@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>BudgetIt</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BudgetIt">
+  <link rel="apple-touch-icon" href="assets/icon-512x512.png">
+
+</head>
+<body>
+  <div id="welcome-screen" class="overlay hidden">
+    <form id="welcome-form">
+      <h2>Добро пожаловать</h2>
+      <label for="company-name">Название компании (обязательно):</label>
+      <input type="text" id="company-name" placeholder="Введите название компании" required>
+      <button type="submit">Продолжить</button>
+    </form>
+  </div>
+
+  <button id="install-btn" style="display: none;">Установить приложение</button>
+
+
+  <header>
+    <h1 id="company-header">BudgetIt</h1>
+    <button id="settings-btn">⚙️</button>
+  </header>
+  <main>
+    <div id="summary">
+      <div id="income">Доход <span id="income-amount">0</span></div>
+      <div id="expense">Расход <span id="expense-amount">0</span></div>
+    </div>
+    <div id="pending">Ожидает оплаты: <span id="pending-amount">0</span></div>
+    <div id="filters">
+      <label for="month-filter">Фильтр по месяцам:</label>
+      <select id="month-filter">
+        <option value="all">Все</option>
+        <option value="01">Январь</option>
+        <option value="02">Февраль</option>
+        <option value="03">Март</option>
+        <option value="04">Апрель</option>
+        <option value="05">Май</option>
+        <option value="06">Июнь</option>
+        <option value="07">Июль</option>
+        <option value="08">Август</option>
+        <option value="09">Сентябрь</option>
+        <option value="10">Октябрь</option>
+        <option value="11">Ноябрь</option>
+        <option value="12">Декабрь</option>
+      </select>
+    </div>
+    <ul id="transaction-list"></ul>
+  </main>
+  <footer>
+    <button id="add-btn">+</button>
+  </footer>
+
+  <!-- Bottom Sheet -->
+  <div id="bottom-sheet" class="hidden">
+    <div id="tabs">
+      <button class="tab-btn active" data-tab="debt-paid-form">Долг/Оплата</button>
+      <button class="tab-btn" data-tab="expense-form">Расход</button>
+    </div>
+    <div id="tab-content">
+      <!-- Debt/Paid Form -->
+      <form id="debt-paid-form" class="tab-content">
+        <label for="date">Дата:</label>
+        <input type="date" id="date" required>
+        <label for="name">Имя:</label>
+        <input type="text" id="name" placeholder="Имя">
+        <label for="phone">Телефон:</label>
+        <input type="tel" id="phone" placeholder="Телефон" pattern="[0-9]*">
+        <label for="amount">Сумма:</label>
+        <input type="number" id="amount" placeholder="Сумма" required>
+        <label for="status">Статус:</label>
+        <select id="status">
+          <option value="debt">Долг</option>
+          <option value="paid">Оплачено</option>
+        </select>
+        <button type="submit">Сохранить</button>
+      </form>
+
+      <!-- Expense Form -->
+      <form id="expense-form" class="tab-content hidden">
+        <label for="expense-date">Дата:</label>
+        <input type="date" id="expense-date" required>
+        <div id="products-list">
+          <div class="product-item">
+            <label>Товар:</label>
+            <input type="text" class="product-name" placeholder="Название">
+            <input type="number" class="product-quantity" placeholder="Кол-во" required>
+            <input type="number" class="product-price" placeholder="Цена" required>
+          </div>
+        </div>
+        <button type="button" id="add-product">Добавить ещё товар</button>
+        <button type="submit">Сохранить</button>
+      </form>
+    </div>
+    <button id="close-btn">Закрыть</button>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings-page" class="hidden overlay">
+    <div class="settings-header">
+      <h2>Настройки</h2>
+      <p><strong>Версия приложения:</strong> 1.1</p>
+      <p><strong>Автор:</strong> l1lG1tPain</p>
+      <p><strong>Telegram:</strong><a href="https://t.me/cybersnitch" target="_blank"> @CyberSnitch</a></p>
+    </div>
+    <div class="settings-buttons">
+      <button id="export-btn">
+        <i class="fas fa-file-export"></i> Экспорт
+      </button>
+      <label for="import-file" id="import-label">
+        <i class="fas fa-file-import"></i> Импорт
+        <input type="file" id="import-file" accept=".json">
+      </label>
+    </div>
+    <button id="close-settings">Закрыть</button>
+  </div>
+  
+
+  <!-- Bottom Sheet Info -->
+  <div id="bottom-sheet-info" class="hidden bottom-sheet">
+    <div class="info-content">
+      <h2>Информация о транзакции</h2>
+      <p><strong>Имя:</strong> <span id="info-name">—</span></p>
+      <p><strong>Статус:</strong> <span id="info-status">—</span></p>
+      <p><strong>Номер:</strong> <span id="info-phone">—</span></p>
+      <p><strong>Сумма:</strong> <span id="info-amount">—</span></p>
+      <p><strong>Дата:</strong> <span id="info-date">—</span></p>
+  
+      <!-- Кнопки -->
+      <div id="debt-buttons" class="hidden">
+        <button id="paid-btn"><i class="fas fa-check-circle"></i> Оплачено</button>
+        <button id="delete-btn"><i class="fas fa-trash"></i> Удалить</button>
+      </div>
+      <div id="default-buttons">
+        <button id="delete-only-btn" class="hidden"><i class="fas fa-trash"></i> Удалить</button>
+      </div>
+      <button id="close-info-btn">Закрыть</button>
+    </div>
+  </div>
+  
+  
+
+  <script src="app.js"></script>
+</body>
+</html>

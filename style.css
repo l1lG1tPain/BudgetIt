@@ -1,0 +1,562 @@
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body.modal-open {
+    overflow: hidden; /* Блокируем прокрутку */
+  }
+
+  /* Убираем прыгающий скролл на iOS */
+html, body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* Плавный скроллинг */
+    overscroll-behavior-y: contain; /* Отключаем проскальзывание */
+  }
+  
+  /* Убираем синие выделения при клике на кнопки */
+button, input, select, textarea {
+    outline: none; /* Убираем обводку */
+    -webkit-tap-highlight-color: transparent; /* Отключаем подсветку на мобильных устройствах */
+  }
+  
+  button:focus, input:focus, select:focus, textarea:focus {
+    outline: none; /* Отключаем обводку при фокусе */
+  }
+  
+  #install-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #FF740F;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  #install-btn:hover {
+    background-color: #e6680b;
+  }
+  
+  
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: #EEEEEE;
+    color: #000000;
+    user-select: none;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #settings-btn {
+    width: auto;
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #000000;
+    color: #C0FF00;
+    padding: 10px 20px;
+    position: fixed;
+    width: 100%;
+  }
+  
+  header h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+  }
+  
+  main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    margin: 85px 0;
+  }
+  
+  /* Summary Styles */
+  #summary {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  #income, #expense {
+    width: 48%;
+    background-color: #CDCDCD;
+    /* color: #fff; */
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  #income span, #expense span {
+    display: block;
+    font-size: 23px;
+  }
+
+  #income {
+    background-color: #C0FF00;
+  }
+  
+  #pending {
+    margin-bottom: 20px;
+    font-size: 1rem;
+    /* color: #FF740F; */
+  }
+  
+  /* Transaction List Styles */
+  #transaction-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  #transaction-list li {
+    border-left: 4px solid;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Footer Styles */
+  footer {
+    position: fixed; /* Фиксируем внизу экрана */
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background-color: #111318;
+  }
+  
+  #add-btn {
+    font-size: 24px;
+    background-color: #C0FF00;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  
+  /* Bottom Sheet Styles */
+  #bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  #tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    background: #CDCDCD;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    margin: 0 5px;
+  }
+  
+  .tab-btn.active {
+    background: #C0FF00;
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content:not(.hidden) {
+    display: block;
+  }
+  
+  /* Product List Styles */
+  #products-list .product-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  #products-list .product-item input {
+    flex: 1;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  /* Overlay (Welcome Screen & Settings) */
+  .hidden {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    display: none !important; /* Гарантирует скрытие */
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    visibility: visible; /* По умолчанию видимое */
+    opacity: 1;
+    transition: opacity 0.3s ease, visibility 0s linear 0s;
+  }
+  
+  
+  
+  
+  .overlay form, .overlay .content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+  }
+  
+  /* Input and Button Styles */
+  input, select, button {
+    /* width: 100%; */
+    padding: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+  }
+
+  input, select, .tab-content button {
+    width: 100%;
+  }
+  
+  button {
+    background-color: #C0FF00;
+    /* color: white; */
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #4bff00;
+  }
+  
+  button:active {
+    background-color: #42c708;
+  }
+  
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  #filters {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  
+  #filters label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: #666;
+  }
+  
+  #month-filter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    padding: 5px 10px;
+    border: 2px solid #C0FF00;
+    transition: border-color 0.3s ease;
+    border-radius: 5px;
+    background-color: #f4f4f4;
+    color: #111318;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  #month-filter:hover {
+    border-color: #42c708;
+    background-color: #fff;
+  }
+  
+
+  /* Стили для страницы настроек */
+#settings-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: #FFFFFF; /* Белый фон */
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s ease-in-out;
+    margin: auto;
+  }
+  
+  #settings-page h2 {
+    font-size: 1.5rem;
+    color: #000000; /* Чёрный */
+    margin-bottom: 10px;
+  }
+  
+  /* Стили для кнопок в настройках */
+#settings-page button {
+    display: inline-block;
+    width: 100%;
+    max-width: 200px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff; /* Белый текст */
+    background: linear-gradient(45deg, #42c708, #C0FF00); /* Градиент от оранжевого к зелёному */
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin: 10px 5px; /* Центровка кнопки */
+  }
+  
+  /* Hover эффекты для кнопок */
+  #settings-page button:hover {
+    transform: translateY(-2px); /* Поднимается вверх */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Active эффекты для кнопок */
+  #settings-page button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Респонсивность для мобильных устройств */
+  @media (max-width: 768px) {
+  
+    #settings-page h2 {
+      font-size: 1.2rem;
+    }
+  
+    #settings-page button {
+      font-size: 0.9rem;
+    }
+  
+    #settings-page input {
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* Анимация появления */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  #bottom-sheet-info {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .info-content h2 {
+    font-size: 1.5rem;
+    color: #000;
+  }
+  
+  .info-content p {
+    font-size: 1rem;
+    color: #555;
+  }
+  
+  #bottom-sheet-info button {
+    padding: 10px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 48%;
+    transition: background 0.3s ease;
+  }
+  
+  #paid-btn {
+    background: #C0FF00;
+  }
+  
+  #delete-btn {
+    background: red;
+  }
+  
+  #close-info-btn {
+    background: #C0FF00;
+    width: 100% !important;
+  }
+  
+  #paid-btn:hover {
+    background: #42c708;
+  }
+  
+  #delete-btn:hover {
+    background: darkred;
+  }
+  
+  #close-info-btn:hover {
+    background: #4bff00;
+  }
+  
+  
+  /* Прокрутка внутри bottom-sheet */
+.bottom-sheet {
+    overflow-y: scroll;
+    scrollbar-width: thin; /* Для браузеров поддерживающих CSS Scrollbar */
+  }
+  
+  .bottom-sheet::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  button i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+    vertical-align: middle;
+  }
+  
+
+  /* Стили для страницы настроек */
+  
+  .settings-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  
+  .settings-header p {
+    margin: 5px 0;
+    font-size: 1rem;
+  }
+  
+  .settings-header a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .settings-header a:hover {
+    text-decoration: underline;
+  }
+  
+  .settings-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+  }
+  
+  .settings-buttons button,
+  #import-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin: 10px 5px; /* Центровка кнопки */
+  }
+  
+  .settings-buttons button:hover,
+  #import-label:hover {
+    background: linear-gradient(45deg, #5a0cb4, #1f65c1);
+    transform: translateY(-2px); /* Поднимается вверх */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .settings-buttons i {
+    margin-right: 8px;
+    font-size: 1.2rem;
+  }
+  
+  #import-label {
+    position: relative;
+    /* overflow: hidden; */
+    cursor: pointer;
+  }
+  
+  #import-file {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  
+  #export-btn {
+    width: 50%;
+    display: flex;
+  }
+
+  .settings-buttons button,
+#import-label {
+  transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.settings-buttons button:hover,
+#import-label:hover {
+  transform: translateY(-2px); /* Лёгкое поднятие кнопки */
+}
+
