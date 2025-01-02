@@ -143,11 +143,12 @@ document.getElementById('debt-paid-form').addEventListener('submit', (e) => {
   const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
   const name = document.getElementById('name').value.trim() || 'N/A';
   const phone = document.getElementById('phone').value || '';
-  const amount = +document.getElementById('amount').value;
+  const rawAmount = document.getElementById('amount').value.replace(/\./g, ''); // Убираем точки
+  const amount = parseInt(rawAmount, 10); // Преобразуем очищенное значение в число
   const status = document.getElementById('status').value;
 
-  if (!amount) {
-    alert('Введите сумму!');
+  if (isNaN(amount) || amount <= 0) { // Проверяем, корректно ли введена сумма
+    alert('Введите корректную сумму!');
     return;
   }
 
@@ -159,6 +160,13 @@ document.getElementById('debt-paid-form').addEventListener('submit', (e) => {
 
   closeModal('bottom-sheet');
 });
+
+// Handle real-time input formatting
+function handleAmountInput(input) {
+  const rawValue = input.value.replace(/\D/g, ''); // Убираем все нецифровые символы
+  input.value = rawValue.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.'); // Форматируем с точками
+}
+
 
 // Add Transaction (Expense)
 document.getElementById('expense-form').addEventListener('submit', (e) => {
@@ -194,6 +202,8 @@ document.getElementById('expense-form').addEventListener('submit', (e) => {
 
   closeModal('bottom-sheet');
 });
+
+
 
 // Add new product input
 document.getElementById('add-product').addEventListener('click', () => {

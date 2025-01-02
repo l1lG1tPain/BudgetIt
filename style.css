@@ -9,6 +9,7 @@
     overflow: hidden; /* Блокируем прокрутку */
   }
 
+  
   /* Убираем прыгающий скролл на iOS */
 html, body {
     overflow-x: hidden;
