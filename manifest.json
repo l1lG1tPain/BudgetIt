@@ -1,8 +1,7 @@
 {
     "name": "BudgetIt",
     "short_name": "BudgetIt",
-    "start_url": "/BudgetIt/index.html",
-    "scope": "/BudgetIt/",
+    "start_url": "/",
     "version": "2.3",
     "display": "standalone",
     "background_color": "#2be82a",
