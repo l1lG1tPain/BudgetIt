@@ -327,7 +327,7 @@ main {
 #budget-form {
   background: var(--tertiary-color);
   padding: 30px;
-  border-radius: 85px;
+  border-radius: 8px;
   margin: 0px 45px;
 }
 #budget-name {
