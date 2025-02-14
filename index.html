@@ -8,8 +8,8 @@
   <link rel="manifest" href="./manifest.json">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"> -->
@@ -25,6 +25,7 @@
       <h2>Добавить бюджет</h2>
       <label for="budget-name">Название бюджета (макс 13 символов):</label>
       <input type="text" id="budget-name" placeholder="Введите название бюджета" required maxlength="13">
+      <!-- Контейнер для inline-ошибки -->
       <button type="submit">Добавить</button>
       <!-- Можно раскомментировать кнопку «Закрыть», но тогда приложение останется без бюджета -->
       <!-- <button type="button" id="close-budget-modal">Закрыть</button> -->
@@ -77,7 +78,6 @@
       </div>
     </div>
     
-
     <!-- Фильтр по месяцу -->
     <div id="month-filter-container">
       <label for="month-filter-input">Месяц:</label>
@@ -99,7 +99,6 @@
       </ul>
     </div>
     
-
     <!-- Список транзакций -->
     <ul id="transaction-list"></ul>
   </main>
@@ -122,6 +121,7 @@
       <select id="income-category" required>
         <option value="">🛠️ Выберите категорию</option>
         <option value="💰 Зарплата">💰 Зарплата</option>
+        <option value="💼 Аванс">💼 Аванс</option>
         <option value="🎁 Подарок">🎁 Подарок</option>
         <option value="🕵️‍♂️ Левак">🕵️‍♂️ Левак</option>
         <option value="✨ Божий дар">✨ Божий дар</option>
@@ -131,7 +131,7 @@
         <option value="👶 Родители подкинули на жизнь">👶 Родители подкинули на жизнь</option>
         <option value="🎩 Легкие деньги, надеюсь, не криминал">🎩 Легкие деньги, надеюсь, не криминал</option>
         <option value="💳 Кэшбек, который даже не заметил">💳 Кэшбек, который даже не заметил</option>
-        <option value="📦 Авито-деньги">📦 Авито-деньги</option>
+        <option value="📦 ПВЗ-деньги">📦 Авито-деньги</option>
         <option value="🔮 Загадочное поступление">🔮 Загадочное поступление</option>
         <option value="🦄 Деньги за мемы">🦄 Деньги за мемы</option>
         <option value="🤡 Оказалось, что долг вернули">🤡 Оказалось, что долг вернули</option>
@@ -155,6 +155,7 @@
         <option value="💘 Девушка">💘 Девушка</option>
         <option value="🛍️ Покупки">🛍️ Покупки</option>
         <option value="🏠 Жильё">🏠 Жильё</option>
+        <option value="🏢 Расходы по работе">🏢 Расходы по работе</option>
         <option value="🚌 Транспорт">🚌 Транспорт</option>
         <option value="🎮 Развлечения">🎮 Развлечения</option>
         <option value="💊 Здоровье">💊 Здоровье</option>
@@ -204,6 +205,12 @@
         <option value="🎤 Караоке и музыкальные вечеринки">🎤 Караоке и музыкальные вечеринки</option>
         <option value="🍣 Японская кухня (суши, роллы, рамен)">🍣 Японская кухня (суши, роллы, рамен)</option>
         <option value="🎿 Активный отдых">🎿 Активный отдых</option>
+        <option value="💡 Коммунальные услуги">💡 Коммунальные услуги</option>
+        <option value="🚗 Автомобиль">🚗 Автомобиль</option>
+        <option value="🏥 Медицинские услуги">🏥 Медицинские услуги</option>
+        <option value="💼 Профессиональное развитие">💼 Профессиональное развитие</option>
+        <option value="📦 Доставка и курьер">📦 Доставка и курьер</option>
+        <option value="💳 Кредит и проценты">💳 Кредит и проценты</option>
         <option value="🍀 Непредвиденные траты">🍀 Непредвиденные траты</option>
         <option value="🔥 Хочу, но не надо было">🔥 Хочу, но не надо было</option>
         <option value="💀 Последние деньги">💀 Последние деньги</option>
@@ -282,7 +289,7 @@
   <div id="settings-page" class="overlay hidden">
     <div class="settings-content">
       <h2>Настройки</h2>
-      <p><strong>Версия приложения:</strong> 2.3</p>
+      <p><strong>Версия приложения:</strong> 2.4</p>
       <p><strong>Автор:</strong> l1lG1tPain</p>
       <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
       <button id="export-btn">📤 Экспорт</button>
@@ -290,6 +297,18 @@
         <input type="file" id="import-file" accept=".json">
       </label>
       <button id="close-settings">Закрыть</button>
+    </div>
+  </div>
+
+  <div id="delete-budget-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Вы точно хотите удалить бюджет?</h3>
+        <p>Все данные из этого бюджета будут удалены. На всякий случай экспортируйте базу данных.</p>
+        <button id="export-before-delete">📤 Экспорт данных</button>
+        <div class="modal-buttons">
+            <button id="confirm-delete-budget">Удалить</button>
+            <button id="cancel-delete-budget">Отмена</button>
+        </div>
     </div>
   </div>
 
@@ -305,10 +324,11 @@
     <img src="assets/BudgetIt ava-v2.3-min.jpg" alt="BudgetItIcon" width="192" height="192">
     <div class="loader"></div>
     <p>Загрузка BudgetIt...</p>
-</div>
+  </div>
 
-<style>
-  #loading-screen {
+  <style>
+    /* Стили для загрузочного экрана */
+    #loading-screen {
       position: fixed;
       width: 100%;
       height: 100vh;
@@ -320,35 +340,33 @@
       flex-direction: column;
       font-size: 20px;
       z-index: 9999;
-  }
-  .loader {
+    }
+    .loader {
       width: 50px;
       height: 50px;
       border: 5px solid white;
       border-top: 5px solid transparent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
+    }
+    @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
-  }
-</style>
+    }
+  </style>
 
-<script>
-  window.onload = function() {
-    setTimeout(() => {
-      let loader = document.getElementById('loading-screen');
-      loader.style.opacity = '0';
-      loader.style.transition = 'opacity 0.5s ease-out';
-      setTimeout(() => { loader.style.display = 'none'; }, 500);
-    }, 1000);
-  };
-</script>
+  <script>
+    window.onload = function() {
+      setTimeout(() => {
+        let loader = document.getElementById('loading-screen');
+        loader.style.opacity = '0';
+        loader.style.transition = 'opacity 0.5s ease-out';
+        setTimeout(() => { loader.style.display = 'none'; }, 500);
+      }, 1000);
+    };
+  </script>
 
-
-
+  <!-- Подключаем внешний JavaScript -->
   <script src="app.js"></script>
-
 </body>
 </html>

@@ -118,7 +118,23 @@ textarea:focus {
   overflow-y: auto;
   z-index: 1100;
   box-shadow: 0 -2px 25px rgb(0 0 0 / 30%);
+  
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
+
+.bottom-sheet:not(.hidden) {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Класс .hidden НЕ должен устанавливать display: none */
+.hidden {
+  pointer-events: none;
+}
+
+
 
 /* Хедер */
 header {
@@ -200,7 +216,7 @@ main {
   width: 100%;
   padding: 8px 10px;
   border: 2px solid var(--primary-color);
-  border-radius: 5px;
+  border-radius: 8px;
   background: #f4f4f4;
   cursor: pointer;
 }
@@ -256,7 +272,7 @@ main {
   padding: 8px;
   margin-top: 5px;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 16px;
 }
 .transaction-form button {
@@ -300,18 +316,18 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 40px;
 }
 #budget-switch-sheet .budget-add input {
   flex: 1;
   padding: 8px;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 8px;
 }
 #budget-form {
   background: var(--tertiary-color);
   padding: 30px;
-  border-radius: 15px;
+  border-radius: 85px;
   margin: 0px 45px;
 }
 #budget-name {
@@ -327,13 +343,13 @@ main {
   width: 100%;
 }
 
-#pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button{
+#pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button, #cancel-delete-budget, #confirm-delete-budget{
   color: #000000;
   font-weight: bolder;
   font-size: 16px;
 }
 
-#pay-debt, #delete-transaction{
+#pay-debt, #delete-transaction, #confirm-delete-budget, #cancel-delete-budget{
   width: 49%;
 }
 
@@ -348,7 +364,7 @@ main {
   width: 100%;
 }
 
-#delete-transaction {
+#delete-transaction, #confirm-delete-budget {
   background-color: var(--expense-color);
 }
 #close-detail, #close-budget-sheet {
@@ -365,12 +381,19 @@ main {
   width: 100% !important;
 }
 
+#income-amount, #debt-amount, #deposit-status {
+  margin-bottom: 40px;
+}
+
+#add-product {
+  margin-top: 40px;
+}
 
 /* Настройки */
 .settings-content {
   background: var(--tertiary-color);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 8x;
   text-align: left;
 }
 .settings-content button,
@@ -395,10 +418,11 @@ button {
   align-items: center;
   padding: 20px;
   background: var(--tertiary-color);
-  border-radius: 15px;
+  border-radius: 16px 16px 0 0;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease-in-out;
   margin: auto;
+  top: 15px;
 }
 #settings-page h2 {
   font-size: 1.5rem;
@@ -481,7 +505,7 @@ footer {
   background: var(--primary-color);
   color: var(--secondary-color);
   border: none;
-  border-radius: 50%;
+  border-radius: 80%;
   width: 60px;
   height: 60px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -585,7 +609,7 @@ select {
   -moz-appearance: none;
   background-color: var(--tertiary-color);
   /* border: 2px solid var(--primary-color); */
-  border-radius: 5px;
+  border-radius: 8px;
   padding: 8px 40px 8px 10px; /* Отступ справа для стрелочки */
   font-size: 16px;
   color: var(--secondary-color);
@@ -614,7 +638,7 @@ main {
   overflow-y: auto; /* Включаем вертикальный скролл */
   /* padding: 90px 5px; */
   scroll-behavior: smooth; /* Плавный скролл */
-  border-radius: 10px;
+  border-radius: 8px;
   background-color: var(--main-ground);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -629,4 +653,152 @@ main::-webkit-scrollbar-thumb {
   background: var(--primary-color); /* Синий ползунок */
   border-radius: 10px;
 }
+
+/* Общие стили для модального окна */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Затемнение фона */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Поверх всего */
+}
+
+/* Скрытый класс для модалки */
+.modal.hidden {
+  display: none;
+}
+
+/* Содержимое модального окна */
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Кнопки внутри модалки */
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+/* Стили кнопок */
+.modal-buttons button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+#confirm-delete-budget:hover {
+  background: #c62828;
+}
+
+#cancel-delete-budget:hover {
+  background: #388e3c;
+}
+
+#export-before-delete {
+  background: #007bff; /* Синяя кнопка экспорта */
+  color: white;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+#export-before-delete:hover {
+  background: #0056b3;
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from {
+      opacity: 0;
+      transform: scale(0.95);
+  }
+  to {
+      opacity: 1;
+      transform: scale(1);
+  }
+}
+
+.budget-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-budget-btn {
+  background-color: var(--main-ground);
+}
+
+
+#current-budget {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#current-budget:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.delete-product {
+  background: none !important;
+  color: var(--primary-color) !important;
+  width: 5% !important;
+  padding: 5px;
+}
+
+
+/* Ошибки (hint) - всплывающие */
+.product-item {
+  position: relative; /* чтобы .error-message позиционировалась относительно этого контейнера */
+}
+
+/* Для бюджетных форм (если нужно ошибки и там), тоже можно position: relative */
+#budget-form,
+#budget-switch-sheet .budget-add,
+#debt-form,
+#deposit-form,
+#income-form {
+  position: relative;
+}
+
+/* Сама подсказка об ошибке */
+.error-message {
+  position: absolute;
+  top: 100%;      /* появляется чуть ниже инпута */
+  left: 0;
+  margin-top: 2px;
+  background: rgba(255, 0, 0, 0.1);
+  color: red;
+  padding: 3px 5px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  white-space: nowrap;  /* не переносим текст */
+  pointer-events: none; /* клики проходят «сквозь» */
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 999;   /* поверх всего */
+}
+
+.error-message.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 
