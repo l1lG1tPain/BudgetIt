@@ -1,154 +1,259 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>BudgetIt</title>
+  <title>B$dgetIt</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="./manifest.json">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"> -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BudgetIt">
   <link rel="apple-touch-icon" href="assets/icon-512x512.png">
-
 </head>
 <body>
-  <div id="welcome-screen" class="overlay hidden">
-    <form id="welcome-form">
-      <h2>Добро пожаловать</h2>
-      <label for="company-name">Название компании (обязательно):</label>
-      <input type="text" id="company-name" placeholder="Введите название компании" required>
-      <button type="submit">Продолжить</button>
+  <!-- Модальное окно для создания первого бюджета -->
+  <div id="budget-modal" class="overlay hidden">
+    <form id="budget-form">
+      <h2>Добавить бюджет</h2>
+      <label for="budget-name">Название бюджета (макс 13 символов):</label>
+      <input type="text" id="budget-name" placeholder="Введите название бюджета" required maxlength="13">
+      <button type="submit">Добавить</button>
+      <!-- Можно раскомментировать кнопку «Закрыть», но тогда приложение останется без бюджета -->
+      <!-- <button type="button" id="close-budget-modal">Закрыть</button> -->
     </form>
   </div>
 
-  <button id="install-btn" style="display: none;">Установить приложение</button>
+  <!-- Bottom-sheet для переключения между бюджетами -->
+  <div id="budget-switch-sheet" class="bottom-sheet hidden">
+    <div class="budget-list"></div>
+    <div class="budget-add">
+      <span>Бюджет:</span>
+      <input type="text" id="new-budget-name" placeholder="Название" maxlength="13">
+    </div>
+    <button id="add-budget-btn">Добавить</button>
+    <button id="close-budget-sheet">Закрыть</button>
+  </div>
 
-
+  <!-- Хедер -->
   <header>
-    <h1 id="company-header">BudgetIt</h1>
+    <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
     <button id="settings-btn">⚙️</button>
   </header>
+
+  <!-- Основной контент -->
   <main>
-    <div id="summary">
-      <div id="income">Доход <span id="income-amount">0</span></div>
-      <div id="expense">Расход <span id="expense-amount">0</span></div>
+    <!-- Блоки суммарной информации -->
+    <div id="summary-blocks">
+      <!-- Блок Бюджет – 100% ширины -->
+      <div class="summary-block full" id="block-budget">
+        <div class="block-title">Бюджет <span class="emoji"></span></div>
+        <div class="block-value">0</div>
+      </div>
+      
+      <!-- Блоки по 50% ширины -->
+      <div class="summary-block half" id="block-income">
+        <div class="block-title">Доходы <span class="emoji"></span></div>
+        <div class="block-value">0</div>
+      </div>
+      <div class="summary-block half" id="block-expense">
+        <div class="block-title">Расходы <span class="emoji"></span></div>
+        <div class="block-value">0</div>
+      </div>
+      <div class="summary-block half" id="block-deposit">
+        <div class="block-title">Вклады <span class="emoji"></span></div>
+        <div class="block-value">0</div>
+      </div>
+      <div class="summary-block half" id="block-debt">
+        <div class="block-title">Долги <span class="emoji"></span></div>
+        <div class="block-value">0</div>
+      </div>
     </div>
-    <div id="pending">Ожидает оплаты: <span id="pending-amount">0</span></div>
-    <div id="filters">
-      <label for="month-filter">Фильтр по месяцам:</label>
-      <select id="month-filter">
-        <option value="all">Все</option>
-        <option value="01">Январь</option>
-        <option value="02">Февраль</option>
-        <option value="03">Март</option>
-        <option value="04">Апрель</option>
-        <option value="05">Май</option>
-        <option value="06">Июнь</option>
-        <option value="07">Июль</option>
-        <option value="08">Август</option>
-        <option value="09">Сентябрь</option>
-        <option value="10">Октябрь</option>
-        <option value="11">Ноябрь</option>
-        <option value="12">Декабрь</option>
-      </select>
+    
+
+    <!-- Фильтр по месяцу -->
+    <div id="month-filter-container">
+      <label for="month-filter-input">Месяц:</label>
+      <input type="text" id="month-filter-input" placeholder="Все" readonly data-value="all">
+      <ul id="month-filter-dropdown" class="hidden">
+        <li data-value="all">Все</li>
+        <li data-value="01">Январь</li>
+        <li data-value="02">Февраль</li>
+        <li data-value="03">Март</li>
+        <li data-value="04">Апрель</li>
+        <li data-value="05">Май</li>
+        <li data-value="06">Июнь</li>
+        <li data-value="07">Июль</li>
+        <li data-value="08">Август</li>
+        <li data-value="09">Сентябрь</li>
+        <li data-value="10">Октябрь</li>
+        <li data-value="11">Ноябрь</li>
+        <li data-value="12">Декабрь</li>
+      </ul>
     </div>
+    
+
+    <!-- Список транзакций -->
     <ul id="transaction-list"></ul>
   </main>
+
+  <!-- Bottom-sheet для добавления транзакции -->
+  <div id="transaction-sheet" class="bottom-sheet hidden">
+    <div class="transaction-type-filter">
+      <select id="transaction-type">
+        <option value="income">💰 Доходы</option>
+        <option value="expense">💸 Расходы</option>
+        <option value="debt">📉 Долги</option>
+        <option value="deposit">🏦 Вклады</option>
+      </select>    
+    </div>
+    <!-- Форма Доходов -->
+    <form id="income-form" class="transaction-form hidden">
+      <label for="income-date">Дата:</label>
+      <input type="date" id="income-date" required>
+      <label for="income-category">Категория:</label>
+      <select id="income-category" required>
+        <option value="">🛠️ Выберите категорию</option>
+        <option value="💰 Зарплата">💰 Зарплата</option>
+        <option value="🎁 Подарок">🎁 Подарок</option>
+        <option value="🕵️‍♂️ Левак">🕵️‍♂️ Левак</option>
+        <option value="✨ Божий дар">✨ Божий дар</option>
+      </select>    
+      <label for="income-amount">Сумма:</label>
+      <input type="tel" id="income-amount" required maxlength="15" inputmode="numeric">
+      <button type="submit">Сохранить</button>
+      <button type="button" class="close-form">Закрыть</button>
+    </form>
+    <!-- Форма Расходов -->
+    <form id="expense-form" class="transaction-form hidden">
+      <label for="expense-date">Дата:</label>
+      <input type="date" id="expense-date" required>
+      <label for="expense-category">Категория:</label>
+      <select id="expense-category" required onchange="updateSelectedCategory()">
+        <option value="">🛒 Выберите категорию</option>
+        <option value="🥦 Продукты">🥦 Продукты</option>
+        <option value="🌐 Интернет">🌐 Интернет</option>
+        <option value="📱 Связь">📱 Связь</option>
+        <option value="🚖 Такси">🚖 Такси</option>
+        <option value="💘 Девушка">💘 Девушка</option>
+        <option value="🛍️ Покупки">🛍️ Покупки</option>
+        <option value="🏠 Жильё">🏠 Жильё</option>
+        <option value="🚌 Транспорт">🚌 Транспорт</option>
+        <option value="🎮 Развлечения">🎮 Развлечения</option>
+        <option value="💊 Здоровье">💊 Здоровье</option>
+        <option value="📚 Образование">📚 Образование</option>
+        <option value="🐶 Животные">🐶 Животные</option>
+        <option value="👕 Одежда">👕 Одежда</option>
+        <option value="✈️ Путешествия">✈️ Путешествия</option>
+        <option value="🎁 Подарки">🎁 Подарки</option>
+        <option value="💳 Финансовые обязательства">💳 Финансовые обязательства</option>
+        <option value="🎨 Хобби">🎨 Хобби</option>
+        <option value="🔌 Электроника">🔌 Электроника</option>
+        <option value="🍽️ Кафе и рестораны">🍽️ Кафе и рестораны</option>
+        <option value="📺 Подписки">📺 Подписки</option>
+        <option value="🤲 Благотворительность">🤲 Благотворительность</option>
+        <option value="🥂 Алкоголь и вечеринки">🥂 Алкоголь и вечеринки</option>
+        <option value="🍑 Игрушки для взрослых">🍑 Игрушки для взрослых</option>
+        <option value="🤦‍♂️ Фигня, которую купил на эмоциях">🤦‍♂️ Фигня, которую купил на эмоциях</option>
+        <option value="📈 Крипта и инвестиции">📈 Крипта и инвестиции</option>
+        <option value="🎤 Донаты стримерам">🎤 Донаты стримерам</option>
+        <option value="🧠 Психолог">🧠 Психолог</option>
+        <option value="💸 Бесполезные подписки">💸 Бесполезные подписки</option>
+        <option value="🐸 Мемные покупки">🐸 Мемные покупки</option>
+        <option value="🎰 Ставки и казино">🎰 Ставки и казино</option>
+        <option value="💵 Чаевые">💵 Чаевые</option>
+        <option value="🍕 Фастфуд и ночные заказы">🍕 Фастфуд и ночные заказы</option>
+        <option value="🚑 Экстренные расходы">🚑 Экстренные расходы</option>
+      </select>
+      <!-- Список товаров с автодополнением -->
+      <div id="products-list">
+        <div class="product-item">
+          <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
+          <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
+          <input type="tel" class="product-price" placeholder="Цена" required maxlength="11" inputmode="numeric">
+        </div>
+      </div>
+      <!-- datalist для автоподсказок -->
+      <datalist id="product-names-list"></datalist>
+      <button type="button" id="add-product">Добавить ещё товар</button>
+      <button type="submit">Сохранить</button>
+      <button type="button" class="close-form">Закрыть</button>
+    </form>
+    <!-- Форма Долгов -->
+    <form id="debt-form" class="transaction-form hidden">
+      <label for="debt-date">Дата:</label>
+      <input type="date" id="debt-date" required>
+      <label for="debt-name">Имя:</label>
+      <input type="text" id="debt-name" required maxlength="16">
+      <label for="debt-amount">Сумма:</label>
+      <input type="tel" id="debt-amount" required maxlength="15" inputmode="numeric">
+      <button type="submit">Сохранить</button>
+      <button type="button" class="close-form">Закрыть</button>
+    </form>
+    <!-- Форма Вкладов -->
+    <form id="deposit-form" class="transaction-form hidden">
+      <label for="deposit-date">Дата:</label>
+      <input type="date" id="deposit-date" required>
+      <label for="deposit-name">Имя:</label>
+      <input type="text" id="deposit-name" required maxlength="16">
+      <label for="deposit-amount">Сумма:</label>
+      <input type="tel" id="deposit-amount" required maxlength="15" inputmode="numeric">
+      <label for="deposit-status">Статус:</label>
+      <select id="deposit-status" required>
+        <option value="">🔄 Выберите статус</option>
+        <option value="➕ Пополнение">➕ Пополнение</option>
+        <option value="➖ Снятие">➖ Снятие</option>
+      </select>     
+      <button type="submit">Сохранить</button>
+      <button type="button" class="close-form">Закрыть</button>
+    </form>
+  </div>
+
+  <!-- Bottom-sheet для детальной информации о транзакции -->
+  <div id="transaction-detail-sheet" class="bottom-sheet hidden">
+    <h2>Информация о транзакции</h2>
+    <div id="detail-type"></div>
+    <div id="detail-name"></div>
+    <div id="detail-products" class="hidden"></div>
+    <div id="detail-amount"></div>
+    <div id="detail-date"></div>
+    <div id="detail-status" class="hidden"></div>
+    <div id="detail-buttons">
+      <button id="delete-transaction">Удалить</button>
+      <button id="pay-debt" class="hidden">Оплачено</button>
+      <button id="close-detail">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Модальное окно настроек -->
+  <div id="settings-page" class="overlay hidden">
+    <div class="settings-content">
+      <h2>Настройки</h2>
+      <p><strong>Версия приложения:</strong> 2.3</p>
+      <p><strong>Автор:</strong> l1lG1tPain</p>
+      <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
+      <button id="export-btn">📤 Экспорт</button>
+      <label id="import-label">📥 Импорт
+        <input type="file" id="import-file" accept=".json">
+      </label>
+      <button id="close-settings">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Футер: кнопка добавления транзакции -->
   <footer>
     <button id="add-btn">+</button>
   </footer>
 
-  <!-- Bottom Sheet -->
-  <div id="bottom-sheet" class="hidden">
-    <div id="tabs">
-      <button class="tab-btn active" data-tab="debt-paid-form">Долг/Оплата</button>
-      <button class="tab-btn" data-tab="expense-form">Расход</button>
-    </div>
-    <div id="tab-content">
-      <!-- Debt/Paid Form -->
-      <form id="debt-paid-form" class="tab-content">
-        <label for="date">Дата:</label>
-        <input type="date" id="date" required>
-        <label for="name">Имя:</label>
-        <input type="text" id="name" placeholder="Имя">
-        <label for="phone">Телефон:</label>
-        <input type="tel" id="phone" placeholder="Телефон" pattern="[0-9]*">
-        <label for="amount">Сумма:</label>
-        <input type="tel" id="amount" placeholder="Сумма" required oninput="handleAmountInput(this)">
-        <label for="status">Статус:</label>
-        <select id="status">
-          <option value="debt">Долг</option>
-          <option value="paid">Оплачено</option>
-        </select>
-        <button type="submit">Сохранить</button>
-      </form>
-
-      <!-- Expense Form -->
-      <form id="expense-form" class="tab-content hidden">
-        <label for="expense-date">Дата:</label>
-        <input type="date" id="expense-date" required>
-        <div id="products-list">
-          <div class="product-item">
-            <label>Товар:</label>
-            <input type="text" class="product-name" placeholder="Название">
-            <input type="number" class="product-quantity" placeholder="Кол-во" required>
-            <input type="tel" class="product-price" placeholder="Цена" required>
-          </div>
-        </div>
-        <button type="button" id="add-product">Добавить ещё товар</button>
-        <button type="submit">Сохранить</button>
-      </form>
-    </div>
-    <button id="close-btn">Закрыть</button>
-  </div>
-
-  <!-- Settings -->
-  <div id="settings-page" class="hidden overlay">
-    <div class="settings-header">
-      <h2>Настройки</h2>
-      <p><strong>Версия приложения:</strong> 1.1</p>
-      <p><strong>Автор:</strong> l1lG1tPain</p>
-      <p><strong>Telegram:</strong><a href="https://t.me/cybersnitch" target="_blank"> @CyberSnitch</a></p>
-    </div>
-    <div class="settings-buttons">
-      <button id="export-btn">
-        <i class="fas fa-file-export"></i> Экспорт
-      </button>
-      <label for="import-file" id="import-label">
-        <i class="fas fa-file-import"></i> Импорт
-        <input type="file" id="import-file" accept=".json">
-      </label>
-    </div>
-    <button id="close-settings">Закрыть</button>
-  </div>
-  
-
-  <!-- Bottom Sheet Info -->
-  <div id="bottom-sheet-info" class="hidden bottom-sheet">
-    <div class="info-content">
-      <h2>Информация о транзакции</h2>
-      <p><strong>Имя:</strong> <span id="info-name">—</span></p>
-      <p><strong>Статус:</strong> <span id="info-status">—</span></p>
-      <p><strong>Номер:</strong> <span id="info-phone">—</span></p>
-      <p><strong>Сумма:</strong> <span id="info-amount">—</span></p>
-      <p><strong>Дата:</strong> <span id="info-date">—</span></p>
-  
-      <!-- Кнопки -->
-      <div id="debt-buttons" class="hidden">
-        <button id="paid-btn"><i class="fas fa-check-circle"></i> Оплачено</button>
-        <button id="delete-btn"><i class="fas fa-trash"></i> Удалить</button>
-      </div>
-      <div id="default-buttons">
-        <button id="delete-only-btn" class="hidden"><i class="fas fa-trash"></i> Удалить</button>
-      </div>
-      <button id="close-info-btn">Закрыть</button>
-    </div>
-  </div>
-  
-  
+  <!-- PWA Install Button -->
+  <button id="install-btn" style="display: none;">Установить приложение</button>
 
   <script src="app.js"></script>
 </body>

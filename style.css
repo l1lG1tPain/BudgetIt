@@ -1,563 +1,632 @@
-/* General Styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+:root {
+  --primary-color:  #2be82a;  /* Бюджет (яркий зелёный) */
+  --income-color:   #2aace8;  /* Доходы (свежий голубой) */
+  --expense-color:  #e82b2a;  /* Расходы (яркий красный) */
+  --deposit-color:  #8a2be2;  /* Вклады (насыщенный фиолетовый) */
+  --debt-color:     #e8a22a;  /* Долги (яркий оранжевый) */
+  /* Остальные переменные, если нужны */
+  --secondary-color: #000000;
+  --tertiary-color:  #ffffff;
+  --dark-color:      #171717;
+  --accent-color:    #dbe4db;
+  --main-ground:     #f8f9fa;
+}
 
-  body.modal-open {
-    overflow: hidden; /* Блокируем прокрутку */
-  }
-
-  
-  /* Убираем прыгающий скролл на iOS */
-html, body {
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* Плавный скроллинг */
-    overscroll-behavior-y: contain; /* Отключаем проскальзывание */
-  }
-  
-  /* Убираем синие выделения при клике на кнопки */
 button, input, select, textarea {
-    outline: none; /* Убираем обводку */
-    -webkit-tap-highlight-color: transparent; /* Отключаем подсветку на мобильных устройствах */
-  }
-  
-  button:focus, input:focus, select:focus, textarea:focus {
-    outline: none; /* Отключаем обводку при фокусе */
-  }
-  
-  #install-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background-color: #FF740F;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-  }
-  
-  #install-btn:hover {
-    background-color: #e6680b;
-  }
-  
-  
-  body {
-    font-family: 'JetBrains Mono', monospace;
-    background-color: #EEEEEE;
-    color: #000000;
-    user-select: none;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  #settings-btn {
-    width: auto;
-  }
-  
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #000000;
-    color: #C0FF00;
-    padding: 10px 20px;
-    position: fixed;
-    width: 100%;
-  }
-  
-  header h1 {
-    font-size: 1.7rem;
-    font-weight: 700;
-  }
-  
-  main {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    margin: 85px 0;
-  }
-  
-  /* Summary Styles */
-  #summary {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  
-  #income, #expense {
-    width: 48%;
-    background-color: #CDCDCD;
-    /* color: #fff; */
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: bold;
-  }
+  user-select: none;              /* Отключает выделение текста */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  outline: none;                  /* Убирает обводку при фокусе */
+  -webkit-tap-highlight-color: transparent; /* Убирает подсветку на мобильных устройствах */
+}
 
-  #income span, #expense span {
-    display: block;
-    font-size: 23px;
-  }
+input, select, textarea {
+  background-color: var(--tertiary-color);
+}
 
-  #income {
-    background-color: #C0FF00;
-  }
-  
-  #pending {
-    margin-bottom: 20px;
-    font-size: 1rem;
-    /* color: #FF740F; */
-  }
-  
-  /* Transaction List Styles */
-  #transaction-list {
-    list-style: none;
-    padding: 0;
-  }
-  
-  #transaction-list li {
-    border-left: 4px solid;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    background-color: #fff;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Footer Styles */
-  footer {
-    position: fixed; /* Фиксируем внизу экрана */
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    background-color: #111318;
-  }
-  
-  #add-btn {
-    font-size: 24px;
-    background-color: #C0FF00;
-    border: none;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-  }
-  
-  /* Bottom Sheet Styles */
-  #bottom-sheet {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  #tabs {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-  }
-  
-  .tab-btn {
-    flex: 1;
-    background: #CDCDCD;
-    padding: 10px;
-    text-align: center;
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    margin: 0 5px;
-  }
-  
-  .tab-btn.active {
-    background: #C0FF00;
-  }
-  
-  .tab-content {
-    display: none;
-  }
-  
-  .tab-content:not(.hidden) {
-    display: block;
-  }
-  
-  /* Product List Styles */
-  #products-list .product-item {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  #products-list .product-item input {
-    flex: 1;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  /* Overlay (Welcome Screen & Settings) */
-  .hidden {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-    display: none !important; /* Гарантирует скрытие */
-  }
-  
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    visibility: visible; /* По умолчанию видимое */
-    opacity: 1;
-    transition: opacity 0.3s ease, visibility 0s linear 0s;
-  }
-  
-  
-  
-  
-  .overlay form, .overlay .content {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 400px;
-  }
-  
-  /* Input and Button Styles */
-  input, select, button {
-    /* width: 100%; */
-    padding: 10px;
-    margin-top: 5px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-  }
 
-  input, select, .tab-content button {
-    width: 100%;
-  }
-  
-  button {
-    background-color: #C0FF00;
-    /* color: white; */
-    border: none;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background-color: #4bff00;
-  }
-  
-  button:active {
-    background-color: #42c708;
-  }
-  
-  button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-  
-  #filters {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin: 10px 0;
-  }
-  
-  #filters label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    color: #666;
-  }
-  
-  #month-filter {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    padding: 5px 10px;
-    border: 2px solid #C0FF00;
-    transition: border-color 0.3s ease;
-    border-radius: 5px;
-    background-color: #f4f4f4;
-    color: #111318;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-  }
-  
-  #month-filter:hover {
-    border-color: #42c708;
-    background-color: #fff;
-  }
-  
+/* Общие стили */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  /* font-family: 'JetBrains Mono', 'Apple Color Emoji', monospace; */
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--main-ground);
+  color: var(--secondary-color);
+  user-select: none;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* Стили для страницы настроек */
-#settings-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    background: #FFFFFF; /* Белый фон */
-    border-radius: 15px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.3s ease-in-out;
-    margin: auto;
-  }
-  
-  #settings-page h2 {
-    font-size: 1.5rem;
-    color: #000000; /* Чёрный */
-    margin-bottom: 10px;
-  }
-  
-  /* Стили для кнопок в настройках */
-#settings-page button {
-    display: inline-block;
-    width: 100%;
-    max-width: 200px;
-    padding: 10px 20px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #fff; /* Белый текст */
-    background: linear-gradient(45deg, #42c708, #C0FF00); /* Градиент от оранжевого к зелёному */
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    margin: 10px 5px; /* Центровка кнопки */
-  }
-  
-  /* Hover эффекты для кнопок */
-  #settings-page button:hover {
-    transform: translateY(-2px); /* Поднимается вверх */
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-  }
-  
-  /* Active эффекты для кнопок */
-  #settings-page button:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  }
-  
-  /* Респонсивность для мобильных устройств */
-  @media (max-width: 768px) {
-  
-    #settings-page h2 {
-      font-size: 1.2rem;
-    }
-  
-    #settings-page button {
-      font-size: 0.9rem;
-    }
-  
-    #settings-page input {
-      font-size: 0.9rem;
-    }
-  }
-  
-  /* Анимация появления */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  #bottom-sheet-info {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  .info-content h2 {
-    font-size: 1.5rem;
-    color: #000;
-  }
-  
-  .info-content p {
-    font-size: 1rem;
-    color: #555;
-  }
-  
-  #bottom-sheet-info button {
-    padding: 10px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 48%;
-    transition: background 0.3s ease;
-  }
-  
-  #paid-btn {
-    background: #C0FF00;
-  }
-  
-  #delete-btn {
-    background: red;
-  }
-  
-  #close-info-btn {
-    background: #C0FF00;
-    width: 100% !important;
-  }
-  
-  #paid-btn:hover {
-    background: #42c708;
-  }
-  
-  #delete-btn:hover {
-    background: darkred;
-  }
-  
-  #close-info-btn:hover {
-    background: #4bff00;
-  }
-  
-  
-  /* Прокрутка внутри bottom-sheet */
+#block-budget {
+  /* Блок Бюджет уже использует primary-color */
+  background: var(--primary-color);
+}
+
+#block-income {
+  background: var(--income-color);
+}
+
+#block-expense {
+  background: var(--expense-color);
+}
+
+#block-deposit {
+  background: var(--deposit-color);
+}
+
+#block-debt {
+  background: var(--debt-color);
+}
+
+/* Hover для блоков */
+.summary-block:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover для кнопок */
+button:hover {
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+/* Контур для всех инпутов, select, textarea при фокусе */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1.5px solid var(--primary-color);
+  /* outline-offset: 2px; */
+}
+
+
+/* Скрытие элементов */
+.hidden {
+  display: none !important;
+}
+
+/* Оверлей для модальных окон */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Bottom-sheet */
 .bottom-sheet {
-    overflow-y: scroll;
-    scrollbar-width: thin; /* Для браузеров поддерживающих CSS Scrollbar */
-  }
-  
-  .bottom-sheet::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  button i {
-    margin-right: 8px;
-    font-size: 1.2rem;
-    vertical-align: middle;
-  }
-  
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--tertiary-color);
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1100;
+  box-shadow: 0 -2px 25px rgb(0 0 0 / 30%);
+}
 
-  /* Стили для страницы настроек */
-  
-  .settings-header h2 {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-  }
-  
-  .settings-header p {
-    margin: 5px 0;
-    font-size: 1rem;
-  }
-  
-  .settings-header a {
-    color: #007bff;
-    text-decoration: none;
-  }
-  
-  .settings-header a:hover {
-    text-decoration: underline;
-  }
-  
-  .settings-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 20px;
-  }
-  
-  .settings-buttons button,
-  #import-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(45deg, #6a11cb, #2575fc);
-    border: none;
-    border-radius: 8px;
-    padding: 10px 15px;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    margin: 10px 5px; /* Центровка кнопки */
-  }
-  
-  .settings-buttons button:hover,
-  #import-label:hover {
-    background: linear-gradient(45deg, #5a0cb4, #1f65c1);
-    transform: translateY(-2px); /* Поднимается вверх */
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
-  }
-  
-  .settings-buttons i {
-    margin-right: 8px;
+/* Хедер */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 900;
+}
+header h1 {
+  font-size: 1.7rem;
+  cursor: pointer;
+}
+
+/* Основной контент */
+main {
+  flex: 1;
+  padding: 90px 20px;
+  overflow-y: auto;
+}
+
+/* Блоки суммарной информации */
+/* Контейнер для блоков */
+#summary-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* Общие стили для блоков */
+.summary-block {
+  background: var(--tertiary-color);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+  text-align: center;
+}
+/* Блок, занимающий всю ширину */
+.summary-block.full {
+  flex-basis: 100%;
+}
+/* Блоки, занимающие 50% ширины */
+.summary-block.half {
+  flex-basis: calc(50% - 5px);
+  width: 48%;
+}
+/* Стили заголовков и значений */
+.block-title {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+.block-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--dark-color);
+}
+/* Стиль для смайликов */
+.block-title .emoji {
+  font-size: 1.1rem;
+}
+
+/* Кастомный фильтр по месяцам */
+#month-filter-container {
+  position: relative;
+  width: 200px;
+  margin: 10px auto;
+}
+#month-filter-container label {
+  display: block;
+  margin-bottom: 5px;
+  text-align: center;
+}
+#month-filter-container input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 5px;
+  background: #f4f4f4;
+  cursor: pointer;
+}
+#month-filter-container ul {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--tertiary-color);
+  border: 2px solid var(--primary-color);
+  border-top: none;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 2000;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#month-filter-container ul li {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+#month-filter-container ul li:hover {
+  background: var(--primary-color);
+  color: var(--tertiary-color);
+}
+
+/* Список транзакций */
+#transaction-list {
+  list-style: none;
+  margin-top: 10px;
+}
+#transaction-list li {
+  border-left: 4px solid;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: var(--tertiary-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Стили форм в bottom-sheet */
+.transaction-form {
+  margin-top: 10px;
+}
+.transaction-form label {
+  display: block;
+  margin-top: 10px;
+}
+.transaction-form input,
+.transaction-form select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+.transaction-form button {
+  margin-top: 10px;
+  padding: 11px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+}
+.transaction-form .close-form {
+  background: #ccc;
+}
+
+/* Стили для списка товаров */
+#products-list .product-item {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+#products-list .product-item input {
+  flex: 1;
+}
+
+/* Стили для bottom-sheet переключения бюджета */
+#budget-switch-sheet .budget-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+#budget-switch-sheet .budget-list div {
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  cursor: pointer;
+}
+#budget-switch-sheet .budget-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#budget-switch-sheet .budget-add input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+#budget-form {
+  background: var(--tertiary-color);
+  padding: 30px;
+  border-radius: 15px;
+  margin: 0px 45px;
+}
+#budget-name {
+  width: 100%;
+  padding: 10px;
+  font-weight: bold;
+  border-radius: 8px;
+  margin-top: 5px;
+  font-size: 16px;
+}
+
+#budget-form button {
+  width: 100%;
+}
+
+#pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button{
+  color: #000000;
+  font-weight: bolder;
+  font-size: 16px;
+}
+
+#pay-debt, #delete-transaction{
+  width: 49%;
+}
+
+/* Отключил кнопку Оплатить времено пока не сделаю нормальную логику */
+#pay-debt { 
+  display: none;
+}
+
+.pay-debt {
+  color: #000000;
+  font-weight: bolder;
+  width: 100%;
+}
+
+#delete-transaction {
+  background-color: var(--expense-color);
+}
+#close-detail, #close-budget-sheet {
+  background-color: #ccc;
+  width: 100%;
+}
+
+#add-budget-btn {
+  margin-top: 0;
+  width: 100%;
+}
+
+#export-btn, #import-label, #close-settings{
+  width: 100% !important;
+}
+
+
+/* Настройки */
+.settings-content {
+  background: var(--tertiary-color);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: left;
+}
+.settings-content button,
+.settings-content label,
+button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: var(--tertiary-color);
+  cursor: pointer;
+}
+.settings-content a {
+  color: #007bff;
+}
+
+/* Стили для страницы настроек */
+#settings-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: var(--tertiary-color);
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+  margin: auto;
+}
+#settings-page h2 {
+  font-size: 1.5rem;
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+}
+#settings-page button {
+  display: inline-block;
+  width: 100%;
+  max-width: 200px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--tertiary-color);
+  background: linear-gradient(45deg, var(--primary-color), var(--primary-color));
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 10px 5px;
+}
+#settings-page button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+}
+#settings-page button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+@media (max-width: 768px) {
+  #settings-page h2 {
     font-size: 1.2rem;
   }
-  
-  #import-label {
-    position: relative;
-    /* overflow: hidden; */
-    cursor: pointer;
+  #settings-page button {
+    font-size: 0.9rem;
   }
-  
-  #import-file {
-    position: absolute;
-    left: 0;
-    top: 0;
+  #settings-page input {
+    font-size: 0.9rem;
+  }
+}
+@keyframes fadeIn {
+  from {
     opacity: 0;
-    cursor: pointer;
+    transform: translateY(20px);
   }
-  
-  #export-btn {
-    width: 50%;
-    display: flex;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
-  .settings-buttons button,
+/* Кнопка установки приложения */
+#install-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: var(--tertiary-color);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Футер (кнопка +) */
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  /* padding: 10px; */
+  background-color: var(--dark-color);
+}
+#add-btn {
+  font-size: 24px;
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+
+/* Стили для страницы настроек */
+  
+.settings-header h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.settings-header p {
+  margin: 5px 0;
+  font-size: 1rem;
+}
+
+.settings-header a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.settings-header a:hover {
+  text-decoration: underline;
+}
+
+.settings-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.settings-buttons button,
 #import-label {
-  transition: transform 0.2s ease, background 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #6a11cb, #2575fc);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 15px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 10px 5px; /* Центровка кнопки */
 }
 
 .settings-buttons button:hover,
 #import-label:hover {
-  transform: translateY(-2px); /* Лёгкое поднятие кнопки */
+  background: linear-gradient(45deg, #5a0cb4, #1f65c1);
+  transform: translateY(-2px); /* Поднимается вверх */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+.settings-buttons i {
+  margin-right: 8px;
+  font-size: 1.2rem;
+}
+
+#import-label {
+  position: relative;
+  /* overflow: hidden; */
+  cursor: pointer;
+}
+
+#import-file {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#export-btn {
+  width: 50%;
+  display: flex;
+}
+
+.settings-buttons button,
+#import-label {
+transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.settings-buttons button:hover,
+#import-label:hover {
+transform: translateY(-2px); /* Лёгкое поднятие кнопки */
+}
+
+/* Сбрасываем стандартный вид select */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--tertiary-color);
+  /* border: 2px solid var(--primary-color); */
+  border-radius: 5px;
+  padding: 8px 40px 8px 10px; /* Отступ справа для стрелочки */
+  font-size: 16px;
+  color: var(--secondary-color);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%232be82a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Эффект фокуса для select */
+select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px rgba(43,232,42,0.5);
+}
+
+/* При наведении немного меняем прозрачность */
+select:hover {
+  opacity: 0.9;
+}
+
+/* Контейнер main, если в нем динамически добавляются элементы */
+main {
+  max-height: 90vh; /* Или другое подходящее ограничение */
+  overflow-y: auto; /* Включаем вертикальный скролл */
+  /* padding: 90px 5px; */
+  scroll-behavior: smooth; /* Плавный скролл */
+  border-radius: 10px;
+  background-color: var(--main-ground);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Стилизация scrollbar (для WebKit браузеров) */
+main::-webkit-scrollbar {
+  width: 3px; /* Ширина скроллбара */
+}
+
+
+main::-webkit-scrollbar-thumb {
+  background: var(--primary-color); /* Синий ползунок */
+  border-radius: 10px;
 }
 

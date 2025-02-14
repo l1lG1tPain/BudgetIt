@@ -1,14 +1,14 @@
 // === CONFIG ===
-const CACHE_VERSION = "budgetit-v1.1";
-const CACHE_NAME = `budgetit-${CACHE_VERSION}`;
+const CACHE_VERSION = "budgetit-v2.3";
+const CACHE_NAME = `budgetit-cache-v2.3`;
 const ASSETS = [
   "/", // Главная страница
   "/index.html",
   "/style.css",
   "/app.js",
   "/manifest.json", // Манифест
-  "/assets/icon-192x192.png", // Иконки для PWA
-  "/assets/icon-512x512.png"
+  "/assets/icon-192x192v2.3.png", // Иконки для PWA
+  "/assets/icon-512x512v2.3.png"
 ];
 
 // === INSTALL ===
@@ -24,19 +24,18 @@ self.addEventListener("install", (event) => {
 // === ACTIVATE ===
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            // Удаляем устаревшие кэши
+          if (cache.startsWith("budgetit-") && cache !== CACHE_NAME) {
             return caches.delete(cache);
           }
         })
-      )
-    )
+      );
+    })
   );
-  self.clients.claim(); // Берёт управление существующими клиентами
 });
+
 
 // === FETCH ===
 self.addEventListener("fetch", (event) => {

@@ -3,18 +3,18 @@
     "short_name": "BudgetIt",
     "start_url": "/BudgetIt/index.html",
     "scope": "/BudgetIt/",
-    "version": "1.1",
+    "version": "2.3",
     "display": "standalone",
-    "background_color": "#EEEEEE",
-    "theme_color": "#C0FF00",
+    "background_color": "#2be82a",
+    "theme_color": "#2be82a",
     "icons": [
         {
-            "src": "assets/icon-192x192.png",
+            "src": "assets/icon-192x192v2.3.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "assets/icon-512x512.png",
+            "src": "assets/icon-512x512v2.3.png",
             "sizes": "512x512",
             "type": "image/png"
         }
