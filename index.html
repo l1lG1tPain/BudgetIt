@@ -103,193 +103,197 @@
     <ul id="transaction-list"></ul>
   </main>
 
-  <!-- Bottom-sheet для добавления транзакции -->
   <div id="transaction-sheet" class="bottom-sheet hidden">
-    <div class="transaction-type-filter">
-      <select id="transaction-type">
-        <option value="income">💰 Доходы</option>
-        <option value="expense">💸 Расходы</option>
-        <option value="debt">📉 Долги</option>
-        <option value="deposit">🏦 Вклады</option>
-      </select>    
+    <!-- Bottom-sheet для добавления транзакции -->
+    <div class="transaction-type-chips">
+      <button class="chip-btn" data-type="income">💰 Доходы</button>
+      <button class="chip-btn" data-type="expense">💸 Расходы</button>
+      <button class="chip-btn" data-type="debt">📉 Долги</button>
+      <button class="chip-btn" data-type="deposit">🏦 Вклады</button>
     </div>
-    <!-- Форма Доходов -->
-    <form id="income-form" class="transaction-form hidden">
-      <label for="income-date">Дата:</label>
-      <input type="date" id="income-date" required>
-      <label for="income-category">Категория:</label>
-      <select id="income-category" required>
-        <option value="">🛠️ Выберите категорию</option>
-        <option value="💰 Зарплата">💰 Зарплата</option>
-        <option value="💼 Аванс">💼 Аванс</option>
-        <option value="🎁 Подарок">🎁 Подарок</option>
-        <option value="🕵️‍♂️ Левак">🕵️‍♂️ Левак</option>
-        <option value="✨ Божий дар">✨ Божий дар</option>
-        <option value="🛠️ Фриланс, надеюсь не кидалово">🛠️ Фриланс, надеюсь не кидалово</option>
-        <option value="🎰 Выигрыш, но не в казино">🎰 Выигрыш, но не в казино</option>
-        <option value="🧙‍♂️ Магическим образом появились деньги">🧙‍♂️ Магическим образом появились деньги</option>
-        <option value="👶 Родители подкинули на жизнь">👶 Родители подкинули на жизнь</option>
-        <option value="🎩 Легкие деньги, надеюсь, не криминал">🎩 Легкие деньги, надеюсь, не криминал</option>
-        <option value="💳 Кэшбек, который даже не заметил">💳 Кэшбек, который даже не заметил</option>
-        <option value="📦 ПВЗ-деньги">📦 Авито-деньги</option>
-        <option value="🔮 Загадочное поступление">🔮 Загадочное поступление</option>
-        <option value="🦄 Деньги за мемы">🦄 Деньги за мемы</option>
-        <option value="🤡 Оказалось, что долг вернули">🤡 Оказалось, что долг вернули</option>
-      </select>    
-      <label for="income-amount">Сумма:</label>
-      <input type="tel" id="income-amount" required maxlength="15" inputmode="numeric">
-      <button type="submit">Сохранить</button>
-      <button type="button" class="close-form">Закрыть</button>
-    </form>
-    <!-- Форма Расходов -->
-    <form id="expense-form" class="transaction-form hidden">
-      <label for="expense-date">Дата:</label>
-      <input type="date" id="expense-date" required>
-      <label for="expense-category">Категория:</label>
-      <select id="expense-category" required onchange="updateSelectedCategory()">
-        <option value="">🛒 Выберите категорию</option>
-        <option value="🥦 Продукты">🥦 Продукты</option>
-        <option value="🌐 Интернет">🌐 Интернет</option>
-        <option value="📱 Связь">📱 Связь</option>
-        <option value="🚖 Такси">🚖 Такси</option>
-        <option value="💘 Девушка">💘 Девушка</option>
-        <option value="🛍️ Покупки">🛍️ Покупки</option>
-        <option value="🏠 Жильё">🏠 Жильё</option>
-        <option value="🏢 Расходы по работе">🏢 Расходы по работе</option>
-        <option value="🚌 Транспорт">🚌 Транспорт</option>
-        <option value="🎮 Развлечения">🎮 Развлечения</option>
-        <option value="💊 Здоровье">💊 Здоровье</option>
-        <option value="📚 Образование">📚 Образование</option>
-        <option value="🐶 Животные">🐶 Животные</option>
-        <option value="👕 Одежда">👕 Одежда</option>
-        <option value="✈️ Путешествия">✈️ Путешествия</option>
-        <option value="🎁 Подарки">🎁 Подарки</option>
-        <option value="💳 Финансовые обязательства">💳 Финансовые обязательства</option>
-        <option value="🎨 Хобби">🎨 Хобби</option>
-        <option value="🔌 Электроника">🔌 Электроника</option>
-        <option value="🍽️ Кафе и рестораны">🍽️ Кафе и рестораны</option>
-        <option value="📺 Подписки">📺 Подписки</option>
-        <option value="🤲 Благотворительность">🤲 Благотворительность</option>
-        <option value="🥂 Алкоголь и вечеринки">🥂 Алкоголь и вечеринки</option>
-        <option value="🍑 Игрушки для взрослых">🍑 Игрушки для взрослых</option>
-        <option value="🤦‍♂️ Фигня, которую купил на эмоциях">🤦‍♂️ Фигня, которую купил на эмоциях</option>
-        <option value="📈 Крипта и инвестиции">📈 Крипта и инвестиции</option>
-        <option value="🎤 Донаты стримерам">🎤 Донаты стримерам</option>
-        <option value="🧠 Психолог">🧠 Психолог</option>
-        <option value="💸 Бесполезные подписки">💸 Бесполезные подписки</option>
-        <option value="🐸 Мемные покупки">🐸 Мемные покупки</option>
-        <option value="🎰 Ставки и казино">🎰 Ставки и казино</option>
-        <option value="💵 Чаевые">💵 Чаевые</option>
-        <option value="🍕 Фастфуд и ночные заказы">🍕 Фастфуд и ночные заказы</option>
-        <option value="🚑 Экстренные расходы">🚑 Экстренные расходы</option>
-        <option value="🍵 Чайные церемонии">🍵 Чайные церемонии</option>
-        <option value="💨 Кальян">💨 Кальян</option>
-        <option value="🚬 Курилки">🚬 Курилки</option>
-        <option value="📱 Телефоны (ремонт, аксессуары, апгрейды)">📱 Телефоны (ремонт, аксессуары, апгрейды)</option>
-        <option value="👔 Деловая одежда">👔 Деловая одежда</option>
-        <option value="🧥 Зимняя одежда">🧥 Зимняя одежда</option>
-        <option value="🎭 Культурные мероприятия">🎭 Культурные мероприятия</option>
-        <option value="🔧 Ремонт и обслуживание">🔧 Ремонт и обслуживание</option>
-        <option value="🛏️ Домашний уют">🛏️ Домашний уют</option>
-        <option value="🌿 Эко-покупки">🌿 Эко-покупки</option>
-        <option value="⚒️ DIY и самоделки">⚒️ DIY и самоделки</option>
-        <option value="🕹️ Гаджеты и аксессуары">🕹️ Гаджеты и аксессуары</option>
-        <option value="💼 Работа и бизнес">💼 Работа и бизнес</option>
-        <option value="📦 Маркетплейсы (AliExpress, Wildberries, Ozon и т. д.)">📦 Маркетплейсы (AliExpress, Wildberries, Ozon и т. д.)</option>
-        <option value="🚲 Велосипед и самокат">🚲 Велосипед и самокат</option>
-        <option value="🧘‍♂️ Медитация и ментальное здоровье">🧘‍♂️ Медитация и ментальное здоровье</option>
-        <option value="🌍 Волонтёрство и участие в проектах">🌍 Волонтёрство и участие в проектах</option>
-        <option value="🎶 Музыкальные сервисы">🎶 Музыкальные сервисы</option>
-        <option value="🧴 Косметика и уход">🧴 Косметика и уход</option>
-        <option value="🛠️ Инструменты и стройматериалы">🛠️ Инструменты и стройматериалы</option>
-        <option value="🎤 Караоке и музыкальные вечеринки">🎤 Караоке и музыкальные вечеринки</option>
-        <option value="🍣 Японская кухня (суши, роллы, рамен)">🍣 Японская кухня (суши, роллы, рамен)</option>
-        <option value="🎿 Активный отдых">🎿 Активный отдых</option>
-        <option value="💡 Коммунальные услуги">💡 Коммунальные услуги</option>
-        <option value="🚗 Автомобиль">🚗 Автомобиль</option>
-        <option value="🏥 Медицинские услуги">🏥 Медицинские услуги</option>
-        <option value="💼 Профессиональное развитие">💼 Профессиональное развитие</option>
-        <option value="📦 Доставка и курьер">📦 Доставка и курьер</option>
-        <option value="💳 Кредит и проценты">💳 Кредит и проценты</option>
-        <option value="🍀 Непредвиденные траты">🍀 Непредвиденные траты</option>
-        <option value="🔥 Хочу, но не надо было">🔥 Хочу, но не надо было</option>
-        <option value="💀 Последние деньги">💀 Последние деньги</option>
-        <option value="🫠 Зачем я это купил?">🫠 Зачем я это купил?</option>
-        <option value="🤡 Купил и забыл">🤡 Купил и забыл</option>
-        <option value="🫳 Деньги, улетевшие в космос">🫳 Деньги, улетевшие в космос</option>
-        <option value="💸 Финансовый суицид">💸 Финансовый суицид</option>
-        <option value="🛑 Мама, я дурак">🛑 Мама, я дурак</option>
-        <option value="🎭 Те самые импульсивные траты">🎭 Те самые импульсивные траты</option>
-        <option value="🤷‍♂️ Просто захотелось">🤷‍♂️ Просто захотелось</option>
-        <option value="🚨 Финансовая ошибка 404">🚨 Финансовая ошибка 404</option>
-        <option value="🤑 Сказал себе «это инвестиция»">🤑 Сказал себе «это инвестиция»</option>
-        <option value="👹 Шальная покупка после 2 часов ночи">👹 Шальная покупка после 2 часов ночи</option>
-      </select>
-      <!-- Список товаров с автодополнением -->
-      <div id="products-list">
-        <div class="product-item">
-          <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
-          <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
-          <input type="tel" class="product-price" placeholder="Цена" required maxlength="11" inputmode="numeric">
+    
+      <!-- Форма Доходов -->
+      <form id="income-form" class="transaction-form hidden">
+        <label for="income-date">Дата:</label>
+        <input type="date" id="income-date" required>
+        <label for="income-category">Категория:</label>
+        <select id="income-category" required>
+          <option value="">🛠️ Выберите категорию</option>
+          <option value="💰 Зарплата">💰 Зарплата</option>
+          <option value="💼 Аванс">💼 Аванс</option>
+          <option value="🎁 Подарок">🎁 Подарок</option>
+          <option value="🕵️‍♂️ Левак">🕵️‍♂️ Левак</option>
+          <option value="✨ Божий дар">✨ Божий дар</option>
+          <option value="🛠️ Фриланс, надеюсь не кидалово">🛠️ Фриланс, надеюсь не кидалово</option>
+          <option value="🎰 Выигрыш, но не в казино">🎰 Выигрыш, но не в казино</option>
+          <option value="🧙‍♂️ Магическим образом появились деньги">🧙‍♂️ Магическим образом появились деньги</option>
+          <option value="👶 Родители подкинули на жизнь">👶 Родители подкинули на жизнь</option>
+          <option value="🎩 Легкие деньги, надеюсь, не криминал">🎩 Легкие деньги, надеюсь, не криминал</option>
+          <option value="💳 Кэшбек, который даже не заметил">💳 Кэшбек, который даже не заметил</option>
+          <option value="📦 ПВЗ-деньги">📦 Авито-деньги</option>
+          <option value="🔮 Загадочное поступление">🔮 Загадочное поступление</option>
+          <option value="🦄 Деньги за мемы">🦄 Деньги за мемы</option>
+          <option value="🤡 Оказалось, что долг вернули">🤡 Оказалось, что долг вернули</option>
+        </select>    
+        <label for="income-amount">Сумма:</label>
+        <input type="tel" id="income-amount" required maxlength="15" inputmode="numeric">
+        <button type="submit">Сохранить</button>
+        <button type="button" class="close-form">Закрыть</button>
+      </form>
+      <!-- Форма Расходов -->
+      <form id="expense-form" class="transaction-form hidden">
+        <label for="expense-date">Дата:</label>
+        <input type="date" id="expense-date" required>
+        <label for="expense-category">Категория:</label>
+        <select id="expense-category" required onchange="updateSelectedCategory()">
+          <option value="">🛒 Выберите категорию</option>
+          <option value="🥦 Продукты">🥦 Продукты</option>
+          <option value="🌐 Интернет">🌐 Интернет</option>
+          <option value="📱 Связь">📱 Связь</option>
+          <option value="🚖 Такси">🚖 Такси</option>
+          <option value="💘 Девушка">💘 Девушка</option>
+          <option value="🛍️ Покупки">🛍️ Покупки</option>
+          <option value="🏠 Жильё">🏠 Жильё</option>
+          <option value="🏢 Расходы по работе">🏢 Расходы по работе</option>
+          <option value="🚌 Транспорт">🚌 Транспорт</option>
+          <option value="🎮 Развлечения">🎮 Развлечения</option>
+          <option value="💊 Здоровье">💊 Здоровье</option>
+          <option value="📚 Образование">📚 Образование</option>
+          <option value="🐶 Животные">🐶 Животные</option>
+          <option value="👕 Одежда">👕 Одежда</option>
+          <option value="✈️ Путешествия">✈️ Путешествия</option>
+          <option value="🎁 Подарки">🎁 Подарки</option>
+          <option value="💳 Финансовые обязательства">💳 Финансовые обязательства</option>
+          <option value="🎨 Хобби">🎨 Хобби</option>
+          <option value="🔌 Электроника">🔌 Электроника</option>
+          <option value="🍽️ Кафе и рестораны">🍽️ Кафе и рестораны</option>
+          <option value="📺 Подписки">📺 Подписки</option>
+          <option value="🤲 Благотворительность">🤲 Благотворительность</option>
+          <option value="🥂 Алкоголь и вечеринки">🥂 Алкоголь и вечеринки</option>
+          <option value="🍑 Игрушки для взрослых">🍑 Игрушки для взрослых</option>
+          <option value="🤦‍♂️ Фигня, которую купил на эмоциях">🤦‍♂️ Фигня, которую купил на эмоциях</option>
+          <option value="📈 Крипта и инвестиции">📈 Крипта и инвестиции</option>
+          <option value="🎤 Донаты стримерам">🎤 Донаты стримерам</option>
+          <option value="🧠 Психолог">🧠 Психолог</option>
+          <option value="💸 Бесполезные подписки">💸 Бесполезные подписки</option>
+          <option value="🐸 Мемные покупки">🐸 Мемные покупки</option>
+          <option value="🎰 Ставки и казино">🎰 Ставки и казино</option>
+          <option value="💵 Чаевые">💵 Чаевые</option>
+          <option value="🍕 Фастфуд и ночные заказы">🍕 Фастфуд и ночные заказы</option>
+          <option value="🚑 Экстренные расходы">🚑 Экстренные расходы</option>
+          <option value="🍵 Чайные церемонии">🍵 Чайные церемонии</option>
+          <option value="💨 Кальян">💨 Кальян</option>
+          <option value="🚬 Курилки">🚬 Курилки</option>
+          <option value="📱 Телефоны (ремонт, аксессуары, апгрейды)">📱 Телефоны (ремонт, аксессуары, апгрейды)</option>
+          <option value="👔 Деловая одежда">👔 Деловая одежда</option>
+          <option value="🧥 Зимняя одежда">🧥 Зимняя одежда</option>
+          <option value="🎭 Культурные мероприятия">🎭 Культурные мероприятия</option>
+          <option value="🔧 Ремонт и обслуживание">🔧 Ремонт и обслуживание</option>
+          <option value="🛏️ Домашний уют">🛏️ Домашний уют</option>
+          <option value="🌿 Эко-покупки">🌿 Эко-покупки</option>
+          <option value="⚒️ DIY и самоделки">⚒️ DIY и самоделки</option>
+          <option value="🕹️ Гаджеты и аксессуары">🕹️ Гаджеты и аксессуары</option>
+          <option value="💼 Работа и бизнес">💼 Работа и бизнес</option>
+          <option value="📦 Маркетплейсы (AliExpress, Wildberries, Ozon и т. д.)">📦 Маркетплейсы (AliExpress, Wildberries, Ozon и т. д.)</option>
+          <option value="🚲 Велосипед и самокат">🚲 Велосипед и самокат</option>
+          <option value="🧘‍♂️ Медитация и ментальное здоровье">🧘‍♂️ Медитация и ментальное здоровье</option>
+          <option value="🌍 Волонтёрство и участие в проектах">🌍 Волонтёрство и участие в проектах</option>
+          <option value="🎶 Музыкальные сервисы">🎶 Музыкальные сервисы</option>
+          <option value="🧴 Косметика и уход">🧴 Косметика и уход</option>
+          <option value="🛠️ Инструменты и стройматериалы">🛠️ Инструменты и стройматериалы</option>
+          <option value="🎤 Караоке и музыкальные вечеринки">🎤 Караоке и музыкальные вечеринки</option>
+          <option value="🍣 Японская кухня (суши, роллы, рамен)">🍣 Японская кухня (суши, роллы, рамен)</option>
+          <option value="🎿 Активный отдых">🎿 Активный отдых</option>
+          <option value="💡 Коммунальные услуги">💡 Коммунальные услуги</option>
+          <option value="🚗 Автомобиль">🚗 Автомобиль</option>
+          <option value="🏥 Медицинские услуги">🏥 Медицинские услуги</option>
+          <option value="💼 Профессиональное развитие">💼 Профессиональное развитие</option>
+          <option value="📦 Доставка и курьер">📦 Доставка и курьер</option>
+          <option value="💳 Кредит и проценты">💳 Кредит и проценты</option>
+          <option value="🍀 Непредвиденные траты">🍀 Непредвиденные траты</option>
+          <option value="🔥 Хочу, но не надо было">🔥 Хочу, но не надо было</option>
+          <option value="💀 Последние деньги">💀 Последние деньги</option>
+          <option value="🫠 Зачем я это купил?">🫠 Зачем я это купил?</option>
+          <option value="🤡 Купил и забыл">🤡 Купил и забыл</option>
+          <option value="🫳 Деньги, улетевшие в космос">🫳 Деньги, улетевшие в космос</option>
+          <option value="💸 Финансовый суицид">💸 Финансовый суицид</option>
+          <option value="🛑 Мама, я дурак">🛑 Мама, я дурак</option>
+          <option value="🎭 Те самые импульсивные траты">🎭 Те самые импульсивные траты</option>
+          <option value="🤷‍♂️ Просто захотелось">🤷‍♂️ Просто захотелось</option>
+          <option value="🚨 Финансовая ошибка 404">🚨 Финансовая ошибка 404</option>
+          <option value="🤑 Сказал себе «это инвестиция»">🤑 Сказал себе «это инвестиция»</option>
+          <option value="👹 Шальная покупка после 2 часов ночи">👹 Шальная покупка после 2 часов ночи</option>
+        </select>
+        <!-- Список товаров с автодополнением -->
+        <div id="products-list">
+          <div class="product-item">
+            <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
+            <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
+            <input type="tel" class="product-price" placeholder="Цена" required maxlength="11" inputmode="numeric">
+          </div>
         </div>
-      </div>
-      <!-- datalist для автоподсказок -->
-      <datalist id="product-names-list"></datalist>
-      <button type="button" id="add-product">Добавить ещё товар</button>
-      <button type="submit">Сохранить</button>
-      <button type="button" class="close-form">Закрыть</button>
-    </form>
-    <!-- Форма Долгов -->
-    <form id="debt-form" class="transaction-form hidden">
-      <label for="debt-date">Дата:</label>
-      <input type="date" id="debt-date" required>
-      <label for="debt-name">Имя:</label>
-      <input type="text" id="debt-name" required maxlength="16">
-      <label for="debt-amount">Сумма:</label>
-      <input type="tel" id="debt-amount" required maxlength="15" inputmode="numeric">
-      <button type="submit">Сохранить</button>
-      <button type="button" class="close-form">Закрыть</button>
-    </form>
-    <!-- Форма Вкладов -->
-    <form id="deposit-form" class="transaction-form hidden">
-      <label for="deposit-date">Дата:</label>
-      <input type="date" id="deposit-date" required>
-      <label for="deposit-name">Имя:</label>
-      <input type="text" id="deposit-name" required maxlength="16">
-      <label for="deposit-amount">Сумма:</label>
-      <input type="tel" id="deposit-amount" required maxlength="15" inputmode="numeric">
-      <label for="deposit-status">Статус:</label>
-      <select id="deposit-status" required>
-        <option value="">🔄 Выберите статус</option>
-        <option value="➕ Пополнение">➕ Пополнение</option>
-        <option value="➖ Снятие">➖ Снятие</option>
-      </select>     
-      <button type="submit">Сохранить</button>
-      <button type="button" class="close-form">Закрыть</button>
-    </form>
-  </div>
-
-  <!-- Bottom-sheet для детальной информации о транзакции -->
-  <div id="transaction-detail-sheet" class="bottom-sheet hidden">
-    <h2>Информация о транзакции</h2>
-    <div id="detail-type"></div>
-    <div id="detail-name"></div>
-    <div id="detail-products" class="hidden"></div>
-    <div id="detail-amount"></div>
-    <div id="detail-date"></div>
-    <div id="detail-status" class="hidden"></div>
-    <div id="detail-buttons">
-      <button id="delete-transaction">Удалить</button>
-      <button id="pay-debt" class="hidden">Оплачено</button>
-      <button id="close-detail">Закрыть</button>
+        <!-- datalist для автоподсказок -->
+        <datalist id="product-names-list"></datalist>
+        <button type="button" id="add-product">Добавить ещё товар</button>
+        <button type="submit">Сохранить</button>
+        <button type="button" class="close-form">Закрыть</button>
+      </form>
+      <!-- Форма Долгов -->
+      <form id="debt-form" class="transaction-form hidden">
+        <label for="debt-date">Дата:</label>
+        <input type="date" id="debt-date" required>
+        <label for="debt-name">Имя:</label>
+        <input type="text" id="debt-name" required maxlength="16">
+        <label for="debt-amount">Сумма:</label>
+        <input type="tel" id="debt-amount" required maxlength="15" inputmode="numeric">
+        <label for="debt-direction">Тип долга:</label>
+        <select id="debt-direction" required>
+          <option value="owe">Я должен</option>
+          <option value="owed">Мне должны</option>
+        </select>
+        <button type="submit">Сохранить</button>
+        <button type="button" class="close-form">Закрыть</button>
+      </form>
+      <!-- Форма Вкладов -->
+      <form id="deposit-form" class="transaction-form hidden">
+        <label for="deposit-date">Дата:</label>
+        <input type="date" id="deposit-date" required>
+        <label for="deposit-name">Имя:</label>
+        <input type="text" id="deposit-name" required maxlength="16">
+        <label for="deposit-amount">Сумма:</label>
+        <input type="tel" id="deposit-amount" required maxlength="15" inputmode="numeric">
+        <label for="deposit-status">Статус:</label>
+        <select id="deposit-status" required>
+          <option value="">🔄 Выберите статус</option>
+          <option value="➕ Пополнение">➕ Пополнение</option>
+          <option value="➖ Снятие">➖ Снятие</option>
+        </select>     
+        <button type="submit">Сохранить</button>
+        <button type="button" class="close-form">Закрыть</button>
+      </form>
     </div>
-  </div>
 
+    <!-- Bottom-sheet для детальной информации о транзакции -->
+    <div id="transaction-detail-sheet" class="bottom-sheet hidden">
+      <h2>Информация о транзакции</h2>
+      <div id="detail-type"></div>
+      <div id="detail-name"></div>
+      <div id="detail-products" class="hidden"></div>
+      <div id="detail-amount"></div>
+      <div id="detail-date"></div>
+      <div id="detail-status" class="hidden"></div>
+      <div id="detail-buttons">
+        <button id="delete-transaction">Удалить</button>
+        <button id="pay-debt" class="hidden">Оплачено</button>
+        <button id="close-detail">Закрыть</button>
+      </div>
+    </div>
+  </div>  
   <!-- Модальное окно настроек -->
   <div id="settings-page" class="overlay hidden">
     <div class="settings-content">
       <h2>Настройки</h2>
-      <p><strong>Версия приложения:</strong> 2.4</p>
+      <p><strong>Версия приложения:</strong> 2.5</p>
       <p><strong>Автор:</strong> l1lG1tPain</p>
       <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
       <button id="export-btn">📤 Экспорт</button>
@@ -314,7 +318,7 @@
 
   <!-- Футер: кнопка добавления транзакции -->
   <footer>
-    <button id="add-btn">+</button>
+    <button id="add-btn">+ Добавить</button>
   </footer>
 
   <!-- PWA Install Button -->
@@ -325,36 +329,6 @@
     <div class="loader"></div>
     <p>Загрузка BudgetIt...</p>
   </div>
-
-  <style>
-    /* Стили для загрузочного экрана */
-    #loading-screen {
-      position: fixed;
-      width: 100%;
-      height: 100vh;
-      background: #2be82a;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      font-size: 20px;
-      z-index: 9999;
-    }
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 5px solid white;
-      border-top: 5px solid transparent;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
-
   <script>
     window.onload = function() {
       setTimeout(() => {

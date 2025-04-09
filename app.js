@@ -57,7 +57,7 @@ function openModal(id) {
     // Если открывается конкретный bottom-sheet, закрываем остальные
     closeBottomSheets(id);
   }
-  // Удаляем класс hidden — элемент плавно выедет за счет CSS перехода
+  // Удаляем класс hidden — элемент плавно выедет за счёт CSS-перехода
   document.getElementById(id).classList.remove('hidden');
 }
 
@@ -65,7 +65,6 @@ function closeBottomSheets(exceptId) {
   const sheets = document.querySelectorAll('.bottom-sheet');
   sheets.forEach(sheet => {
     if (!exceptId || sheet.id !== exceptId) {
-      // Добавляем класс hidden, и благодаря переходу элемент плавно скроется
       sheet.classList.add('hidden');
     }
   });
@@ -74,6 +73,35 @@ function closeBottomSheets(exceptId) {
 function closeModal(id) {
   console.log('closeModal called for:', id);
   document.getElementById(id).classList.add('hidden');
+}
+
+// ======================
+// Устанавливаем дефолтный месяц (текущий)
+// ======================
+function setDefaultMonthFilter() {
+  const today = new Date();
+  const currentMonth = String(today.getMonth() + 1).padStart(2, '0'); // "01" - "12"
+
+  // Русские названия месяцев (дополните при желании)
+  const monthNames = {
+    "01": "Январь",
+    "02": "Февраль",
+    "03": "Март",
+    "04": "Апрель",
+    "05": "Май",
+    "06": "Июнь",
+    "07": "Июль",
+    "08": "Август",
+    "09": "Сентябрь",
+    "10": "Октябрь",
+    "11": "Ноябрь",
+    "12": "Декабрь"
+  };
+
+  // Ставим отображаемое название + значение
+  const input = document.getElementById('month-filter-input');
+  input.value = monthNames[currentMonth] || "Неизвестно";
+  input.setAttribute('data-value', currentMonth);
 }
 
 // Загрузка DOM
@@ -105,8 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
       currentBudgetIndex = parseInt(currentBudgetIndex, 10);
     }
     updateHeader();
-    updateUI();
   }
+
+  // Ставим дефолтный месяц (сразу после того, как определили budgets)
+  setDefaultMonthFilter();
+  // Теперь формируем UI
+  updateUI();
+
   attachEventListeners();
   applyInputRestrictions();
   console.log('DOMContentLoaded -> Initialization finished.');
@@ -118,53 +151,75 @@ function updateHeader() {
   headerEl.textContent = budgets[currentBudgetIndex] ? budgets[currentBudgetIndex].name : 'BudgetIt';
 }
 
-// Функции для эмоджи
+// Функции для эмоджи (бюджет, доход, расход, долг, вклад)
 function getBudgetEmoji(value) {
-  if (value < -10000000) return "💀💀💀";
-  if (value < 0) return "🥶📉";
-  if (value < 1000000) return "🐟";
-  if (value < 10000000) return "🦀";
-  if (value < 15000000) return "🐙";
-  if (value < 25000000) return "🐬";
-  if (value < 40000000) return "🦈";
-  return "🐋";
+  if (value < -100000000) return "🔥🕳️💀";   // <- меньше -100 млн
+  if (value < -10000000)  return "💀💀💀";    // <- меньше -10 млн
+  if (value < 0)          return "🥶📉";     // < 0
+  if (value < 500000)     return "🪱";       // < 500k
+  if (value < 2000000)    return "🐟";       // < 2 млн
+  if (value < 10000000)   return "🦀";       // < 10 млн
+  if (value < 15000000)   return "🐙";       // < 15 млн
+  if (value < 25000000)   return "🐬";       // < 25 млн
+  if (value < 40000000)   return "🦈";       // < 40 млн
+  if (value < 100000000)  return "🐋";       // < 100 млн
+  return "🪐🚀";                         // 100 млн+
 }
+
 function getIncomeEmoji(value) {
-  if (value < 1000000) return "🤔💸";
-  if (value < 10000000) return "😊💲";
-  if (value < 50000000) return "😎💵";
-  return "🏦💰";
+  if (value < 0)          return "❓❗";       // если вдруг отрицательно
+  if (value < 200000)     return "🤔💸"; 
+  if (value < 1000000)    return "😊💲";
+  if (value < 5000000)    return "😎💵";
+  if (value < 10000000)   return "🤑💰";
+  if (value < 50000000)   return "🏦💰";
+  return "🚀🤑"; // свыше 50 млн
 }
+
 function getExpenseEmoji(value) {
-  if (value < 500000) return "🤏💵";
-  if (value < 1000000) return "😬🛒";
-  if (value < 10000000) return "🤯💸";
-  return "🚀🔥💳";
+  if (value <= 0)         return "😶";       // может быть 0
+  if (value < 300000)     return "🤏💵";
+  if (value < 800000)     return "😬🛒";
+  if (value < 5000000)    return "🤯💸";
+  if (value < 20000000)   return "💸🥵";
+  if (value < 50000000)   return "🔥💳";
+  return "🔥🕳️";  // 50 млн+
 }
+
 function getDebtEmoji(value) {
-  if (value < 1000000) return "😅💳";
-  if (value < 10000000) return "😓📉";
-  return "🆘💀";
+  if (value < 0)          return "❓💳"; // бывает ли такое
+  if (value < 500000)     return "😅💳";
+  if (value < 5000000)    return "😓📉";
+  if (value < 20000000)   return "🆘💀";
+  return "💣💥"; // сверхогромный долг
 }
+
 function getDepositEmoji(value) {
-  if (value < 1000000) return "🐖💰";
-  if (value < 10000000) return "🏦📈";
-  return "💎💎";
+  if (value < 0)          return "❗🏦"; 
+  if (value < 500000)     return "🐖💰";
+  if (value < 2000000)    return "💰💰";
+  if (value < 10000000)   return "🏦📈";
+  if (value < 50000000)   return "💎💎";
+  return "💎🚀";
 }
+
+// При смене категории расходов
 function updateSelectedCategory() {
   const select = document.getElementById("expense-category");
+  if (!select) return;
   const selectedOption = select.options[select.selectedIndex].text;
   select.setAttribute("data-display", selectedOption);
 }
 document.addEventListener("DOMContentLoaded", updateSelectedCategory);
 
+// Отметить долг как оплаченный
 function markDebtAsPaid(debtId) {
   const budget = budgets[currentBudgetIndex];
   if (!budget) return;
   const debt = budget.transactions.find(t => t.id === debtId && t.type === 'debt');
   if (!debt) {
-      console.error("Долг не найден!");
-      return;
+    console.error("Долг не найден!");
+    return;
   }
   debt.paid = true;
   debt.paidDate = new Date().toISOString();
@@ -173,8 +228,16 @@ function markDebtAsPaid(debtId) {
   console.log("Долг оплачен:", debt);
 }
 
+// Дополнительная функция для проверки, совпадает ли месяц даты с выбранным monthFilter
+function checkIfSameMonth(dateStr, filterValue) {
+  if (!dateStr) return false;
+  // Если 'all', считаем, что оплаченный долг не даёт эффекта (итог = 0)
+  if (filterValue === 'all') return false;
+  const mm = new Date(dateStr).toISOString().slice(5,7);
+  return mm === filterValue;
+}
 
-// Добавляем обработчики фильтров один раз при инициализации
+// Фильтр по кликам на блоки Доход, Расход, Долг и т.д.
 function attachFilterEventListeners() {
   const blockBudget = document.getElementById('block-budget');
   const blockIncome = document.getElementById('block-income');
@@ -183,73 +246,106 @@ function attachFilterEventListeners() {
   const blockDebt = document.getElementById('block-debt');
 
   blockBudget.addEventListener('click', () => {
-      transactionFilter = 'all';
-      updateUI();
+    transactionFilter = 'all';
+    updateUI();
   });
   blockIncome.addEventListener('click', () => {
-      transactionFilter = 'income';
-      updateUI();
+    transactionFilter = 'income';
+    updateUI();
   });
   blockExpense.addEventListener('click', () => {
-      transactionFilter = 'expense';
-      updateUI();
+    transactionFilter = 'expense';
+    updateUI();
   });
   blockDeposit.addEventListener('click', () => {
-      transactionFilter = 'deposit';
-      updateUI();
+    transactionFilter = 'deposit';
+    updateUI();
   });
   blockDebt.addEventListener('click', () => {
-      transactionFilter = 'debt';
-      updateUI();
+    transactionFilter = 'debt';
+    updateUI();
   });
 }
 
 let transactionFilter = 'all';
 
-// В функции updateUI удаляем повторное добавление обработчиков:
+// Основная функция обновления UI
 function updateUI() {
   console.log('updateUI called.');
   const budget = budgets[currentBudgetIndex];
   if (!budget) return;
   const transactions = budget.transactions || [];
+  
+  // Фильтр по месяцу (строка "Все" => data-value="all")
   const monthFilter = document.getElementById('month-filter-input').getAttribute('data-value') || 'all';
   
+  // Сначала фильтруем общий набор транзакций по месяцу
   let filtered = transactions.filter(t => {
-      if (t.type === 'debt') return true;
-      if (monthFilter === 'all') return true;
-      const tMonth = new Date(t.date).toISOString().slice(5, 7);
-      return tMonth === monthFilter;
+    // Для долга тоже возвращаем true, чтобы была видна запись в списке
+    if (t.type === 'debt') return true;
+    
+    if (monthFilter === 'all') return true;
+    // Смотрим месяц транзакции
+    const tMonth = new Date(t.date).toISOString().slice(5, 7);
+    return tMonth === monthFilter;
   });
 
-  const totalIncome = filtered.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = filtered.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const totalDeposit = filtered.filter(t => t.type === 'deposit')
-      .reduce((sum, t) => sum + (t.status === '➕ Пополнение' ? t.amount : -t.amount), 0);
-  const totalDebt = transactions.filter(t => t.type === 'debt' && !t.paid).reduce((sum, t) => sum + t.amount, 0);
-  const overallBudget = totalIncome - totalExpense;
-  
-  const paidDebts = transactions
-    .filter(t => t.type === 'debt' && t.paid && t.paidDate)
-    .filter(t => {
-        if (monthFilter === 'all') return true;
-        const paidMonth = new Date(t.paidDate).toISOString().slice(5, 7);
-        return paidMonth === monthFilter;
-    })
+  // Считаем суммарные доходы, расходы, вклады (без учёта долгов!)
+  const totalIncome = filtered
+    .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
-  
-  console.log("Оплаченные долги, учтенные в расходах:", paidDebts);
-  
-  const depositWithdrawals = filtered
-    .filter(t => t.type === 'deposit' && t.status === '➖ Снятие')
-    .reduce((sum, t) => sum - t.amount, 0);
-  const depositAdditions = filtered
-    .filter(t => t.type === 'deposit' && t.status === '➕ Пополнение')
+
+  const totalExpense = filtered
+    .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
-  
-  const expenseBlockValue = totalExpense + depositWithdrawals + paidDebts + depositAdditions;
-  console.log("Общий расход (с учетом вкладов и долгов):", expenseBlockValue);
-  
-  // Обновляем значения блоков и эмоджи
+
+  const totalDeposit = filtered
+    .filter(t => t.type === 'deposit')
+    .reduce((sum, t) => {
+      return sum + (t.status === '➕ Пополнение' ? t.amount : -t.amount);
+    }, 0);
+
+  // Начальный бюджет (до учёта долгов)
+  let overallBudget = totalIncome - totalExpense + totalDeposit;
+
+  // Считаем «объём» активных долгов + корректируем бюджет
+  let totalDebt = 0; 
+
+  // Проходимся по ВСЕМ (уже отфильтрованным по месяцу) долговым транзакциям 
+  filtered
+    .filter(t => t.type === 'debt')
+    .forEach(t => {
+      // Если долг не оплачен => действует «текущий» эффект
+      if (!t.paid) {
+        if (t.direction === 'owe') {
+          // я должен => сейчас эти деньги у меня (пока не заплатил)
+          // +Budget, +Debt
+          overallBudget += t.amount;
+          totalDebt += t.amount;
+        } else {
+          // мне должны => я отдал деньги
+          // -Budget, +Debt
+          overallBudget -= t.amount;
+          totalDebt += t.amount;
+        }
+      } else {
+        // Долг оплачен => смотрим, в каком месяце он закрыт (paidDate)
+        if (checkIfSameMonth(t.paidDate, monthFilter)) {
+          // direction='owe' => именно в этом месяце я заплатил => -Budget
+          // direction='owed' => в этом месяце мне вернули => +Budget
+          if (t.direction === 'owe') {
+            overallBudget -= t.amount;
+          } else {
+            overallBudget += t.amount;
+          }
+        }
+      }
+    });
+
+  // Теперь мы знаем окончательный overallBudget и totalDebt
+  console.log("totalDebt =", totalDebt, "overallBudget =", overallBudget);
+
+  // Анимированно отображаем в блоках
   const budgetEl  = document.querySelector('#block-budget .block-value');
   const incomeEl  = document.querySelector('#block-income .block-value');
   const expenseEl = document.querySelector('#block-expense .block-value');
@@ -258,70 +354,108 @@ function updateUI() {
 
   animateValue(budgetEl,  parseInt(budgetEl.textContent.replace(/\D/g, '')) || 0,  overallBudget,    800);
   animateValue(incomeEl,  parseInt(incomeEl.textContent.replace(/\D/g, '')) || 0,  totalIncome,      800);
-  animateValue(expenseEl, parseInt(expenseEl.textContent.replace(/\D/g, '')) || 0, expenseBlockValue,800);
+  animateValue(expenseEl, parseInt(expenseEl.textContent.replace(/\D/g, '')) || 0, totalExpense,     800);
   animateValue(depositEl, parseInt(depositEl.textContent.replace(/\D/g, '')) || 0, totalDeposit,     800);
   animateValue(debtEl,    parseInt(debtEl.textContent.replace(/\D/g, '')) || 0,    totalDebt,        800);
 
   document.querySelector('#block-budget .emoji').textContent  = getBudgetEmoji(overallBudget);
   const incomeEmojiEl = document.querySelector('#block-income .emoji');
   if (incomeEmojiEl) incomeEmojiEl.textContent = getIncomeEmoji(totalIncome);
-  document.querySelector('#block-expense .emoji').textContent = getExpenseEmoji(expenseBlockValue);
+  document.querySelector('#block-expense .emoji').textContent = getExpenseEmoji(totalExpense);
   document.querySelector('#block-debt .emoji').textContent    = getDebtEmoji(totalDebt);
   const depositEmojiEl = document.querySelector('#block-deposit .emoji');
   if (depositEmojiEl) depositEmojiEl.textContent = getDepositEmoji(totalDeposit);
 
+  // Дополнительно фильтруем транзакции, чтобы показать нужные типы (transactionFilter)
   let finalFiltered = filtered.filter(t => {
-      if (transactionFilter !== 'all' && t.type !== transactionFilter) return false;
-      return true;
+    if (transactionFilter !== 'all' && t.type !== transactionFilter) {
+      return false;
+    }
+    return true;
   });
+
+  // Обновляем список транзакций
   updateTransactionList(finalFiltered);
 }
 
-// Вызов attachFilterEventListeners один раз при инициализации
+// Вызов attachFilterEventListeners один раз
 document.addEventListener('DOMContentLoaded', () => {
   attachFilterEventListeners();
 });
-
 
 // Список транзакций
 function updateTransactionList(transactions) {
   console.log('updateTransactionList called, count =', transactions.length);
   const list = document.getElementById('transaction-list');
   list.innerHTML = '';
+  
+  // Сортируем по дате убыв. (свежие сверху)
   transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
   transactions.forEach(t => {
-      const li = document.createElement('li');
-      li.style.borderLeftColor = getTypeColor(t.type);
-      li.innerHTML = `
+    const li = document.createElement('li');
+    li.style.borderLeftColor = getTypeColor(t.type);
+
+    // Если это долг, сформируем тег #Должен / #Мне должны
+    let debtTag = '';
+    if (t.type === 'debt') {
+      if (t.direction === 'owe') {
+        debtTag = ' <span style="color: #e82b2a; font-size: 0.9em;">#Должен</span>';
+      } else {
+        debtTag = ' <span style="color: #2be82a; font-size: 0.9em;">#Мне должны</span>';
+      }
+    }
+
+    li.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div><strong>${getTypeName(t.type)}: </strong>${t.category || t.name}</div>
+        <div>
+          <strong>${getTypeName(t.type)}: </strong>${t.category || t.name}${debtTag}
+        </div>
         <div style="font-weight: bold;">${formatNumber(t.amount)}</div>
       </div>
-      <div style="font-size: 0.8em; color: gray; text-align: right;">${formatDate(t.date)}</div>
-      ${t.type === 'debt' ? (t.paid ? `<span style="color: green; font-weight: bold;">✅ Оплачено</span>` : `<button class="pay-debt" data-id="${t.id}">Оплатить</button>`) : ""}
-      `;
-      li.addEventListener('click', () => openTransactionDetail(t));
-      list.appendChild(li);
+      <div style="font-size: 0.8em; color: gray; text-align: right;">
+        ${formatDate(t.date)}
+      </div>
+      ${
+        t.type === 'debt'
+          ? t.paid
+            ? `<span style="color: green; font-weight: bold;">✅ Оплачено</span>`
+            : `<button class="pay-debt" data-id="${t.id}">Оплатить</button>`
+          : ''
+      }
+    `;
+
+    // Переход к деталям по клику на элемент
+    li.addEventListener('click', () => openTransactionDetail(t));
+    list.appendChild(li);
   });
+
+  // Кнопка "Оплатить" (для долгов)
   document.querySelectorAll('.pay-debt').forEach(button => {
-      button.addEventListener('click', (event) => {
-          event.stopPropagation();
-          const debtId = parseInt(event.target.dataset.id, 10);
-          markDebtAsPaid(debtId);
-      });
+    button.addEventListener('click', (event) => {
+      event.stopPropagation(); // чтобы не открывались детали
+      const debtId = parseInt(event.target.dataset.id, 10);
+      markDebtAsPaid(debtId);
+    });
   });
 }
 
 // Открытие деталей транзакции
 function openTransactionDetail(transaction) {
   document.getElementById('detail-type').textContent = getTypeName(transaction.type);
-  document.getElementById('detail-name').textContent = transaction.category || transaction.name;
+
+  // Если это долг, добавим тег #Должен / #Мне должны к названию
+  if (transaction.type === 'debt') {
+    const directionTag = transaction.direction === 'owe' ? ' #Должен' : ' #Мне должны';
+    document.getElementById('detail-name').textContent = (transaction.name || transaction.category) + directionTag;
+  } else {
+    document.getElementById('detail-name').textContent = transaction.category || transaction.name;
+  }
+
   document.getElementById('detail-amount').textContent = 'Сумма: ' + formatNumber(transaction.amount);
   document.getElementById('detail-date').textContent = 'Дата: ' + formatDate(transaction.date);
-  document.getElementById('delete-transaction').onclick = () => {
-    deleteTransaction(transaction.id);
-    closeModal('transaction-detail-sheet');
-  };
+
+  // Показать/скрыть статус (для вкладов)
   const detailStatus = document.getElementById('detail-status');
   if (transaction.type === 'deposit') {
     detailStatus.classList.remove('hidden');
@@ -329,6 +463,8 @@ function openTransactionDetail(transaction) {
   } else {
     detailStatus.classList.add('hidden');
   }
+
+  // Показать/скрыть список товаров (для расходов)
   const prodDiv = document.getElementById('detail-products');
   if (transaction.type === 'expense' && transaction.products && transaction.products.length) {
     prodDiv.classList.remove('hidden');
@@ -337,21 +473,25 @@ function openTransactionDetail(transaction) {
   } else {
     prodDiv.classList.add('hidden');
   }
+
+  // Кнопка "Оплатить долг" (если это debt и ещё не оплачено)
   const payDebtBtn = document.getElementById('pay-debt');
   if (transaction.type === 'debt' && !transaction.paid) {
-      payDebtBtn.classList.remove('hidden');
-      payDebtBtn.onclick = () => markDebtAsPaid(transaction.id);
+    payDebtBtn.classList.remove('hidden');
+    payDebtBtn.onclick = () => markDebtAsPaid(transaction.id);
   } else {
-      payDebtBtn.classList.add('hidden');
+    payDebtBtn.classList.add('hidden');
   }
+
+  // Кнопка "Удалить транзакцию"
+  document.getElementById('delete-transaction').onclick = () => {
+    deleteTransaction(transaction.id);
+    closeModal('transaction-detail-sheet');
+  };
+
   openModal('transaction-detail-sheet');
 }
-function payDebt(transaction) {
-  transaction.paid = true;
-  saveBudgets();
-  updateUI();
-  closeModal('transaction-detail-sheet');
-}
+
 function deleteTransaction(transactionId) {
   const transactions = budgets[currentBudgetIndex].transactions;
   const index = transactions.findIndex(t => t.id === transactionId);
@@ -372,16 +512,17 @@ function attachEventListeners() {
     clearInlineError(nameInput);
     const name = nameInput.value.trim();
     if (name && validateBudgetName(name)) {
-        budgets.push({ name, transactions: [] });
-        currentBudgetIndex = budgets.length - 1;
-        saveBudgets();
-        updateHeader();
-        updateUI();
-        closeModal('budget-modal');
+      budgets.push({ name, transactions: [] });
+      currentBudgetIndex = budgets.length - 1;
+      saveBudgets();
+      updateHeader();
+      updateUI();
+      closeModal('budget-modal');
     } else {
-        showInlineError(nameInput, 'Некорректное название бюджета!');
+      showInlineError(nameInput, 'Некорректное название бюджета!');
     }
   });
+
   // Переключение бюджета
   document.getElementById('current-budget').addEventListener('click', () => {
     console.log('current-budget clicked -> open budget-switch-sheet');
@@ -407,14 +548,15 @@ function attachEventListeners() {
     const newName = newNameInput.value.trim();
     console.log('add-budget-btn clicked, newName =', newName);
     if (newName && validateBudgetName(newName)) {
-        budgets.push({ name: newName, transactions: [] });
-        saveBudgets();
-        populateBudgetList();
-        newNameInput.value = '';
+      budgets.push({ name: newName, transactions: [] });
+      saveBudgets();
+      populateBudgetList();
+      newNameInput.value = '';
     } else {
-        showInlineError(newNameInput, 'Некорректное название бюджета!');
+      showInlineError(newNameInput, 'Некорректное название бюджета!');
     }
   });
+
   // Фильтр по месяцу
   document.getElementById('month-filter-input').addEventListener('click', function(){
     closeBottomSheets();
@@ -429,28 +571,51 @@ function attachEventListeners() {
       updateUI();
     });
   });
-  // Кнопка добавления транзакции
+
+  // Кнопка добавления транзакции => открываем bottom-sheet
   document.getElementById('add-btn').addEventListener('click', () => {
     const today = new Date().toISOString().split('T')[0];
     ['income-date','expense-date','debt-date','deposit-date'].forEach(id => {
       document.getElementById(id).value = today;
     });
-    document.getElementById('transaction-type').value = 'income';
+    // Убираем обращение к "transaction-type" (т.к. его больше нет)
+    // document.getElementById('transaction-type').value = 'income';
+
+    // По умолчанию показываем форму доходов (и чипсу доходов)
     hideAllForms();
     openForm('income-form');
+    // Можно дополнительно сбросить "active" на чипсах и подсветить "Доходы"
+    document.querySelectorAll('.transaction-type-chips .chip-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    const incomeBtn = document.querySelector('.transaction-type-chips .chip-btn[data-type="income"]');
+    if (incomeBtn) incomeBtn.classList.add('active');
+
     openModal('transaction-sheet');
   });
-  // Смена типа транзакции
-  document.getElementById('transaction-type').addEventListener('change', e => {
-    hideAllForms();
-    const type = e.target.value;
-    console.log('transaction-type changed to:', type);
-    if (type === 'income') openForm('income-form');
-    if (type === 'expense') openForm('expense-form');
-    if (type === 'debt') openForm('debt-form');
-    if (type === 'deposit') openForm('deposit-form');
-  });
 
+  // Переключение форм внутри bottom-sheet по типу транзакции (логика чипсов)
+  document.querySelectorAll('.transaction-type-chips .chip-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      // 1. Снимаем "active" со всех чипсов
+      document.querySelectorAll('.transaction-type-chips .chip-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      // 2. Подсвечиваем текущую нажатую
+      button.classList.add('active');
+      
+      // 3. Прячем все формы
+      hideAllForms();
+      
+      // 4. Открываем нужную форму
+      const type = button.getAttribute('data-type'); 
+      if (type === 'income')  openForm('income-form');
+      if (type === 'expense') openForm('expense-form');
+      if (type === 'debt')    openForm('debt-form');
+      if (type === 'deposit') openForm('deposit-form');
+    });
+  });
+  
   // Закрытие форм транзакций
   document.querySelectorAll('.close-form').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -469,11 +634,10 @@ function attachEventListeners() {
   document.getElementById('add-product').addEventListener('click', () => {
     console.log('add-product clicked -> create new product-item');
     const productsList = document.getElementById('products-list');
-    const productCount = productsList.children.length; // если уже есть хотя бы один товар
+    const productCount = productsList.children.length;
     const container = document.createElement('div');
     container.classList.add('product-item');
     
-    // Добавляем delete-кнопку, если это не первый товар
     container.innerHTML = `
       <input type="text" class="product-name numeric-format" placeholder="Название" maxlength="16" list="product-names-list">
       <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
@@ -483,23 +647,21 @@ function attachEventListeners() {
     
     productsList.appendChild(container);
     
-    // Привязываем обработчик форматирования для нового поля "Цена"
     const priceInput = container.querySelector('.product-price');
     priceInput.addEventListener('input', function() {
-        let numericValue = this.value.replace(/\D/g, '');
-        this.value = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      let numericValue = this.value.replace(/\D/g, '');
+      this.value = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     });
     
-    // Если кнопка удаления присутствует, привязываем её обработчик
     const deleteBtn = container.querySelector('.delete-product');
     if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
-            container.remove();
-        });
+      deleteBtn.addEventListener('click', () => {
+        container.remove();
+      });
     }
   });
-  
-  // Настройки
+
+  // Страница настроек
   document.getElementById('settings-btn').addEventListener('click', () => {
     console.log('settings-btn clicked -> open settings-page');
     openModal('settings-page');
@@ -509,10 +671,12 @@ function attachEventListeners() {
   });
   document.getElementById('export-btn').addEventListener('click', exportData);
   document.getElementById('import-file').addEventListener('change', importData);
+
   // Bottom-sheet с деталями транзакции
   document.getElementById('close-detail').addEventListener('click', () => {
     closeModal('transaction-detail-sheet');
   });
+
   // Установка PWA
   let deferredPrompt;
   window.addEventListener('beforeinstallprompt', e => {
@@ -541,6 +705,7 @@ function openForm(formId) {
   document.getElementById(formId).classList.remove('hidden');
 }
 
+// Доход
 function submitIncome(e) {
   e.preventDefault();
   console.log('submitIncome called.');
@@ -570,6 +735,7 @@ function submitIncome(e) {
   closeModal('transaction-sheet');
 }
 
+// Расход
 function submitExpense(e) {
   e.preventDefault();
   console.log('submitExpense called.');
@@ -583,6 +749,7 @@ function submitExpense(e) {
   let isFormValid = true;
   const productElements = Array.from(document.querySelectorAll('#products-list .product-item'));
   const products = [];
+  
   productElements.forEach(item => {
     const nameInput = item.querySelector('.product-name');
     const quantityInput = item.querySelector('.product-quantity');
@@ -590,9 +757,11 @@ function submitExpense(e) {
     clearInlineError(nameInput);
     clearInlineError(quantityInput);
     clearInlineError(priceInput);
+
     const name = nameInput.value.trim();
     const quantity = parseInt(quantityInput.value, 10) || 0;
     const price = parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0;
+
     // Если все поля пусты – удаляем этот блок
     if (name === '' && quantity === 0 && price === 0) {
       item.remove();
@@ -627,13 +796,17 @@ function submitExpense(e) {
     products
   };
   addTransaction(transaction);
+
+  // Сохраним новые названия товаров в общий список для автокомплита
   products.forEach(p => {
     if (p.name && !productNames.includes(p.name)) {
       productNames.push(p.name);
     }
   });
   updateProductDatalist();
+
   form.reset();
+  // Сброс формы: один «пустой» товар
   document.getElementById('products-list').innerHTML = `
     <div class="product-item">
       <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
@@ -647,10 +820,10 @@ function submitExpense(e) {
       this.value = numericValue.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     });
   });
-  
   closeModal('transaction-sheet');
 }
 
+// Долг
 function submitDebt(e) {
   e.preventDefault();
   console.log('submitDebt called.');
@@ -659,6 +832,9 @@ function submitDebt(e) {
   clearInlineError(nameInput);
   const amountInput = form['debt-amount'];
   clearInlineError(amountInput);
+  const directionSelect = form['debt-direction'];
+  clearInlineError(directionSelect);
+
   const amount = parseInt(amountInput.value.replace(/\D/g, ''), 10) || 0;
   if (nameInput.value.trim() === '') {
     showInlineError(nameInput, 'Введите имя');
@@ -668,19 +844,27 @@ function submitDebt(e) {
     showInlineError(amountInput, 'Введите корректную сумму');
     return;
   }
+  if (!directionSelect.value) {
+    showInlineError(directionSelect, 'Выберите тип долга');
+    return;
+  }
+
+  // ВАЖНО: сохраняем direction
   const transaction = {
     id: Date.now(),
     type: 'debt',
     date: form['debt-date'].value,
     name: nameInput.value.trim(),
     amount,
-    paid: false
+    paid: false,
+    direction: directionSelect.value // 'owe' | 'owed'
   };
   addTransaction(transaction);
   form.reset();
   closeModal('transaction-sheet');
 }
 
+// Вклад
 function submitDeposit(e) {
   e.preventDefault();
   console.log('submitDeposit called.');
@@ -711,6 +895,7 @@ function submitDeposit(e) {
   closeModal('transaction-sheet');
 }
 
+// Добавить транзакцию в текущий бюджет
 function addTransaction(transaction) {
   console.log('addTransaction called:', transaction);
   if (!budgets[currentBudgetIndex].transactions) {
@@ -721,6 +906,7 @@ function addTransaction(transaction) {
   updateUI();
 }
 
+// Форматирование (для полей input)
 document.querySelectorAll('input.numeric-format').forEach(input => {
   input.addEventListener('input', function() {
     let numericValue = this.value.replace(/\D/g, '');
@@ -728,7 +914,7 @@ document.querySelectorAll('input.numeric-format').forEach(input => {
   });
 });
 
-// Экспорт/импорт
+// Экспорт / Импорт
 function exportData() {
   console.log('exportData called.');
   const dataStr = JSON.stringify(budgets);
@@ -762,6 +948,8 @@ function saveBudgets() {
   localStorage.setItem('budgets', JSON.stringify(budgets));
   localStorage.setItem('currentBudgetIndex', currentBudgetIndex);
 }
+
+// Утилиты форматирования
 function formatNumber(num) {
   return num.toLocaleString('ru-RU');
 }
@@ -780,14 +968,15 @@ function getTypeName(type) {
 function getTypeColor(type) {
   const rootStyles = getComputedStyle(document.documentElement);
   const map = {
-    income: rootStyles.getPropertyValue('--income-color').trim(),
+    income:  rootStyles.getPropertyValue('--income-color').trim(),
     expense: rootStyles.getPropertyValue('--expense-color').trim(),
-    debt: rootStyles.getPropertyValue('--debt-color').trim(),
+    debt:    rootStyles.getPropertyValue('--debt-color').trim(),
     deposit: rootStyles.getPropertyValue('--deposit-color').trim()
   };
   return map[type] || 'black';
 }
 function validateBudgetName(name) {
+  // Разрешаем буквы, цифры, пробелы, emoji
   const regex = /^[\p{L}\p{N}\p{Emoji}\s]+$/u;
   return regex.test(name);
 }
@@ -803,9 +992,10 @@ function updateProductDatalist() {
 function applyInputRestrictions() {
   console.log('applyInputRestrictions called.');
   document.querySelectorAll('input[type="text"]').forEach(input => {
-      input.addEventListener('input', e => {
-          e.target.value = e.target.value.replace(/[^\p{L}\p{N}\p{Emoji}\s]/gu, '').slice(0, 20);
-      });
+    input.addEventListener('input', e => {
+      // Убираем недопустимые символы
+      e.target.value = e.target.value.replace(/[^\p{L}\p{N}\p{Emoji}\s]/gu, '').slice(0, 20);
+    });
   });
   document.querySelectorAll('input[inputmode="numeric"]').forEach(input => {
     input.addEventListener('input', e => {
@@ -814,26 +1004,28 @@ function applyInputRestrictions() {
     });
   });
 }
+
+// Список бюджетов (для bottom-sheet переключения)
 function populateBudgetList() {
   console.log('populateBudgetList called.');
   const listDiv = document.querySelector('#budget-switch-sheet .budget-list');
   listDiv.innerHTML = '';
   budgets.forEach((b, index) => {
-      const div = document.createElement('div');
-      div.classList.add('budget-item');
-      div.innerHTML = `
-          <span>${b.name}</span>
-          <button class="delete-budget-btn" data-index="${index}">🗑️</button>
-      `;
-      div.addEventListener('click', () => switchBudget(index));
-      listDiv.appendChild(div);
+    const div = document.createElement('div');
+    div.classList.add('budget-item');
+    div.innerHTML = `
+      <span>${b.name}</span>
+      <button class="delete-budget-btn" data-index="${index}">🗑️</button>
+    `;
+    div.addEventListener('click', () => switchBudget(index));
+    listDiv.appendChild(div);
   });
   document.querySelectorAll('.delete-budget-btn').forEach(button => {
-      button.addEventListener('click', event => {
-          event.stopPropagation();
-          const index = parseInt(event.target.dataset.index, 10);
-          openDeleteConfirmation(index);
-      });
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      const idx = parseInt(event.target.dataset.index, 10);
+      openDeleteConfirmation(idx);
+    });
   });
 }
 
@@ -846,55 +1038,56 @@ function openDeleteConfirmation(index) {
   closeBottomSheets();
   const modal = document.getElementById('delete-budget-modal');
   if (!modal) {
-      console.error("Ошибка: Модальное окно удаления не найдено!");
-      return;
+    console.error("Ошибка: Модальное окно удаления не найдено!");
+    return;
   }
   modal.classList.remove('hidden');
 }
 
-
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById('confirm-delete-budget').addEventListener('click', () => {
-      if (budgetToDelete !== null) {
-          deleteBudget(budgetToDelete);
-          budgetToDelete = null;
-          document.getElementById('delete-budget-modal').classList.add('hidden');
-      }
-  });
-  document.getElementById('cancel-delete-budget').addEventListener('click', () => {
+    if (budgetToDelete !== null) {
+      deleteBudget(budgetToDelete);
       budgetToDelete = null;
       document.getElementById('delete-budget-modal').classList.add('hidden');
+    }
+  });
+  document.getElementById('cancel-delete-budget').addEventListener('click', () => {
+    budgetToDelete = null;
+    document.getElementById('delete-budget-modal').classList.add('hidden');
   });
   document.getElementById('export-before-delete').addEventListener('click', exportData);
 });
+
 function deleteBudget(index) {
   if (index < 0 || index >= budgets.length) {
-      console.error("Ошибка: Неверный индекс бюджета!");
-      return;
+    console.error("Ошибка: Неверный индекс бюджета!");
+    return;
   }
   console.log(`Удаляем бюджет: ${budgets[index].name}`);
   budgets.splice(index, 1);
   if (budgets.length === 0) {
-      localStorage.removeItem('budgets');
-      localStorage.removeItem('currentBudgetIndex');
-      openModal('budget-modal');
+    localStorage.removeItem('budgets');
+    localStorage.removeItem('currentBudgetIndex');
+    openModal('budget-modal');
   } else {
-      if (currentBudgetIndex === index) {
-          currentBudgetIndex = 0;
-      } else if (currentBudgetIndex > index) {
-          currentBudgetIndex--;
-      }
-      saveBudgets();
-      updateHeader();
-      updateUI();
+    if (currentBudgetIndex === index) {
+      currentBudgetIndex = 0;
+    } else if (currentBudgetIndex > index) {
+      currentBudgetIndex--;
+    }
+    saveBudgets();
+    updateHeader();
+    updateUI();
   }
   saveBudgets();
   populateBudgetList();
 }
+
 function switchBudget(index) {
   if (index < 0 || index >= budgets.length) {
-      console.error("Ошибка: Некорректный индекс бюджета!");
-      return;
+    console.error("Ошибка: Некорректный индекс бюджета!");
+    return;
   }
   console.log(`Переключаемся на бюджет: ${budgets[index].name}`);
   currentBudgetIndex = index;

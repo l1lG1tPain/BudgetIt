@@ -117,7 +117,7 @@ textarea:focus {
   max-height: 80vh;
   overflow-y: auto;
   z-index: 1100;
-  box-shadow: 0 -2px 25px rgb(0 0 0 / 30%);
+  box-shadow: 0 -2px 25px rgb(0 0 0 / 90%);
   
   transform: translateY(100%);
   opacity: 0;
@@ -190,6 +190,7 @@ main {
 .block-title {
   font-size: 1.2rem;
   margin-bottom: 5px;
+  font-weight: 500;
 }
 .block-value {
   font-size: 1.1rem;
@@ -204,8 +205,11 @@ main {
 /* Кастомный фильтр по месяцам */
 #month-filter-container {
   position: relative;
-  width: 200px;
+  /* width: 200px; */
   margin: 10px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 #month-filter-container label {
   display: block;
@@ -213,9 +217,9 @@ main {
   text-align: center;
 }
 #month-filter-container input {
-  width: 100%;
+  width: 80%;
   padding: 8px 10px;
-  border: 2px solid var(--primary-color);
+  border: 2px solid var(--secondary-color);
   border-radius: 8px;
   background: #f4f4f4;
   cursor: pointer;
@@ -223,10 +227,11 @@ main {
 #month-filter-container ul {
   position: absolute;
   top: calc(100% + 2px);
-  left: 0;
+  /* left: 0; */
   right: 0;
   background: var(--tertiary-color);
-  border: 2px solid var(--primary-color);
+  border: 2px solid var(--secondary-color);
+  border-radius: 0 0 8px 8px;
   border-top: none;
   max-height: 150px;
   overflow-y: auto;
@@ -234,6 +239,7 @@ main {
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 80%;
 }
 #month-filter-container ul li {
   padding: 8px 10px;
@@ -288,7 +294,8 @@ main {
   cursor: pointer;
 }
 .transaction-form .close-form {
-  background: #ccc;
+  background: var(--secondary-color);
+  color: var(--tertiary-color);
 }
 
 /* Стили для списка товаров */
@@ -344,9 +351,13 @@ main {
 }
 
 #pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button, #cancel-delete-budget, #confirm-delete-budget{
-  color: #000000;
+  color: var(--tertiary-color);
   font-weight: bolder;
   font-size: 16px;
+}
+
+#close-settings {
+  background: var(--secondary-color) !important;
 }
 
 #pay-debt, #delete-transaction, #confirm-delete-budget, #cancel-delete-budget{
@@ -359,7 +370,7 @@ main {
 }
 
 .pay-debt {
-  color: #000000;
+  color: var(--tertiary-color);
   font-weight: bolder;
   width: 100%;
 }
@@ -368,20 +379,22 @@ main {
   background-color: var(--expense-color);
 }
 #close-detail, #close-budget-sheet {
-  background-color: #ccc;
+  background-color: var(--secondary-color);
   width: 100%;
 }
 
 #add-budget-btn {
   margin-top: 0;
   width: 100%;
+  color: var(--secondary-color);
+  background: var(--primary-color);
 }
 
 #export-btn, #import-label, #close-settings{
   width: 100% !important;
 }
 
-#income-amount, #debt-amount, #deposit-status {
+#income-amount, #debt-direction, #deposit-status {
   margin-bottom: 40px;
 }
 
@@ -400,15 +413,22 @@ main {
 .settings-content label,
 button {
   margin-top: 10px;
+  /* font-size: 16px; */
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
-  background: var(--primary-color);
+  background: var(--secondary-color);
   color: var(--tertiary-color);
   cursor: pointer;
 }
 .settings-content a {
   color: #007bff;
+}
+
+#settings-btn {
+  font-size: 18px;
+  margin-top: 5;
+  padding: 0;
 }
 
 /* Стили для страницы настроек */
@@ -498,22 +518,21 @@ footer {
   display: flex;
   justify-content: center;
   /* padding: 10px; */
-  background-color: var(--dark-color);
+  background-color: var(--main-ground);
 }
 #add-btn {
-  font-size: 24px;
-  background: var(--primary-color);
-  color: var(--secondary-color);
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--secondary-color);
+  color: var(--tertiary-color);
   border: none;
-  border-radius: 80%;
-  width: 60px;
-  height: 60px;
+  /* border-radius: 80%; */
+  width: 90%;
+  height: 40px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: pointer;
   margin-bottom: 10px;
 }
-
-
 /* Стили для страницы настроек */
   
 .settings-header h2 {
@@ -634,13 +653,13 @@ select:hover {
 
 /* Контейнер main, если в нем динамически добавляются элементы */
 main {
-  max-height: 90vh; /* Или другое подходящее ограничение */
+  max-height: 95vh; /* Или другое подходящее ограничение */
   overflow-y: auto; /* Включаем вертикальный скролл */
   /* padding: 90px 5px; */
   scroll-behavior: smooth; /* Плавный скролл */
   border-radius: 8px;
   background-color: var(--main-ground);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
 }
 
 /* Стилизация scrollbar (для WebKit браузеров) */
@@ -801,4 +820,83 @@ main::-webkit-scrollbar-thumb {
   transform: translateY(0);
 }
 
+.chips-container {
+  display: flex;
+  gap: 10px;
+  justify-content: space-around;
+  margin: 10px 0;
+}
 
+.chip-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  transition: background 0.2s ease;
+}
+
+.chip-btn:hover {
+  background: #ddd;
+}
+
+/* Стили для загрузочного экрана */
+#loading-screen {
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  background: var(--primary-color);
+  color: var(--secondary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-size: 20px;
+  z-index: 9999;
+}
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 5px solid var(--secondary-color);
+  border-top: 5px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.transaction-type-chips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;      /* Позволяет горизонтальную прокрутку при переполнении */
+  /* padding: 10px 0;    */
+}
+
+.chip-btn {
+  flex-shrink: 0;        
+  padding: 8px 12px;
+  background: var(--accent-color);
+  color: var(--secondary-color);
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s ease;
+}
+
+.chip-btn:hover {
+  background: var(--secondary-color);
+  color: var(--tertiary-color);
+}
+
+.chip-btn.active {
+  background: var(--secondary-color);      /* Стиль для выбранной кнопки (если захотите) */
+  color: var(--tertiary-color);
+}
