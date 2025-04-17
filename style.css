@@ -225,7 +225,7 @@ textarea:focus {
   background: var(--tertiary-color);
   border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   padding: var(--spacing-md);
-  max-height: 80vh;
+  max-height: 87vh;
   overflow-y: auto;
   z-index: var(--z-index-bottom-sheet);
   box-shadow: var(--shadow-lg);
