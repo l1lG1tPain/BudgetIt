@@ -148,6 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
   attachEventListeners();
   applyInputRestrictions();
   initializeCategoryButtons();
+
+  // Инициализируем аналитику при открытии страницы настроек
+  document.getElementById('settings-btn').addEventListener('click', function() {
+    // Даем время для рендеринга DOM перед инициализацией графиков
+    setTimeout(() => {
+      initializeAnalyticsCarousel();
+    }, 300);
+  });
+  
   console.log('DOMContentLoaded -> Initialization finished.');
 });
 
@@ -1287,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Запускаем автоскролл (каждые 3 секунды)
-  const intervalId = setInterval(nextSlide, 3000);
+  const intervalId = setInterval(nextSlide, 6000);
 
   // При клике на слайд — проверяем data-link
   slides.forEach(slide => {
@@ -1474,3 +1483,5 @@ function initializeCategoryButtons() {
     select.style.display = 'none';
   });
 }
+
+

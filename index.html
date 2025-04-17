@@ -209,8 +209,6 @@
         <label for="expense-category">Категория:</label>
         <select id="expense-category" required onchange="updateSelectedCategory()">
           <option value="">🛒 Выберите категорию</option>
-          <option value="">🛒 Выберите категорию</option>
-
           <optgroup label="🍽 Продукты и питание">
             <option value="🥦 Продукты">🥦 Продукты</option>
             <option value="🍢 Шашлычок">🍢 Шашлычок</option>
@@ -454,7 +452,7 @@
   
     <!-- Информация о версии, авторе и т.д. -->
     <div class="settings-info">
-      <p><strong>Версия:</strong> 2.6c</p>
+      <p><strong>Версия:</strong> 2.6d</p>
       <p><strong>Автор:</strong> l1lG1tPain</p>
       <p><strong>Telegram:</strong> 
         <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
@@ -470,27 +468,51 @@
       </label>
     </div>
   
+    <div class="banner-carousel">
+      <div class="slides-container">
+        <div class="banner-slide">
+          <img src="assets/banner3.jpg" alt="Баннер 3"/>
+        </div>
+        <div class="banner-slide" data-link="https://l1lg1tpain.github.io/TrackIt/index.html">
+          <img src="assets/banner2.jpg" alt="Баннер 2"/>
+        </div>
+        <div class="banner-slide">
+          <img src="assets/banner1.jpg" alt="Баннер 1"/>
+        </div>
+        
+        <!-- ... другие баннеры ... -->
+      </div>
+    </div>
+    
     <!-- Блок аналитики (можно разместить таблицы, графики и т.д.) -->
     <div class="analytics-section">
       <h3>Аналитика</h3>
-      <p>Здесь в будущем будут добавлены сводки, отчеты, диаграммы и прочую статистику.</p>
+      <div class="analytics-carousel">
+        <div class="analytics-slides-container">
+          <div class="analytics-slide">
+            <h4>Расходы по категориям</h4>
+            <canvas id="expensesByCategoryChart"></canvas>
+          </div>
+          <div class="analytics-slide">
+            <h4>Ежемесячные расходы и доходы</h4>
+            <canvas id="monthlyExpensesChart"></canvas>
+          </div>
+          <div class="analytics-slide">
+            <h4>Доходы vs Расходы</h4>
+            <canvas id="incomeVsExpensesChart"></canvas>
+          </div>
+          <div class="analytics-slide">
+            <h4>Топ расходов</h4>
+            <canvas id="topExpensesChart"></canvas>
+          </div>
+        </div>
+        <div class="analytics-dots"></div>
+      </div>
     </div>
   
     <!-- Блок для будущих дополнительных кнопок или элементов -->
     <div class="extra-buttons-container">
       <!-- Добавляйте сюда любые новые кнопки или ссылки, когда потребуется -->
-    </div>
-
-    <div class="banner-carousel">
-      <div class="slides-container">
-        <div class="banner-slide">
-          <img src="assets/banner1.jpg" alt="Баннер 1"/>
-        </div>
-        <div class="banner-slide" data-link="https://l1lg1tpain.github.io/TrackIt/index.html">
-          <img src="assets/banner2.jpg" alt="Баннер 2"/>
-        </div>
-        <!-- ... другие баннеры ... -->
-      </div>
     </div>
     
   
@@ -537,6 +559,10 @@
 
   <!-- Подключаем внешний JavaScript -->
   <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="charts.js"></script>
+
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>

@@ -646,19 +646,110 @@ button {
 }
 
 
-/* Блок аналитики */
+/* =================================== */
+/* Стили для раздела «Аналитика» */
+/* =================================== */
+
 .analytics-section {
+  width: 100%;
+  height: 500px;           /* можно подкорректировать под желаемую высоту */
+  padding: 5px 5px 25px;
+  background: var(--tertiary-color);
+  border-radius: var(--border-radius-md);
+  /* box-shadow: var(--shadow-sm); */
+  overflow: hidden;
+}
+
+/* Контейнер карусели */
+.analytics-carousel {
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden;
+}
+
+/* Контейнер со слайдами */
+.analytics-slides-container {
+  display: flex;
+  width: 100% !important;  /* ровно 100%, не более */
+  height: 100%;
+  transition: transform 0.5s ease;
+}
+
+/* Каждый слайд */
+.analytics-slide {
+  flex: 0 0 100%;          /* ровно ширина контейнера */
+  box-sizing: border-box;
+  padding: 40px;            /* отступы внутри слайда */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Заголовок внутри слайда */
+.analytics-slide h4 {
   margin-bottom: 20px;
-}
-.analytics-section h3 {
-  font-size: 1.1rem;
   color: var(--secondary-color);
-  margin-bottom: 5px;
+  font-size: 1.3rem;
+  font-weight: 500;
+  text-align: center;
 }
-.analytics-section p {
-  font-size: 0.9rem;
-  color: #444;
+
+/* Сам график */
+.analytics-slide canvas {
+  width: 100% !important;   
+  height: calc(100% - 60px) !important; /* вычитаем высоту заголовка + отступ */
+  max-height: 100% !important;
+  background: var(--tertiary-color);
+  border-radius: var(--border-radius-lg);
+  /* box-shadow: var(--shadow-md); */
 }
+
+/* Точки-индикаторы */
+.analytics-dots {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.analytics-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.analytics-dots .dot.active {
+  background: var(--primary-color);
+  box-shadow: 0 0 6px var(--primary-color);
+}
+
+/* Центр Doughnut‑чарта */
+#expensesByCategoryCenterText {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+#expensesByCategoryCenterText .center-total {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+#expensesByCategoryCenterText .center-label {
+  font-size: 1rem;
+  color: var(--secondary-color);
+}
+
 
 /* Блок для дополнительных кнопок */
 .extra-buttons-container {
@@ -667,12 +758,12 @@ button {
 
 /* Кнопка "Закрыть" закреплена внизу */
 .close-settings-btn {
-  position: absolute;
-  bottom: 20px; /* Отступ снизу */
+  /* position: absolute;
+  bottom: 20px; 
   left: 20px;
-  right: 20px;
+  right: 20px; */
   /* height: 48px; */
-  max-width: 90%;
+  /* max-width: 90%; */
   background: var(--secondary-color);
   color: var(--tertiary-color);
   font-weight: bold;
@@ -1128,7 +1219,6 @@ main::-webkit-scrollbar-thumb {
      (зависит от вашего дизайна). Или можно вообще не задавать, тогда height:auto. */
   height: 120px; 
   overflow: hidden;
-  margin-bottom: 20px; /* небольшое расстояние под слайдером, если нужно */
 }
 
 /* Контейнер со слайдами выстраиваем в линию */
@@ -1355,3 +1445,4 @@ select {
 #expense-category {
   display: none;
 }
+
