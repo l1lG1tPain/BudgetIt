@@ -1,15 +1,108 @@
 :root {
+  /* Основные цвета */
   --primary-color:  #2be82a;  /* Бюджет (яркий зелёный) */
   --income-color:   #2aace8;  /* Доходы (свежий голубой) */
   --expense-color:  #e82b2a;  /* Расходы (яркий красный) */
   --deposit-color:  #8a2be2;  /* Вклады (насыщенный фиолетовый) */
   --debt-color:     #e8a22a;  /* Долги (яркий оранжевый) */
-  /* Остальные переменные, если нужны */
+  
+  /* Базовые цвета */
   --secondary-color: #000000;
   --tertiary-color:  #ffffff;
   --dark-color:      #171717;
   --accent-color:    #dbe4db;
-  --main-ground:     #f8f9fa; 
+  --main-ground:     #f8f9fa;
+
+  /* Размеры и отступы */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Радиусы скругления */
+  --border-radius-sm: 4px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  
+  /* Тени */
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 -2px 25px rgba(0, 0, 0, 0.9);
+  
+  /* Переходы */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* Z-index уровни */
+  --z-index-header: 900;
+  --z-index-backdrop: 1099;
+  --z-index-bottom-sheet: 1100;
+  --z-index-modal: 1200;
+  --z-index-loading: 9999;
+}
+
+/* Темная тема */
+[data-theme="dark"] {
+  --secondary-color: #ffffff;
+  --tertiary-color:  #1a1a1a;
+  --dark-color:      #e8e8e8;
+  --accent-color:    #2a2a2a;
+  --main-ground:     #121212;
+  
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 -2px 25px rgba(0, 0, 0, 0.8);
+}
+
+/* Стили для селектора темы */
+.theme-selector {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  background: var(--tertiary-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-selector label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.theme-selector select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--border-radius-md);
+  background: var(--tertiary-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+  font-size: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%232be82a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-md) center;
+  background-size: 10px;
+}
+
+.theme-selector select:focus {
+  outline: 1.5px solid var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(43, 232, 42, 0.1);
+}
+
+.theme-selector select:hover {
+  border-color: var(--primary-color);
+}
+
+/* Стили для темной темы */
+[data-theme="dark"] .theme-selector select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ffffff'/%3E%3C/svg%3E");
 }
 
 button, input, select, textarea {
@@ -67,14 +160,14 @@ body {
 /* Hover для блоков */
 .summary-block:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 /* Hover для кнопок */
 button:hover {
   opacity: 0.9;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-fast);
 }
 
 /* Контур для всех инпутов, select, textarea при фокусе */
@@ -82,7 +175,6 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: 1.5px solid var(--primary-color);
-  /* outline-offset: 2px; */
 }
 
 
@@ -131,17 +223,17 @@ textarea:focus {
   left: 0;
   right: 0;
   background: var(--tertiary-color);
-  border-radius: 16px 16px 0 0;
-  padding: 20px;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  padding: var(--spacing-md);
   max-height: 80vh;
   overflow-y: auto;
-  z-index: 1100;
-  box-shadow: 0 -2px 25px rgba(0, 0, 0, 0.9);
+  z-index: var(--z-index-bottom-sheet);
+  box-shadow: var(--shadow-lg);
   
   transform: translateY(100%);
   opacity: 0;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
-              opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--transition-slow), 
+              opacity var(--transition-slow);
   transform-origin: bottom center;
 }
 
@@ -164,11 +256,11 @@ header {
   align-items: center;
   background-color: var(--secondary-color);
   color: var(--primary-color);
-  padding: 10px 20px;
+  padding: var(--spacing-sm) var(--spacing-md);
   position: fixed;
   top: 0;
   width: 100%;
-  z-index: 900;
+  z-index: var(--z-index-header);
 }
 header h1 {
   font-size: 1.7rem;
@@ -192,9 +284,9 @@ main {
 /* Общие стили для блоков */
 .summary-block {
   background: var(--tertiary-color);
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
   text-align: center;
 }
@@ -1185,4 +1277,81 @@ main::-webkit-scrollbar-thumb {
 /* Скрываем системный select */
 select {
   display: none !important;
+}
+
+/* Стили для дропдауна категорий в форме расходов */
+.category-dropdown {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.category-dropdown-button {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--tertiary-color);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--secondary-color);
+}
+
+.category-dropdown-button:hover {
+  border-color: var(--primary-color);
+}
+
+.category-dropdown-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--tertiary-color);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.category-dropdown-content.show {
+  display: block;
+}
+
+.category-dropdown-content select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  font-size: 16px;
+  color: var(--secondary-color);
+}
+
+.category-dropdown-content optgroup {
+  padding: 8px;
+  font-weight: bold;
+  color: var(--secondary-color);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.category-dropdown-content option {
+  padding: 8px;
+  padding-left: 20px;
+  cursor: pointer;
+}
+
+.category-dropdown-content option:hover {
+  background: var(--primary-color);
+  color: var(--tertiary-color);
+}
+
+/* Скрываем стандартный select */
+#expense-category {
+  display: none;
 }
