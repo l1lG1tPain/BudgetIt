@@ -9,7 +9,7 @@
   --tertiary-color:  #ffffff;
   --dark-color:      #171717;
   --accent-color:    #dbe4db;
-  --main-ground:     #f8f9fa;
+  --main-ground:     #f8f9fa; 
 }
 
 button, input, select, textarea {
@@ -105,6 +105,25 @@ textarea:focus {
   z-index: 1000;
 }
 
+/* Backdrop for bottom-sheets */
+#bottom-sheet-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1099;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#bottom-sheet-backdrop:not(.hidden) {
+  opacity: 1;
+}
+
 /* Bottom-sheet */
 .bottom-sheet {
   position: fixed;
@@ -121,7 +140,9 @@ textarea:focus {
   
   transform: translateY(100%);
   opacity: 0;
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+              opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom center;
 }
 
 .bottom-sheet:not(.hidden) {
@@ -210,6 +231,7 @@ main {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: 15px 0;
 }
 #month-filter-container label {
   display: block;
@@ -335,7 +357,7 @@ main {
   background: var(--tertiary-color);
   padding: 30px;
   border-radius: 8px;
-  margin: 0px 45px;
+  margin: 0px 40px;
 }
 #budget-name {
   width: 100%;
@@ -432,47 +454,147 @@ button {
 }
 
 /* Стили для страницы настроек */
+/* Контейнер для страницы настроек как bottom-sheet на 80% экрана */
 #settings-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 90%; /* Задаём 80% высоты */
   background: var(--tertiary-color);
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
-  margin: auto;
-  top: 15px;
+  box-shadow: 0 -2px 25px rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  z-index: 1500;
+  overflow-y: auto;      /* Чтобы контент прокручивался, если его слишком много */
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
-#settings-page h2 {
-  font-size: 1.5rem;
-  color: var(--secondary-color);
+
+/* При удалении класса .hidden bottom-sheet «въезжает» и становится видимым */
+#settings-page:not(.hidden) {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Шапка настроек (название, общее описание) */
+.settings-header {
   margin-bottom: 10px;
 }
-#settings-page button {
-  display: inline-block;
-  width: 100%;
-  max-width: 200px;
-  padding: 10px 20px;
+.settings-header h2 {
+  font-size: 1.4rem;
+  margin-bottom: 5px;
+  color: var(--secondary-color);
+}
+.settings-header p {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #444; /* Можно другой цвет */
+}
+
+/* Блок "версия, автор, ссылка" */
+.settings-info p {
+  margin: 4px 0;
+  font-size: 0.95rem;
+  color: #333;
+}
+.settings-info a {
+  color: #007bff;
+  text-decoration: none;
+}
+.settings-info a:hover {
+  text-decoration: underline;
+}
+
+.settings-buttons-inline {
+  display: flex;
+  gap: 10px;   /* Расстояние между кнопками */
+  margin-top: 15px;
+}
+
+/* Одинаковые стили для кнопки и label */
+.settings-buttons-inline button,
+.settings-buttons-inline label {
+  flex: 1; /* Растягиваем оба элемента равномерно */
+  display: inline-flex; /* Чтобы можно было центрировать содержимое */
+  align-items: center;
+  justify-content: center;
+  height: 48px;            /* Фиксируем одну высоту */
   font-size: 1rem;
   font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  color: #fff; /* например, белый текст */
+  /* Можно разные фоны, если нужно различать кнопки */
+  /* background: #000;  <-- для Экспорт */
+  /* background: #5A00FF; <-- для Импорт */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-buttons-inline button:hover,
+.settings-buttons-inline label:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Скрываем input[type=file], чтобы клик шел по всей «кнопке» */
+#import-label {
+  position: relative;
+  overflow: hidden;
+}
+#import-label input[type="file"] {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  opacity: 0; /* file-элемент невидим, но кликабелен */
+  cursor: pointer;
+}
+
+
+/* Блок аналитики */
+.analytics-section {
+  margin-bottom: 20px;
+}
+.analytics-section h3 {
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+  margin-bottom: 5px;
+}
+.analytics-section p {
+  font-size: 0.9rem;
+  color: #444;
+}
+
+/* Блок для дополнительных кнопок */
+.extra-buttons-container {
+  margin: 10px 0;
+}
+
+/* Кнопка "Закрыть" закреплена внизу */
+.close-settings-btn {
+  position: absolute;
+  bottom: 20px; /* Отступ снизу */
+  left: 20px;
+  right: 20px;
+  /* height: 48px; */
+  max-width: 90%;
+  background: var(--secondary-color);
   color: var(--tertiary-color);
-  background: linear-gradient(45deg, var(--primary-color), var(--primary-color));
+  font-weight: bold;
+  font-size: 16px;
   border: none;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 10px 5px;
 }
-#settings-page button:hover {
+.close-settings-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
-#settings-page button:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
+
 @media (max-width: 768px) {
   #settings-page h2 {
     font-size: 1.2rem;
@@ -904,4 +1026,38 @@ main::-webkit-scrollbar-thumb {
 /* Месяц/год фильтр */
 #year-filter, #month-filter-input {
   padding:8px; border-radius:8px; border:2px solid var(--secondary-color);
+}
+
+/* Контейнер для всего слайдера */
+.banner-carousel {
+  position: relative;
+  width: 100%;
+  /* Высоту можно задать фиксированную, например 120px или 150px, чтобы ужать 
+     (зависит от вашего дизайна). Или можно вообще не задавать, тогда height:auto. */
+  height: 120px; 
+  overflow: hidden;
+  margin-bottom: 20px; /* небольшое расстояние под слайдером, если нужно */
+}
+
+/* Контейнер со слайдами выстраиваем в линию */
+.slides-container {
+  display: flex;
+  transition: transform 0.5s ease; /* анимация при смене слайда */
+  will-change: transform;         /* небольшая оптимизация */
+}
+
+/* Каждый слайд (баннер) занимает ширину равную контейнеру */
+.banner-slide {
+  min-width: 100%;
+  cursor: pointer;   /* чтобы показывать, что можно кликать */
+  user-select: none;
+}
+
+/* Сама картинка внутри баннера */
+.banner-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* или contain, если хотите видеть всю картинку целиком */
+  display: block;    /* убирает лишние пробелы и отступы */
+  border-radius: 8px;
 }

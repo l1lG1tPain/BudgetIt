@@ -82,7 +82,7 @@ function setDefaultMonthFilter() {
   const today = new Date();
   const currentMonth = String(today.getMonth() + 1).padStart(2, '0'); // "01" - "12"
 
-  // Русские названия месяцев (дополните при желании)
+  // Русские названия месяцев
   const monthNames = {
     "01": "Январь",
     "02": "Февраль",
@@ -342,7 +342,6 @@ function updateUI() {
       }
     });
 
-  // Теперь мы знаем окончательный overallBudget и totalDebt
   console.log("totalDebt =", totalDebt, "overallBudget =", overallBudget);
 
   // Анимированно отображаем в блоках
@@ -406,12 +405,18 @@ function updateTransactionList(transactions) {
       }
     }
 
+    // Добавляем знак для вкладов
+    let amountSign = '';
+    if (t.type === 'deposit') {
+      amountSign = t.status === '➕ Пополнение' ? '+' : '-';
+    }
+
     li.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <strong>${getTypeName(t.type)}: </strong>${t.category || t.name}${debtTag}
         </div>
-        <div style="font-weight: bold;">${formatNumber(t.amount)}</div>
+        <div style="font-weight: bold;">${amountSign}${formatNumber(t.amount)}</div>
       </div>
       <div style="font-size: 0.8em; color: gray; text-align: right;">
         ${formatDate(t.date)}
@@ -578,8 +583,6 @@ function attachEventListeners() {
     ['income-date','expense-date','debt-date','deposit-date'].forEach(id => {
       document.getElementById(id).value = today;
     });
-    // Убираем обращение к "transaction-type" (т.к. его больше нет)
-    // document.getElementById('transaction-type').value = 'income';
 
     // По умолчанию показываем форму доходов (и чипсу доходов)
     hideAllForms();
@@ -594,7 +597,7 @@ function attachEventListeners() {
     openModal('transaction-sheet');
   });
 
-  // Переключение форм внутри bottom-sheet по типу транзакции (логика чипсов)
+  // Переключение форм внутри bottom-sheet (чипсы)
   document.querySelectorAll('.transaction-type-chips .chip-btn').forEach(button => {
     button.addEventListener('click', () => {
       // 1. Снимаем "active" со всех чипсов
@@ -639,20 +642,72 @@ function attachEventListeners() {
     container.classList.add('product-item');
     
     container.innerHTML = `
-      <input type="text" class="product-name numeric-format" placeholder="Название" maxlength="16" list="product-names-list">
-      <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
+      <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
+      <input type="tel" class="product-quantity numeric-format" placeholder="Кол-во" required maxlength="4">
       <input type="tel" class="product-price numeric-format" placeholder="Цена" required maxlength="11" inputmode="numeric">
       ${ productCount >= 1 ? `<button type="button" class="delete-product" title="Удалить товар">×</button>` : '' }
     `;
     
     productsList.appendChild(container);
-    
+
+    // Добавляем обработчики для новых полей ввода
+    const quantityInput = container.querySelector('.product-quantity');
     const priceInput = container.querySelector('.product-price');
-    priceInput.addEventListener('input', function() {
-      let numericValue = this.value.replace(/\D/g, '');
-      this.value = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    });
     
+    // Обработчик для поля количества
+    quantityInput.addEventListener('input', (e) => {
+      const cursorPosition = quantityInput.selectionStart;
+      let value = quantityInput.value.replace(/[^0-9.,]/g, '');
+      quantityInput.value = value;
+      quantityInput.setSelectionRange(cursorPosition, cursorPosition);
+    });
+
+    quantityInput.addEventListener('blur', () => {
+      const rawValue = quantityInput.value.replace(',', '.').replace(/\s/g, '');
+      let num = parseFloat(rawValue);
+      if (isNaN(num)) {
+        num = 0;
+      }
+      quantityInput.value = rawValue;
+    });
+
+    // Обработчик для поля цены
+    priceInput.addEventListener('input', (e) => {
+      const cursorPosition = priceInput.selectionStart;
+      let value = priceInput.value.replace(/[^0-9.,]/g, '');
+      const rawValue = value.replace(',', '.');
+      let num = parseFloat(rawValue);
+      if (isNaN(num)) {
+        num = 0;
+      }
+      
+      let formatted = num.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3
+      });
+      formatted = formatted.replace(/\u00A0/g, ' ');
+      
+      priceInput.value = formatted;
+      const newCursorPosition = cursorPosition + (formatted.length - value.length);
+      priceInput.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+
+    priceInput.addEventListener('blur', () => {
+      const rawValue = priceInput.value.replace(',', '.').replace(/\s/g, '');
+      let num = parseFloat(rawValue);
+      if (isNaN(num)) {
+        num = 0;
+      }
+      
+      let formatted = num.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3
+      });
+      formatted = formatted.replace(/\u00A0/g, ' ');
+      
+      priceInput.value = formatted;
+    });
+
     const deleteBtn = container.querySelector('.delete-product');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', () => {
@@ -759,8 +814,30 @@ function submitExpense(e) {
     clearInlineError(priceInput);
 
     const name = nameInput.value.trim();
-    const quantity = parseInt(quantityInput.value, 10) || 0;
-    const price = parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0;
+    const rawQuantity = quantityInput.value.trim();
+    // Если пользователь ввёл запятую — заменим на точку
+    const preparedQuantity = rawQuantity.replace(',', '.');
+
+    // Парсим как число с плавающей точкой
+    const quantity = parseFloat(preparedQuantity);
+
+    // Аналогично для цены
+    const rawPrice = priceInput.value.replace(/\s+/g, '').replace(',', '.');
+    const onlyDigitsAndDot = rawPrice.replace(/[^0-9.]/g, ''); 
+    const price = parseFloat(onlyDigitsAndDot) || 0;
+
+    // Проверяем валидность
+    if (isNaN(quantity) || quantity <= 0) {
+      showInlineError(quantityInput, 'Укажите корректное количество, например 0.5');
+      isFormValid = false;
+    }
+    if (isNaN(price) || price <= 0) {
+      showInlineError(priceInput, 'Укажите корректную цену');
+      isFormValid = false;
+    }
+
+    // Если всё корректно, считаем подытог
+    const itemTotal = quantity * price;
 
     // Если все поля пусты – удаляем этот блок
     if (name === '' && quantity === 0 && price === 0) {
@@ -814,12 +891,9 @@ function submitExpense(e) {
       <input type="tel" class="product-price" placeholder="Цена" required maxlength="11" inputmode="numeric">
     </div>
   `;
-  document.querySelectorAll('input.numeric-format').forEach(input => {
-    input.addEventListener('input', function() {
-      let numericValue = this.value.replace(/\D/g, '');
-      this.value = numericValue.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-    });
-  });
+  // Вызывем снова applyInputRestrictions или аналогичный подход, если нужно
+  // но обработка blur для numeric-format сделана ниже
+
   closeModal('transaction-sheet');
 }
 
@@ -906,13 +980,75 @@ function addTransaction(transaction) {
   updateUI();
 }
 
-// Форматирование (для полей input)
 document.querySelectorAll('input.numeric-format').forEach(input => {
-  input.addEventListener('input', function() {
-    let numericValue = this.value.replace(/\D/g, '');
-    this.value = numericValue.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+  // 1. При вводе разрешаем только цифры, точку и запятую
+  input.addEventListener('input', (e) => {
+    // Сохраняем позицию курсора
+    const cursorPosition = input.selectionStart;
+    
+    // Убираем всё, кроме цифр, точек и запятых
+    let value = input.value.replace(/[^0-9.,]/g, '');
+    
+    // Заменяем запятую на точку для парсинга
+    const rawValue = value.replace(',', '.');
+    let num = parseFloat(rawValue);
+    if (isNaN(num)) {
+      num = 0;
+    }
+    
+    // Для поля количества в форме расходов используем другой формат
+    if (input.classList.contains('product-quantity')) {
+      // Оставляем дробную часть как есть, без форматирования тысяч
+      input.value = value;
+      // Восстанавливаем позицию курсора
+      input.setSelectionRange(cursorPosition, cursorPosition);
+    } else {
+      // Для остальных полей (включая цену) форматируем с разделителями тысяч
+      let formatted = num.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3
+      });
+      
+      // Меняем неразрывные пробелы на обычные
+      formatted = formatted.replace(/\u00A0/g, ' ');
+      
+      // Обновляем значение
+      input.value = formatted;
+      
+      // Восстанавливаем позицию курсора с учетом добавленных пробелов
+      const newCursorPosition = cursorPosition + (formatted.length - value.length);
+      input.setSelectionRange(newCursorPosition, newCursorPosition);
+    }
+  });
+
+  // 2. При потере фокуса форматируем с разделением на тысячи
+  input.addEventListener('blur', () => {
+    // Заменяем запятую на точку, чтоб parseFloat корректно понял дробь
+    const rawValue = input.value.replace(',', '.').replace(/\s/g, '');
+    let num = parseFloat(rawValue);
+    if (isNaN(num)) {
+      num = 0;
+    }
+
+    // Для поля количества в форме расходов используем другой формат
+    if (input.classList.contains('product-quantity')) {
+      // Оставляем дробную часть как есть, без форматирования тысяч
+      input.value = rawValue;
+    } else {
+      // Для остальных полей (включая цену) форматируем с разделителями тысяч
+      let formatted = num.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3
+      });
+      
+      // Меняем неразрывные пробелы на обычные
+      formatted = formatted.replace(/\u00A0/g, ' ');
+      
+      input.value = formatted;
+    }
   });
 });
+
 
 // Экспорт / Импорт
 function exportData() {
@@ -951,8 +1087,12 @@ function saveBudgets() {
 
 // Утилиты форматирования
 function formatNumber(num) {
-  return num.toLocaleString('ru-RU');
+  return num.toLocaleString('ru-RU', {
+    minimumFractionDigits: 0, // или 2, если нужны всегда две копейки
+    maximumFractionDigits: 2  // ограничить максимум 2 знаками
+  });
 }
+
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('ru-RU', {
@@ -991,18 +1131,25 @@ function updateProductDatalist() {
 }
 function applyInputRestrictions() {
   console.log('applyInputRestrictions called.');
+  // Для обычных текстовых полей оставляем ограничение символов
   document.querySelectorAll('input[type="text"]').forEach(input => {
     input.addEventListener('input', e => {
       // Убираем недопустимые символы
       e.target.value = e.target.value.replace(/[^\p{L}\p{N}\p{Emoji}\s]/gu, '').slice(0, 20);
     });
   });
+
+  // Если вы хотите убрать логику для inputmode="numeric",
+  // можете раскомментировать или удалить её.
+  // Но в целом, ниже — лишний код, раз у нас уже есть "Вариант B" для .numeric-format
+  /*
   document.querySelectorAll('input[inputmode="numeric"]').forEach(input => {
     input.addEventListener('input', e => {
       const raw = e.target.value.replace(/\D/g, '');
       e.target.value = raw.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     });
   });
+  */
 }
 
 // Список бюджетов (для bottom-sheet переключения)
@@ -1058,6 +1205,41 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById('export-before-delete').addEventListener('click', exportData);
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const slidesContainer = document.querySelector('.slides-container');
+  if (!slidesContainer) return; // если нет баннеров, выходим
+
+  const slides = document.querySelectorAll('.banner-slide');
+  let slideIndex = 0;
+
+  // Функция, которая сдвигает контейнер на нужный слайд
+  function showSlide(index) {
+    slidesContainer.style.transform = `translateX(-${index * 100}%)`;
+  }
+
+  // Функция, переключающаяся на следующий слайд
+  function nextSlide() {
+    slideIndex = (slideIndex + 1) % slides.length;
+    showSlide(slideIndex);
+  }
+
+  // Запускаем автоскролл (каждые 3 секунды)
+  const intervalId = setInterval(nextSlide, 3000);
+
+  // При клике на слайд — проверяем data-link
+  slides.forEach(slide => {
+    slide.addEventListener('click', () => {
+      const link = slide.dataset.link;
+      if (link) {
+        // Открываем ссылку в новой вкладке
+        window.open(link, '_blank');
+      }
+      // Если data-link нет, значит баннер неактивный
+    });
+  });
+});
+
 
 function deleteBudget(index) {
   if (index < 0 || index >= budgets.length) {

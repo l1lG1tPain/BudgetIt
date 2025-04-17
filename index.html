@@ -19,6 +19,9 @@
   <link rel="apple-touch-icon" href="assets/icon-512x512.png">
 </head>
 <body>
+  <!-- Backdrop for bottom-sheets -->
+  <div id="bottom-sheet-backdrop" class="hidden"></div>
+  
   <!-- Модальное окно для создания первого бюджета -->
   <div id="budget-modal" class="overlay hidden">
     <form id="budget-form">
@@ -136,7 +139,7 @@
           <option value="🤡 Оказалось, что долг вернули">🤡 Оказалось, что долг вернули</option>
         </select>    
         <label for="income-amount">Сумма:</label>
-        <input type="tel" id="income-amount" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="income-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
         <button type="submit">Сохранить</button>
         <button type="button" class="close-form">Закрыть</button>
       </form>
@@ -231,8 +234,8 @@
         <div id="products-list">
           <div class="product-item">
             <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
-            <input type="tel" class="product-quantity" placeholder="Кол-во" required maxlength="3">
-            <input type="tel" class="product-price" placeholder="Цена" required maxlength="11" inputmode="numeric">
+            <input type="tel" class="product-quantity numeric-format" placeholder="Кол-во" required maxlength="4">
+            <input type="tel" class="product-price numeric-format" placeholder="Цена" required maxlength="11" inputmode="numeric">
           </div>
         </div>
         <!-- datalist для автоподсказок -->
@@ -248,7 +251,7 @@
         <label for="debt-name">Имя:</label>
         <input type="text" id="debt-name" required maxlength="16">
         <label for="debt-amount">Сумма:</label>
-        <input type="tel" id="debt-amount" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="debt-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
         <label for="debt-direction">Тип долга:</label>
         <select id="debt-direction" required>
           <option value="owe">Я должен</option>
@@ -264,7 +267,7 @@
         <label for="deposit-name">Имя:</label>
         <input type="text" id="deposit-name" required maxlength="16">
         <label for="deposit-amount">Сумма:</label>
-        <input type="tel" id="deposit-amount" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="deposit-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
         <label for="deposit-status">Статус:</label>
         <select id="deposit-status" required>
           <option value="">🔄 Выберите статус</option>
@@ -293,21 +296,62 @@
     </div>
   </div>  
 <!-- Модальное окно настроек -->
-<div id="settings-page" class="overlay hidden">
-  <div class="settings-content">
-    <h2>Настройки</h2>
-    <p><strong>Версия приложения:</strong> 2.5</p>
-    <p><strong>Автор:</strong> l1lG1tPain</p>
-    <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
-    <button id="export-btn">📤 Экспорт</button>
-    <label id="import-label">📥 Импорт
-      <input type="file" id="import-file" accept=".json">
-    </label>
-    <!-- Кнопка Аналитики (пока заглушка) -->
-    <button id="analytics-btn">Аналитика</button>
-    <button id="close-settings">Закрыть</button>
+    <div id="settings-page" class="bottom-sheet hidden">
+    <!-- Шапка настроек (описание приложения) -->
+    <div class="settings-header">
+      <h2>О приложении BudgetIt</h2>
+      <p>
+        BudgetIt — это приложение для учёта доходов, расходов, долгов и вкладов.
+        Помогает удобно вести финансы и быстро видеть общую картину вашего бюджета.
+      </p>
+    </div>
+  
+    <!-- Информация о версии, авторе и т.д. -->
+    <div class="settings-info">
+      <p><strong>Версия:</strong> 2.6</p>
+      <p><strong>Автор:</strong> l1lG1tPain</p>
+      <p><strong>Telegram:</strong> 
+        <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
+      </p>
+    </div>
+  
+    <!-- Блок кнопок в одной строке -->
+    <div class="settings-buttons-inline">
+      <button id="export-btn">📤 Экспорт</button>
+  
+      <label id="import-label">📥 Импорт
+        <input type="file" id="import-file" accept=".json" />
+      </label>
+    </div>
+  
+    <!-- Блок аналитики (можно разместить таблицы, графики и т.д.) -->
+    <div class="analytics-section">
+      <h3>Аналитика</h3>
+      <p>Здесь в будущем будут добавлены сводки, отчеты, диаграммы и прочую статистику.</p>
+    </div>
+  
+    <!-- Блок для будущих дополнительных кнопок или элементов -->
+    <div class="extra-buttons-container">
+      <!-- Добавляйте сюда любые новые кнопки или ссылки, когда потребуется -->
+    </div>
+
+    <div class="banner-carousel">
+      <div class="slides-container">
+        <div class="banner-slide">
+          <img src="assets/banner1.jpg" alt="Баннер 1"/>
+        </div>
+        <div class="banner-slide" data-link="https://l1lg1tpain.github.io/TrackIt/index.html">
+          <img src="assets/banner2.jpg" alt="Баннер 2"/>
+        </div>
+        <!-- ... другие баннеры ... -->
+      </div>
+    </div>
+    
+  
+    <!-- Кнопка «Закрыть» внизу -->
+    <button id="close-settings" class="close-settings-btn">Закрыть</button>
   </div>
-</div>
+    
 
   <div id="delete-budget-modal" class="modal hidden">
     <div class="modal-content">
