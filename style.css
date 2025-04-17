@@ -900,3 +900,8 @@ main::-webkit-scrollbar-thumb {
   background: var(--secondary-color);      /* Стиль для выбранной кнопки (если захотите) */
   color: var(--tertiary-color);
 }
+
+/* Месяц/год фильтр */
+#year-filter, #month-filter-input {
+  padding:8px; border-radius:8px; border:2px solid var(--secondary-color);
+}

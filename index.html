@@ -156,6 +156,9 @@
           <option value="🏠 Жильё">🏠 Жильё</option>
           <option value="🏢 Расходы по работе">🏢 Расходы по работе</option>
           <option value="🚌 Транспорт">🚌 Транспорт</option>
+          <option value="🍢 Шашлычок">🍢 Шашлычок</option>
+          <option value="🥓 Бекон, мясной вайб">🥓 Бекон, мясной вайб</option>
+          <option value="🍽️ Похавал в рестике">🍽️ Похавал в рестике</option>
           <option value="🎮 Развлечения">🎮 Развлечения</option>
           <option value="💊 Здоровье">💊 Здоровье</option>
           <option value="📚 Образование">📚 Образование</option>
@@ -289,20 +292,22 @@
       </div>
     </div>
   </div>  
-  <!-- Модальное окно настроек -->
-  <div id="settings-page" class="overlay hidden">
-    <div class="settings-content">
-      <h2>Настройки</h2>
-      <p><strong>Версия приложения:</strong> 2.5</p>
-      <p><strong>Автор:</strong> l1lG1tPain</p>
-      <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
-      <button id="export-btn">📤 Экспорт</button>
-      <label id="import-label">📥 Импорт
-        <input type="file" id="import-file" accept=".json">
-      </label>
-      <button id="close-settings">Закрыть</button>
-    </div>
+<!-- Модальное окно настроек -->
+<div id="settings-page" class="overlay hidden">
+  <div class="settings-content">
+    <h2>Настройки</h2>
+    <p><strong>Версия приложения:</strong> 2.5</p>
+    <p><strong>Автор:</strong> l1lG1tPain</p>
+    <p><strong>Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a></p>
+    <button id="export-btn">📤 Экспорт</button>
+    <label id="import-label">📥 Импорт
+      <input type="file" id="import-file" accept=".json">
+    </label>
+    <!-- Кнопка Аналитики (пока заглушка) -->
+    <button id="analytics-btn">Аналитика</button>
+    <button id="close-settings">Закрыть</button>
   </div>
+</div>
 
   <div id="delete-budget-modal" class="modal hidden">
     <div class="modal-content">
