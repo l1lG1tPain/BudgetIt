@@ -46,19 +46,16 @@ let productNames = [];
 
 // Функция открытия модального окна (закрывает dropdown и все bottom-sheet, кроме указанного, если требуется)
 function openModal(id) {
-  console.log('openModal called for:', id);
-  // Закрываем dropdown фильтра
-  document.getElementById('month-filter-dropdown').classList.add('hidden');
+  const modal = document.getElementById(id);
+  if (!modal) return;
   
-  // Если открываются настройки – закрываем все bottom-sheet
-  if (id === 'settings-page') {
-    closeBottomSheets();
-  } else if (document.getElementById(id).classList.contains('bottom-sheet')) {
-    // Если открывается конкретный bottom-sheet, закрываем остальные
-    closeBottomSheets(id);
+  // Показываем backdrop для всех bottom-sheet'ов
+  if (modal.classList.contains('bottom-sheet')) {
+    const backdrop = document.getElementById('bottom-sheet-backdrop');
+    backdrop.classList.remove('hidden');
   }
-  // Удаляем класс hidden — элемент плавно выедет за счёт CSS-перехода
-  document.getElementById(id).classList.remove('hidden');
+  
+  modal.classList.remove('hidden');
 }
 
 function closeBottomSheets(exceptId) {
@@ -71,8 +68,16 @@ function closeBottomSheets(exceptId) {
 }
 
 function closeModal(id) {
-  console.log('closeModal called for:', id);
-  document.getElementById(id).classList.add('hidden');
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+  
+  // Скрываем блур, если нет других открытых модалок
+  const hasOpenModals = document.querySelectorAll('.bottom-sheet:not(.hidden)').length > 0;
+  if (!hasOpenModals) {
+    document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
+  }
 }
 
 // ======================
@@ -142,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   attachEventListeners();
   applyInputRestrictions();
+  initializeCategoryButtons();
   console.log('DOMContentLoaded -> Initialization finished.');
 });
 
@@ -748,6 +754,60 @@ function attachEventListeners() {
       document.getElementById('install-btn').style.display = 'none';
     });
   });
+
+  // Заменяем все select на кастомные кнопки
+  document.querySelectorAll('select').forEach(select => {
+    // Проверяем, не был ли уже создан контейнер для этого select
+    if (select.parentNode.querySelector('.category-select-container')) {
+      return; // Пропускаем, если контейнер уже существует
+    }
+
+    // Создаем контейнер для кнопки и скрытого input
+    const container = document.createElement('div');
+    container.className = 'category-select-container';
+    
+    // Создаем кастомную кнопку
+    const button = document.createElement('button');
+    button.className = 'category-select-button';
+    button.textContent = select.options[select.selectedIndex]?.text || 'Выберите категорию';
+    
+    // Создаем скрытый input для хранения значения
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'category';
+    hiddenInput.value = select.value;
+    
+    // Добавляем обработчик клика на кнопку
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentSheet = document.getElementById('transaction-sheet');
+      if (currentSheet && !currentSheet.classList.contains('hidden')) {
+        openCategorySheet(currentSheet);
+      }
+    });
+    
+    // Вставляем элементы в DOM
+    container.appendChild(button);
+    container.appendChild(hiddenInput);
+    select.style.display = 'none';
+    select.parentNode.insertBefore(container, select);
+  });
+
+  // Обработчик клика по backdrop для закрытия модальных окон
+  const backdrop = document.getElementById('bottom-sheet-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === e.currentTarget) {
+        // Закрываем все модальные окна
+        document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+          sheet.classList.add('hidden');
+        });
+        // Скрываем backdrop
+        this.classList.add('hidden');
+      }
+    });
+  }
 }
 
 // Функции для форм транзакций
@@ -1197,11 +1257,13 @@ document.addEventListener("DOMContentLoaded", () => {
       deleteBudget(budgetToDelete);
       budgetToDelete = null;
       document.getElementById('delete-budget-modal').classList.add('hidden');
+      document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
     }
   });
   document.getElementById('cancel-delete-budget').addEventListener('click', () => {
     budgetToDelete = null;
     document.getElementById('delete-budget-modal').classList.add('hidden');
+    document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
   });
   document.getElementById('export-before-delete').addEventListener('click', exportData);
 });
@@ -1277,4 +1339,138 @@ function switchBudget(index) {
   updateHeader();
   updateUI();
   closeModal('budget-switch-sheet');
+}
+
+// Функция для открытия bottom-sheet с категориями
+function openCategorySheet(currentSheet) {
+  // Находим активную форму в текущем bottom-sheet
+  const activeForm = currentSheet.querySelector('.transaction-form:not(.hidden)');
+  if (!activeForm) {
+    console.error('No active form found in current sheet');
+    return;
+  }
+
+  // Находим select элемент в активной форме
+  const currentSelect = activeForm.querySelector('select[id$="-category"], select[id$="-status"], select[id$="-direction"]');
+  if (!currentSelect) {
+    console.error('No select element found in active form');
+    return;
+  }
+
+  // Находим список категорий
+  const categoryList = document.querySelector('#category-sheet .category-list');
+  if (!categoryList) {
+    console.error('No category list found');
+    return;
+  }
+
+  // Очищаем список категорий
+  categoryList.innerHTML = '';
+
+  // Добавляем категории из select
+  Array.from(currentSelect.options).forEach(option => {
+    if (option.value) { // Пропускаем пустые опции
+      const li = document.createElement('li');
+      li.className = 'category-item';
+      li.textContent = option.text;
+      li.addEventListener('click', () => {
+        // Обновляем значение select
+        currentSelect.value = option.value;
+        
+        // Обновляем текст кнопки
+        const button = activeForm.querySelector('.category-select-button');
+        if (button) {
+          button.textContent = option.text;
+        }
+        
+        // Обновляем значение скрытого input
+        const hiddenInput = activeForm.querySelector('input[type="hidden"][name="category"]');
+        if (hiddenInput) {
+          hiddenInput.value = option.value;
+        }
+        
+        // Скрываем только bottom-sheet с категориями, не трогаем backdrop
+        document.getElementById('category-sheet').classList.add('hidden');
+      });
+      categoryList.appendChild(li);
+    }
+  });
+
+  // Показываем backdrop и bottom-sheet с категориями
+  const backdrop = document.getElementById('bottom-sheet-backdrop');
+  const categorySheet = document.getElementById('category-sheet');
+  
+  if (backdrop && categorySheet) {
+    backdrop.classList.remove('hidden');
+    categorySheet.classList.remove('hidden');
+    
+    // Устанавливаем z-index для правильного отображения
+    backdrop.style.zIndex = '1099';
+    currentSheet.style.zIndex = '1100';
+    categorySheet.style.zIndex = '1101';
+  } else {
+    console.error('Backdrop or category sheet not found');
+  }
+}
+
+// Обработчик закрытия bottom-sheet с категориями
+const closeButton = document.querySelector('.close-category-sheet');
+if (closeButton) {
+  closeButton.addEventListener('click', () => {
+    const categorySheet = document.getElementById('category-sheet');
+    if (categorySheet) categorySheet.classList.add('hidden');
+  });
+}
+
+// Функция для инициализации кнопок выбора категорий
+function initializeCategoryButtons() {
+  // Находим все select элементы для категорий и статусов
+  const categorySelects = document.querySelectorAll('select[id$="-category"], select[id$="-status"]');
+  
+  categorySelects.forEach(select => {
+    // Проверяем, не создан ли уже контейнер для этого select
+    if (select.previousElementSibling && select.previousElementSibling.classList.contains('category-select-container')) {
+      return; // Пропускаем, если контейнер уже существует
+    }
+
+    // Создаем контейнер для кнопки
+    const container = document.createElement('div');
+    container.className = 'category-select-container';
+
+    // Создаем кнопку
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'category-select-button';
+    button.textContent = select.options[select.selectedIndex]?.text || 'Выберите категорию';
+
+    // Создаем скрытый input для хранения значения
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'category';
+    hiddenInput.value = select.value;
+
+    // Добавляем обработчик клика на кнопку
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Находим ближайший bottom-sheet
+      const currentSheet = select.closest('.bottom-sheet');
+      if (currentSheet && !currentSheet.classList.contains('hidden')) {
+        openCategorySheet(currentSheet);
+      } else {
+        console.error('No visible bottom sheet found');
+      }
+    });
+
+    // Добавляем элементы в контейнер
+    container.appendChild(button);
+    container.appendChild(hiddenInput);
+
+    // Вставляем контейнер перед select
+    select.parentNode.insertBefore(container, select);
+
+    // Скрываем оригинальный select
+    select.style.display = 'none';
+  });
 }

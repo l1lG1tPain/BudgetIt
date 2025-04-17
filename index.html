@@ -46,6 +46,17 @@
     <button id="close-budget-sheet">Закрыть</button>
   </div>
 
+  <!-- Bottom-sheet для выбора категорий -->
+  <div id="category-sheet" class="bottom-sheet hidden">
+    <div class="category-sheet-header">
+      <h2>Выберите категорию</h2>
+      <button class="close-category-sheet">✕</button>
+    </div>
+    <div class="category-list">
+      <!-- Категории будут добавлены динамически -->
+    </div>
+  </div>
+
   <!-- Хедер -->
   <header>
     <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
@@ -308,7 +319,7 @@
   
     <!-- Информация о версии, авторе и т.д. -->
     <div class="settings-info">
-      <p><strong>Версия:</strong> 2.6</p>
+      <p><strong>Версия:</strong> 2.6b</p>
       <p><strong>Автор:</strong> l1lG1tPain</p>
       <p><strong>Telegram:</strong> 
         <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
