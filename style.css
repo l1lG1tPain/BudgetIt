@@ -552,9 +552,7 @@ button {
   left: 0;
   bottom: 0;
   width: 100%;
-  height: 90%; /* Задаём 80% высоты */
   background: var(--tertiary-color);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
   box-shadow: 0 -2px 25px rgba(0, 0, 0, 0.9);
   padding: 20px;
   z-index: 1500;
