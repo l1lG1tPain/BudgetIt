@@ -321,7 +321,7 @@ function updateUI() {
     }, 0);
 
   // Начальный бюджет (до учёта долгов)
-  let overallBudget = totalIncome - totalExpense + totalDeposit;
+  let overallBudget = totalIncome - totalExpense - totalDeposit;
 
   // Считаем «объём» активных долгов + корректируем бюджет
   let totalDebt = 0; 
