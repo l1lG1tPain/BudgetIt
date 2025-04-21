@@ -1376,34 +1376,71 @@ function openCategorySheet(currentSheet) {
   // Очищаем список категорий
   categoryList.innerHTML = '';
 
-  // Добавляем категории из select
-  Array.from(currentSelect.options).forEach(option => {
-    if (option.value) { // Пропускаем пустые опции
+ // Добавляем категории с раскрывающимися optgroup
+Array.from(currentSelect.children).forEach(child => {
+  if (child.tagName === 'OPTGROUP') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'optgroup-wrapper';
+
+    // Заголовок группы
+    const groupLabel = document.createElement('div');
+    groupLabel.className = 'category-group-label dropdown-toggle';
+    groupLabel.textContent = `▶ ${child.label}`;
+    wrapper.appendChild(groupLabel);
+
+    // Контейнер опций
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'group-options hidden';
+
+    // Добавляем option в контейнер
+    Array.from(child.children).forEach(option => {
+      if (!option.value) return;
       const li = document.createElement('li');
       li.className = 'category-item';
       li.textContent = option.text;
       li.addEventListener('click', () => {
-        // Обновляем значение select
         currentSelect.value = option.value;
-        
-        // Обновляем текст кнопки
+
         const button = activeForm.querySelector('.category-select-button');
-        if (button) {
-          button.textContent = option.text;
-        }
-        
-        // Обновляем значение скрытого input
+        if (button) button.textContent = option.text;
+
         const hiddenInput = activeForm.querySelector('input[type="hidden"][name="category"]');
-        if (hiddenInput) {
-          hiddenInput.value = option.value;
-        }
-        
-        // Скрываем только bottom-sheet с категориями, не трогаем backdrop
+        if (hiddenInput) hiddenInput.value = option.value;
+
         document.getElementById('category-sheet').classList.add('hidden');
       });
-      categoryList.appendChild(li);
-    }
-  });
+      optionsContainer.appendChild(li);
+    });
+
+    // Клик по заголовку — сворачивает/разворачивает
+    groupLabel.addEventListener('click', () => {
+      const isHidden = optionsContainer.classList.contains('hidden');
+      optionsContainer.classList.toggle('hidden', !isHidden);
+      groupLabel.textContent = `${isHidden ? '▼' : '▶'} ${child.label}`;
+    });
+
+    wrapper.appendChild(optionsContainer);
+    categoryList.appendChild(wrapper);
+
+  } else if (child.tagName === 'OPTION' && child.value) {
+    const li = document.createElement('li');
+    li.className = 'category-item';
+    li.textContent = child.text;
+    li.addEventListener('click', () => {
+      currentSelect.value = child.value;
+
+      const button = activeForm.querySelector('.category-select-button');
+      if (button) button.textContent = child.text;
+
+      const hiddenInput = activeForm.querySelector('input[type="hidden"][name="category"]');
+      if (hiddenInput) hiddenInput.value = child.value;
+
+      document.getElementById('category-sheet').classList.add('hidden');
+    });
+    categoryList.appendChild(li);
+  }
+});
+
 
   // Показываем backdrop и bottom-sheet с категориями
   const backdrop = document.getElementById('bottom-sheet-backdrop');

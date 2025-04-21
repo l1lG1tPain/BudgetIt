@@ -2,7 +2,7 @@
     "name": "BudgetIt",
     "short_name": "BudgetIt",
     "start_url": "/",
-    "version": "2.6d",
+    "version": "2.6e",
     "display": "standalone",
     "background_color": "#2be82a",
     "theme_color": "#2be82a",
