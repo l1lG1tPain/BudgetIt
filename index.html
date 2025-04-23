@@ -60,11 +60,13 @@
   <!-- Хедер -->
   <header>
     <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
-    <button id="settings-btn">⚙️</button>
+    <button id="settings-btn">🔧</button>
   </header>
 
   <!-- Основной контент -->
   <main>
+    <div id="currency-chips-placeholder"></div>
+
     <!-- Блоки суммарной информации -->
     <div id="summary-blocks">
       <!-- Блок Бюджет – 100% ширины -->
@@ -728,7 +730,7 @@
   
     <!-- Информация о версии, авторе и т.д. -->
     <div class="settings-info">
-      <p><strong>Версия:</strong> 2.6e</p>
+      <p><strong>Версия:</strong> 2.6f</p>
       <p><strong>Автор:</strong> l1lG1tPain</p>
       <p><strong>Telegram:</strong> 
         <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
@@ -747,10 +749,13 @@
     <div class="banner-carousel">
       <div class="slides-container">
         <div class="banner-slide">
-          <img src="assets/banner3.jpg" alt="Баннер 3"/>
+          <img src="assets/banner4.jpg" alt="Баннер 4"/>
         </div>
         <div class="banner-slide" data-link="https://l1lg1tpain.github.io/TrackIt/index.html">
           <img src="assets/banner2.jpg" alt="Баннер 2"/>
+        </div>
+        <div class="banner-slide">
+          <img src="assets/banner3.jpg" alt="Баннер 3"/>
         </div>
         <div class="banner-slide">
           <img src="assets/banner1.jpg" alt="Баннер 1"/>
@@ -761,30 +766,71 @@
     </div>
     
     <!-- Блок аналитики (можно разместить таблицы, графики и т.д.) -->
-    <div class="analytics-section">
-      <h3>Аналитика</h3>
+    <section class="analytics-section">
+      <h3 class="analytics-title">Аналитика</h3>
       <div class="analytics-carousel">
         <div class="analytics-slides-container">
+  
+          <!-- 1: Расходы по категориям -->
           <div class="analytics-slide">
             <h4>Расходы по категориям</h4>
             <canvas id="expensesByCategoryChart"></canvas>
+            <div id="expensesByCategoryCenterText"></div>
           </div>
+  
+          <!-- 2: Доходы/Расходы — месяц за месяцем -->
           <div class="analytics-slide">
-            <h4>Ежемесячные расходы и доходы</h4>
+            <h4>Доходы / Расходы — месяц за месяцем</h4>
             <canvas id="monthlyExpensesChart"></canvas>
           </div>
+  
+          <!-- 3: Соотношение доходов и расходов -->
           <div class="analytics-slide">
-            <h4>Доходы vs Расходы</h4>
+            <h4>Соотношение доходов и расходов</h4>
             <canvas id="incomeVsExpensesChart"></canvas>
           </div>
+  
+          <!-- 4: Топ расходов -->
           <div class="analytics-slide">
             <h4>Топ расходов</h4>
             <canvas id="topExpensesChart"></canvas>
           </div>
+  
+          <!-- 5: Динамика баланса -->
+          <div class="analytics-slide">
+            <h4>Динамика баланса</h4>
+            <canvas id="balanceDynamicsChart"></canvas>
+          </div>
+  
+          <!-- 6: Категории по убыванию -->
+          <div class="analytics-slide">
+            <h4>Категории по убыванию</h4>
+            <canvas id="categoriesByDescendingChart"></canvas>
+          </div>
+  
+          <!-- 7: История категории -->
+          <div class="analytics-slide">
+            <h4>История категории</h4>
+            <canvas id="categoryHistoryChart"></canvas>
+          </div>
+  
+          <!-- 9: Психопортрет трат -->
+          <div class="analytics-slide">
+            <h4>Бар-чарт по дням недели 📅</h4>
+            <!-- Психопортрет трат: дни недели -->
+            <canvas id="spendingByWeekdayChart" height="250"></canvas>
+          </div>
+          <div class="analytics-slide">
+            <h4>Pie-чарт по числу чеков в разных диапазонах 💳</h4>
+            <!-- Психопортрет трат: размер чека -->
+            <canvas id="spendingByAmountRangeChart" height="250"></canvas>
+          </div>
+  
         </div>
-        <div class="analytics-dots"></div>
+        
       </div>
-    </div>
+      <div class="analytics-dots"></div>
+    </section>
   
     <!-- Блок для будущих дополнительных кнопок или элементов -->
     <div class="extra-buttons-container">
@@ -837,7 +883,9 @@
   <script src="app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="charts.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="widgets/charts.js"></script>
+  <script src="widgets/currencyChips.js" defer></script>
 
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };

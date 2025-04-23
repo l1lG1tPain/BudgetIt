@@ -13,11 +13,22 @@
   --accent-color:    #dbe4db;
   --main-ground:     #f8f9fa;
 
+  --an-primary-color:    #2be82a;
+  --an-income-color:     #2aace8;
+  --an-expense-color:    #e82b2a;
+  --an-debt-color:       #e8a22a;
+  --an-secondary-color:  #ffffff;
+  --an-tertiary-color:   #1f1f1f;
+  --an-accent-color:     #555;
+  --an-shadow-md:        0 4px 12px rgba(0,0,0,0.3);
+  --an-border-radius-md: 12px;
+
+
   /* Размеры и отступы */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
+  --spacing-md: 14px; /* было 16 */
+  --spacing-lg: 20px;
   --spacing-xl: 32px;
   
   /* Радиусы скругления */
@@ -270,7 +281,7 @@ header h1 {
 /* Основной контент */
 main {
   flex: 1;
-  padding: 90px 20px;
+  padding: 60px var(--spacing-md) 90px;
   overflow-y: auto;
 }
 
@@ -376,6 +387,7 @@ main {
   background: var(--tertiary-color);
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  
 }
 
 /* Стили форм в bottom-sheet */
@@ -554,7 +566,7 @@ button {
   width: 100%;
   background: var(--tertiary-color);
   box-shadow: 0 -2px 25px rgba(0, 0, 0, 0.9);
-  padding: 20px;
+  padding: var(--spacing-md);
   z-index: 1500;
   overflow-y: auto;      /* Чтобы контент прокручивался, если его слишком много */
   transform: translateY(100%);
@@ -649,105 +661,95 @@ button {
 /* =================================== */
 
 .analytics-section {
-  width: 100%;
-  height: 500px;           /* можно подкорректировать под желаемую высоту */
-  padding: 5px 5px 25px;
-  background: var(--tertiary-color);
-  border-radius: var(--border-radius-md);
-  /* box-shadow: var(--shadow-sm); */
+  background: var(--an-tertiary-color);
+  border-radius: var(--an-border-radius-md);
+  box-shadow: var(--an-shadow-md);
+  color: var(--an-secondary-color);
+  padding: 12px;
+  max-width: 960px;
+  margin: 40px auto;
   overflow: hidden;
 }
-
-/* Контейнер карусели */
+.analytics-title {
+  text-align: center;
+  color: var(--an-primary-color);
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+}
 .analytics-carousel {
   position: relative;
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  height: 500px;
   overflow: hidden;
 }
-
-/* Контейнер со слайдами */
 .analytics-slides-container {
   display: flex;
-  width: 100% !important;  /* ровно 100%, не более */
   height: 100%;
   transition: transform 0.5s ease;
+  touch-action: pan-y;
+  cursor: grab;
 }
-
-/* Каждый слайд */
+.analytics-slides-container:active {
+  cursor: grabbing;
+}
 .analytics-slide {
-  flex: 0 0 100%;          /* ровно ширина контейнера */
+  flex: 0 0 100%;
   box-sizing: border-box;
-  padding: 40px;            /* отступы внутри слайда */
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
-
-/* Заголовок внутри слайда */
 .analytics-slide h4 {
-  margin-bottom: 20px;
-  color: var(--secondary-color);
+  margin: 0 0 12px;
   font-size: 1.3rem;
   font-weight: 500;
   text-align: center;
 }
-
-/* Сам график */
 .analytics-slide canvas {
-  width: 100% !important;   
-  height: calc(100% - 60px) !important; /* вычитаем высоту заголовка + отступ */
-  max-height: 100% !important;
-  background: var(--tertiary-color);
-  border-radius: var(--border-radius-lg);
-  /* box-shadow: var(--shadow-md); */
+  width: 100% !important;
+  height: calc(100% - 40px) !important;
+  background: var(--an-tertiary-color);
+  border-radius: var(--an-border-radius-md);
 }
-
-/* Точки-индикаторы */
 .analytics-dots {
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
+  position: relative;
+  bottom: 0;
+  left: 75%;
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
 }
-
 .analytics-dots .dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--accent-color);
+  background: var(--an-accent-color);
+  transition: background-color 0.3s, box-shadow 0.3s;
   cursor: pointer;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
-
 .analytics-dots .dot.active {
-  background: var(--primary-color);
-  box-shadow: 0 0 6px var(--primary-color);
+  background: var(--an-primary-color);
+  box-shadow: 0 0 6px var(--an-primary-color);
 }
-
-/* Центр Doughnut‑чарта */
+/* Центр doughnut */
 #expensesByCategoryCenterText {
   position: absolute;
   top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  text-align: center;
+  transform: translate(-50%, -50%);
   pointer-events: none;
+  text-align: center;
 }
-
 #expensesByCategoryCenterText .center-total {
-  font-size: 1.8rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
   color: var(--primary-color);
+  margin-top: -50px;
 }
-
 #expensesByCategoryCenterText .center-label {
   font-size: 1rem;
-  color: var(--secondary-color);
+  color: var(--an-secondary-color);
 }
-
 
 /* Блок для дополнительных кнопок */
 .extra-buttons-container {
@@ -825,12 +827,12 @@ footer {
 }
 #add-btn {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   background: var(--secondary-color);
   color: var(--tertiary-color);
   border: none;
   /* border-radius: 80%; */
-  width: 90%;
+  width: 93%;
   height: 40px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: pointer;
@@ -1411,3 +1413,82 @@ select {
   margin-top: 0.25em;
 }
 
+
+.currency-chip-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.currency-chip-container::-webkit-scrollbar {
+  display: none; /* Chrome */
+}
+
+
+.currency-chip {
+  background-color: var(--secondary-color);
+  color: #fff;
+  border-radius: var(--border-radius-md);
+  padding: 6px 10px;
+  min-width: 140px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.75em;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.currency-chip:hover {
+  transform: scale(1.03);
+}
+
+.chip-info {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.chip-value {
+  font-weight: bold;
+  font-size: 1.05em;
+  margin-bottom: 3px;
+}
+
+.chip-body {
+  display: flex;
+  /* flex-direction: column; */
+  align-items: center;
+  width: 100%;
+}
+
+.trend-up {
+  color: var(--primary-color);
+}
+
+.trend-down {
+  color: var(--an-expense-color);
+}
+
+.trend-graph {
+  width: 100%;
+  height: 30px;
+  margin-bottom: 8px;
+}
+
+.chip-update-time {
+  margin-top: -16px;
+  font-size: 0.75em;
+  color: #888;
+  text-align: right;
+  padding-right: 10px;
+}

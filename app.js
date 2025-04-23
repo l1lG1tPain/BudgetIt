@@ -427,23 +427,25 @@ function updateTransactionList(transactions) {
     }
 
     li.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <strong>${getTypeName(t.type)}: </strong>${t.category || t.name}${debtTag}
-        </div>
-        <div style="font-weight: bold;">${amountSign}${formatNumber(t.amount)}</div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap;">
+      <div style="max-width: 75%; overflow: hidden; word-break: break-word;">
+        <strong>${getTypeName(t.type)}: </strong>${t.category || t.name}${debtTag}
       </div>
-      <div style="font-size: 0.8em; color: gray; text-align: right;">
-        ${formatDate(t.date)}
+      <div style="font-weight: bold; white-space: nowrap; margin-left: 10px;">
+        ${amountSign}${formatNumber(t.amount)}
       </div>
-      ${
-        t.type === 'debt'
-          ? t.paid
-            ? `<span style="color: green; font-weight: bold;">✅ Оплачено</span>`
-            : `<button class="pay-debt" data-id="${t.id}">Оплатить</button>`
-          : ''
-      }
-    `;
+    </div>
+    <div style="font-size: 0.8em; color: gray; text-align: right;">
+      ${formatDate(t.date)}
+    </div>
+    ${
+      t.type === 'debt'
+        ? t.paid
+          ? `<span style="color: green; font-weight: bold;">✅ Оплачено</span>`
+          : `<button class="pay-debt" data-id="${t.id}">Оплатить</button>`
+        : ''
+    }
+  `;
 
     // Переход к деталям по клику на элемент
     li.addEventListener('click', () => openTransactionDetail(t));
