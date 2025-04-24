@@ -1197,6 +1197,7 @@ main::-webkit-scrollbar-thumb {
   font-size: 1rem;
   min-height: 3.5em;
   font-weight: 700;
+  transition: opacity 0.3s ease;
 }
 
 
