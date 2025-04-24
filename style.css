@@ -424,6 +424,8 @@ main {
   color: var(--tertiary-color);
 }
 
+
+
 /* Стили для списка товаров */
 #products-list .product-item {
   display: flex;
@@ -1338,10 +1340,10 @@ main::-webkit-scrollbar-thumb {
   padding: 12px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background-color: white;
+  background: var(--accent-color) !important;
   text-align: left;
   font-size: 16px;
-  color: #333;
+  /* color: var(--tertiary-color) !important; */
   cursor: pointer;
   transition: border-color 0.2s;
   appearance: none;
@@ -1355,8 +1357,8 @@ main::-webkit-scrollbar-thumb {
 }
 
 .category-select-button:hover {
-  border-color: #2196F3;
-  background-color: #f5f5f5;
+  color: var(--tertiary-color) !important;
+  background: var(--secondary-color) !important;
 }
 
 .category-select-button:focus {
