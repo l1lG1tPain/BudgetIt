@@ -864,14 +864,48 @@
   <button id="install-btn" style="display: none;">Установить приложение</button>
 
   <div id="loading-screen">
-    <img src="assets/BudgetIt ava-v2.3-min.jpg" alt="BudgetItIcon" width="192" height="192">
+    <img src="assets/BudgetIt ava-v2.3-min.jpg" alt="BudgetItIcon" width="220" height="220">
     <div class="loader"></div>
-    <p>Загрузка BudgetIt...</p>
+    <p id="loading-text">Загрузка BudgetIt...</p>
   </div>
   <script>
-    window.onload = function() {
+    const loadingMessages = [
+      "Финансовая магия в процессе...",
+      "Шифруем расходы на шаверму...",
+      "Вычитаем кофе из бюджета...",
+      "Настраиваем бюджетные чипы...",
+      "Оптимизируем подписки, которые вы забыли отключить...",
+      "Собираем монетки...",
+      "Проверяем, сколько вы уже должны...",
+      "Инициализация BudgetIt...",
+      "Анализируем ваши финансовые цели...",
+      "Подготовка аналитики и графиков...",
+      "Проверяем, сколько осталось до нищеты...",
+      "Шаманим бюджет через GPT...",
+      "Молимся на стабильный курс валют...",
+      "Финансовый гений просыпается...",
+      "Деньги не главное... но мы их всё равно считаем!",
+      "Заклинание +5 к экономии активировано...",
+      "Скрываем трату на шавуху от отчёта...",
+      "Расчехляем таблицы судьбы...",
+      "Финансовый джедай загружается...",
+      "Копим на мечту... или на пельмени, что раньше придёт.",
+      "Загружаем жабу, которая душит при каждом платеже...",
+      "Проверяем: донатил ли ты сегодня?",
+      "Подключаем тайный орден бухгалтеров...",
+      "Разогреваем калькулятор до боевой температуры...",
+      "Уравновешиваем бюджет силой йоги и отчаяния..."
+    ];
+  
+    window.onload = function () {
+      // Ставим рандомное сообщение
+      const randomMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+      const textElement = document.getElementById('loading-text');
+      if (textElement) textElement.textContent = randomMessage;
+  
+      // Анимация скрытия экрана загрузки
       setTimeout(() => {
-        let loader = document.getElementById('loading-screen');
+        const loader = document.getElementById('loading-screen');
         loader.style.opacity = '0';
         loader.style.transition = 'opacity 0.5s ease-out';
         setTimeout(() => { loader.style.display = 'none'; }, 500);
