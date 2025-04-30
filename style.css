@@ -55,6 +55,20 @@
   --z-index-loading: 9999;
 }
 
+/* Эффект нажатия для всех button, .chip-btn, .category-item и других интерактивных элементов */
+button:active,
+.chip-btn:active,
+.category-item:active,
+.delete-budget-btn:active,
+.close-category-sheet:active {
+  /* небольшое уменьшение размера */
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+  /* быстрый откат */
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+
 /* Темная тема */
 [data-theme="dark"] {
   --secondary-color: #ffffff;
@@ -185,7 +199,7 @@ button:hover {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 1.5px solid var(--primary-color);
+  outline: 1.5px solid var(--secondary-color);
 }
 
 
@@ -252,13 +266,6 @@ textarea:focus {
   transform: translateY(0);
   opacity: 1;
 }
-
-/* Класс .hidden НЕ должен устанавливать display: none */
-.hidden {
-  pointer-events: none;
-}
-
-
 
 /* Хедер */
 header {
@@ -345,7 +352,7 @@ main {
   width: 80%;
   padding: 8px 10px;
   border: 2px solid var(--secondary-color);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   background: #f4f4f4;
   cursor: pointer;
 }
@@ -356,7 +363,7 @@ main {
   right: 0;
   background: var(--tertiary-color);
   border: 2px solid var(--secondary-color);
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
   border-top: none;
   max-height: 150px;
   overflow-y: auto;
@@ -365,6 +372,7 @@ main {
   padding: 0;
   margin: 0;
   width: 80%;
+  font-weight: 700;
 }
 #month-filter-container ul li {
   padding: 8px 10px;
@@ -456,7 +464,7 @@ main {
 #budget-switch-sheet .budget-add input {
   flex: 1;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--secondary-color);
   border-radius: 8px;
 }
 #budget-form {
@@ -478,7 +486,7 @@ main {
   width: 100%;
 }
 
-#pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button, #cancel-delete-budget, #confirm-delete-budget{
+#pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #export-btn, #import-label, #close-settings, #budget-form button, #cancel-delete-budget, #confirm-delete-budget, #pay-debt-detail{
   color: var(--tertiary-color);
   font-weight: bolder;
   font-size: 16px;
@@ -488,7 +496,7 @@ main {
   background: var(--secondary-color) !important;
 }
 
-#pay-debt, #delete-transaction, #confirm-delete-budget, #cancel-delete-budget{
+#pay-debt, #delete-transaction, #confirm-delete-budget, #cancel-delete-budget, #pay-debt-detail{
   width: 49%;
 }
 
@@ -604,7 +612,7 @@ button {
   color: #333;
 }
 .settings-info a {
-  color: #007bff;
+  color: var(--deposit-color);
   text-decoration: none;
 }
 .settings-info a:hover {
@@ -655,102 +663,6 @@ button {
   width: 100%; height: 100%;
   opacity: 0; /* file-элемент невидим, но кликабелен */
   cursor: pointer;
-}
-
-
-/* =================================== */
-/* Стили для раздела «Аналитика» */
-/* =================================== */
-
-.analytics-section {
-  background: var(--an-tertiary-color);
-  border-radius: var(--an-border-radius-md);
-  box-shadow: var(--an-shadow-md);
-  color: var(--an-secondary-color);
-  padding: 12px;
-  max-width: 960px;
-  margin: 40px auto;
-  overflow: hidden;
-}
-.analytics-title {
-  text-align: center;
-  color: var(--an-primary-color);
-  font-size: 1.8rem;
-  margin-bottom: 16px;
-}
-.analytics-carousel {
-  position: relative;
-  width: 100%;
-  height: 500px;
-  overflow: hidden;
-}
-.analytics-slides-container {
-  display: flex;
-  height: 100%;
-  transition: transform 0.5s ease;
-  touch-action: pan-y;
-  cursor: grab;
-}
-.analytics-slides-container:active {
-  cursor: grabbing;
-}
-.analytics-slide {
-  flex: 0 0 100%;
-  box-sizing: border-box;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.analytics-slide h4 {
-  margin: 0 0 12px;
-  font-size: 1.3rem;
-  font-weight: 500;
-  text-align: center;
-}
-.analytics-slide canvas {
-  width: 100% !important;
-  height: calc(100% - 40px) !important;
-  background: var(--an-tertiary-color);
-  border-radius: var(--an-border-radius-md);
-}
-.analytics-dots {
-  position: relative;
-  bottom: 0;
-  left: 75%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-}
-.analytics-dots .dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--an-accent-color);
-  transition: background-color 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-}
-.analytics-dots .dot.active {
-  background: var(--an-primary-color);
-  box-shadow: 0 0 6px var(--an-primary-color);
-}
-/* Центр doughnut */
-#expensesByCategoryCenterText {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  text-align: center;
-}
-#expensesByCategoryCenterText .center-total {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-top: -50px;
-}
-#expensesByCategoryCenterText .center-label {
-  font-size: 1rem;
-  color: var(--an-secondary-color);
 }
 
 /* Блок для дополнительных кнопок */
@@ -805,16 +717,23 @@ button {
 /* Кнопка установки приложения */
 #install-btn {
   position: fixed;
-  bottom: 20px;
+  bottom: 40px;
   right: 20px;
   padding: 10px 20px;
   background: var(--primary-color);
-  color: var(--tertiary-color);
+  color: var(--secondary-color);
   border: none;
   border-radius: 8px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.801);
+}
+
+#install-btn:hover {
+  background-color: var(--secondary-color);
+  color: var(--accent-color);
+
 }
 
 /* Футер (кнопка +) */
@@ -1003,7 +922,7 @@ main::-webkit-scrollbar-thumb {
 .modal-content {
   background: #fff;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: var(--border-radius-md);
   width: 90%;
   max-width: 400px;
   text-align: center;
@@ -1027,6 +946,79 @@ main::-webkit-scrollbar-thumb {
   font-size: 16px;
   transition: background 0.2s;
 }
+
+.pay-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Стили для каждой кнопки */
+.pay-modal-buttons button {
+  /* padding: 12px 16px; */
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.15s ease;
+}
+
+/* Полная оплата — зелёная кнопка */
+#pay-debt-confirm {
+  background-color: var(--primary-color);
+  color: #000;
+}
+
+#pay-debt-confirm:hover {
+  background-color: var(--secondary-color);
+  color: var(--accent-color);
+  transform: scale(1.02);
+}
+
+/* Частичная — оранжевая */
+#pay-debt-part {
+  background-color: #ffa726;
+  color: #000;
+}
+
+#pay-debt-part:hover {
+  background-color: #fb8c00;
+  transform: scale(1.02);
+}
+
+/* Отмена — нейтральная/серая */
+#cancel-debt-pay {
+  background-color: #ccc;
+  color: #333;
+}
+
+#cancel-debt-pay:hover {
+  background-color: #bbb;
+  transform: scale(1.02);
+}
+
+#debt-pay-amount {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  border: 2px solid #888;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  color: #000;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+#debt-pay-amount:focus {
+  border-color: #2be82a;
+  background-color: #fff;
+}
+
 
 #confirm-delete-budget:hover {
   background: #c62828;
@@ -1063,6 +1055,7 @@ main::-webkit-scrollbar-thumb {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 700;
 }
 
 .delete-budget-btn {
@@ -1234,6 +1227,7 @@ main::-webkit-scrollbar-thumb {
 /* Месяц/год фильтр */
 #year-filter, #month-filter-input {
   padding:8px; border-radius:8px; border:2px solid var(--secondary-color);
+  font-weight: 600;
 }
 
 /* Контейнер для всего слайдера */
@@ -1278,6 +1272,7 @@ main::-webkit-scrollbar-thumb {
   background: var(--tertiary-color);
   border-radius: 16px 16px 0 0;
   padding: 20px;
+  height: 70vh;
   /* max-height: 60vh; */
   overflow-y: auto;
   z-index: 1200;
@@ -1321,11 +1316,54 @@ main::-webkit-scrollbar-thumb {
   padding: 5px;
 }
 
+/* Поисковое поле в выборке категорий */
+/* закрепляем шапку + поиск */
+.category-sheet-header,
+#category-search {
+  position: sticky;
+  top: 0; /* «прилипает» к верхней границе контейнера */
+  z-index: 10; /* выше списка, чтобы не перекрывался */
+  background: var(--tertiary-color); /* тот же фон, что и у листа */
+}
+
+/* маленький отступ между шапкой и поиском */
+#category-search {
+  margin: var(--spacing-sm) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+
+#category-search {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: 0 0 var(--spacing-md);
+  border: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius-md);
+  background: var(--tertiary-color);
+  color: var(--secondary-color);
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#category-search:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 2px rgba(43, 232, 42, 0.2);
+}
+
+#category-search::placeholder {
+  color: var(--accent-color);
+}
+
+
 .category-list {
   display: flex;
   flex-direction: column;
   /* gap: 10px; */
-  max-height: calc(60vh - 70px);
+  max-height: calc(70vh - 50px - 40px);
   overflow-y: auto;
   padding: 10px 0;
 }
@@ -1390,10 +1428,6 @@ main::-webkit-scrollbar-thumb {
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
-/* Скрываем системный select */
-select {
-  display: none !important;
-}
 
 .category-group-label {
   font-weight: bold;
@@ -1519,3 +1553,226 @@ select {
 }
 
 
+
+/* =================================== */
+/* Стили для раздела «Аналитика» */
+/* =================================== */
+
+.analytics-section {
+  background: var(--an-tertiary-color);
+  border-radius: var(--an-border-radius-md);
+  box-shadow: var(--an-shadow-md);
+  color: var(--an-secondary-color);
+  padding: 12px;
+  max-width: 960px;
+  /* margin: 40px auto; */
+  overflow: hidden;
+}
+.analytics-title {
+  text-align: center;
+  color: var(--an-primary-color);
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+}
+.analytics-carousel {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+}
+.analytics-slides-container {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s ease;
+  touch-action: pan-y;
+  cursor: grab;
+}
+.analytics-slides-container:active {
+  cursor: grabbing;
+}
+.analytics-slide {
+  flex: 0 0 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.analytics-slide h4 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+  font-weight: 500;
+  text-align: center;
+}
+.analytics-slide canvas {
+  .analytics-slide canvas {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1; /* всегда квадрат */
+    max-height: 400px; /* <-- ограничим максимум */
+    background: var(--an-tertiary-color);
+    border-radius: var(--an-border-radius-md);
+  }
+  
+}
+.analytics-dots {
+  position: relative;
+  bottom: 0;
+  left: 75%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+.analytics-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--an-accent-color);
+  transition: background-color 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+.analytics-dots .dot.active {
+  background: var(--an-primary-color);
+  box-shadow: 0 0 6px var(--an-primary-color);
+}
+/* Центр doughnut */
+#expensesByCategoryCenterText {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-align: center;
+}
+#expensesByCategoryCenterText .center-total {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: -50px;
+}
+#expensesByCategoryCenterText .center-label {
+  font-size: 1rem;
+  color: var(--an-secondary-color);
+}
+
+/* Стили для фильтра аналитики */
+#analytics-filter {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+#analytics-filter label {
+  font-size: 1rem;
+  color: var(--tertiary-color);
+  margin-right: 10px;
+}
+
+#analytics-month-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  width: 100%;
+  max-width: 220px; /* фиксируем размер, чтобы не сжимался */
+  display: block; /* чтобы растянуть */
+  margin: 8px auto; /* центрируем */
+
+  padding: 8px 12px;
+  background-color: var(--dark-color);
+  color: var(--tertiary-color);
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+#analytics-month-select:hover {
+  background-color: #2a2a2a;
+  border-color: var(--primary-color);
+}
+
+#analytics-month-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px var(--primary-color);
+}
+
+.custom-select {
+  position: relative;
+  width: 90%;
+  margin: 8px auto;
+  font-family: inherit;
+  color: var(--tertiary-color);
+}
+
+.custom-select-button {
+  background-color: var(--dark-color);
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.custom-select-button:hover {
+  background-color: #2a2a2a;
+  border-color: var(--primary-color);
+}
+
+.custom-select-options {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  right: 0;
+  background-color: var(--dark-color);
+  border: 1px solid var(--accent-color);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.custom-select-options div {
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.custom-select-options div:hover {
+  background-color: var(--primary-color);
+  color: var(--dark-color);
+}
+
+
+/* Общий стиль текста ошибки */
+.inline-error-message {
+  color: var(--expense-color);
+  font-size: 0.85em;
+  margin-top: 4px;
+  font-family: 'Poppins', sans-serif;
+  animation: fadeIn 0.3s ease-out;
+}
+
+
+/* Красная рамка для кастомной кнопки выбора категории */
+.category-select-button.error {
+  border: 2px solid var(--an-expense-color);
+  border-radius: var(--border-radius-md);
+  background-color: rgba(255, 4, 0, 0.1);
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

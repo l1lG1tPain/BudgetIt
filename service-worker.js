@@ -1,6 +1,6 @@
 // === CONFIG ===
-const CACHE_VERSION = "budgetit-v2.6f";
-const CACHE_NAME = `budgetit-cache-v2.6f`;
+const CACHE_VERSION = "budgetit-v2.8.1";
+const CACHE_NAME = `budgetit-cache-v2.8.1`;
 const ASSETS = [
   "/", // Главная страница
   "/index.html",
