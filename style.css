@@ -254,8 +254,6 @@ textarea:focus {
   overflow-y: auto;
   z-index: var(--z-index-bottom-sheet);
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  clip-path: inset(0 round var(--border-radius-lg) var(--border-radius-lg) 0 0);
   
   transform: translateY(100%);
   opacity: 0;
