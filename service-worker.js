@@ -1,14 +1,14 @@
 // === CONFIG ===
-const CACHE_VERSION = "budgetit-v2.8.1";
-const CACHE_NAME = `budgetit-cache-v2.8.1`;
+const CACHE_VERSION = "budgetit-v2.9.0";
+const CACHE_NAME = `budgetit-cache-v2.9.0`;
 const ASSETS = [
   "/", // Главная страница
   "/index.html",
   "/style.css",
   "/app.js",
-  "/manifest.json", // Манифест
-  "/assets/icon-192x192v2.3.png", // Иконки для PWA
-  "/assets/icon-512x512v2.3.png"
+  "/manifest.json?v=2.9.0", // Манифест с версией
+  "/assets/icon-192x192v2.9.png", // Иконки для PWA
+  "/assets/icon-512x512v2.9.png"
 ];
 
 // === INSTALL ===
@@ -18,7 +18,7 @@ self.addEventListener("install", (event) => {
       return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting(); // Активирует новый Service Worker сразу после установки
+  self.skipWaiting(); // Активирует новый Service Worker сразу
 });
 
 // === ACTIVATE ===
@@ -34,19 +34,16 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
+  self.clients.claim(); // 👈 Применяет SW ко всем вкладкам
 });
-
 
 // === FETCH ===
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // 1. Если ресурс есть в кэше, отдаем его
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
-
-      // 2. Если нет в кэше, пробуем загрузить из сети
       return fetch(event.request);
     })
   );

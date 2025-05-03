@@ -1,0 +1,644 @@
+:root {
+    --primary-color:  #2be82a;
+    --income-color:   #2aace8;
+    --expense-color:  #e82b2a;
+    --deposit-color:  #8a2be2;
+    --debt-color:     #e8a22a;
+  
+    --secondary-color: #000000;
+    --tertiary-color:  #ffffff;
+    --dark-color:      #000000;
+    --accent-color:    #dbe4db;
+    --main-ground:     #f8f9fa;
+    --bg-secondary-color: #000000;
+  
+    /* Analytics (фикс: текст ≠ фон) */
+    --an-primary-color:    #2be82a;
+    --an-income-color:     #2aace8;
+    --an-expense-color:    #e82b2a;
+    --an-debt-color:       #e8a22a;
+    --an-secondary-color:  #111111;
+    --an-tertiary-color:   #ffffff;
+    --an-accent-color:     #555;
+    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.3);
+    --an-border-radius-md: 12px;
+  
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 14px;
+    --spacing-lg: 20px;
+    --spacing-xl: 32px;
+  
+    --border-radius-sm: 4px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+  
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.2);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.9);
+  
+    --transition-fast:   0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow:   0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  
+    --z-index-header:       900;
+    --z-index-backdrop:    1099;
+    --z-index-bottom-sheet:1100;
+    --z-index-modal:       1200;
+    --z-index-loading:     9999;
+  }
+  
+  :root[data-theme="dark"] {
+    --primary-color:  #2be82a;
+    --income-color:   #2aace8;
+    --expense-color:  #e82b2a;
+    --deposit-color:  #8a2be2;
+    --debt-color:     #e8a22a;
+  
+    --secondary-color:  #dcddde;
+    --bg-secondary-color: #000000;
+    --tertiary-color:   #2f3136;
+    --accent-color:     #292b2f;
+    --main-ground:      #111116;
+  
+    --shadow-sm:        0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md:        0 4px 8px rgba(0,0,0,0.5);
+    --shadow-lg:        0 -2px 25px rgba(0,0,0,0.8);
+  
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  #f0f0f0;
+    --an-tertiary-color:   #1e1e1e;
+    --an-accent-color:     var(--accent-color);
+  
+    #add-btn {
+      color: #FFFFFF;
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+    }
+  
+    #summary-blocks {
+      color: var(--bg-secondary-color);
+    }
+  }
+  
+  :root[data-theme="onyx"] {
+    --main-ground:    #1c1c24;
+    --tertiary-color: #0C0C0E;
+    --accent-color:   #1E1E20;
+    --sidebar-bg:     #000000;
+  
+    --secondary-color: #FFFFFF;
+    --text-muted:      #aaafb9;
+    --bg-secondary-color: #000000;
+  
+    --primary-color:  #5865F2;
+    --income-color:   #2aace8;
+    --expense-color:  #ed4245;
+    --deposit-color:  #8a2be2;
+    --debt-color:     #e8a22a;
+  
+    --dark-color:      #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
+  
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   #111111;
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      color: #000000;
+      background-color: var(--secondary-color);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+    }
+  }
+  
+  :root[data-theme="ramilka"] {
+    --main-ground:        #696969;
+    --sidebar-bg:         #000000;
+    --bg-secondary:       #696969;
+    --tertiary-color:     #BC8F8F;
+    --accent-color:       #AFEEEE;
+  
+    --text-primary:       #FFFFFF;
+    --text-muted:         #AAAFB9;
+  
+    --card-color-1:       #6B8E23;
+    --card-color-2:       #BDB76B;
+    --card-color-3:       #87CEEB;
+    --card-color-4:       #E6E6FA;
+    --card-color-5:       #DDA0DD;
+  
+    --teal-accent:        #AFEEEE;
+    --rosy-brown-accent:  #BC8F8F;
+  
+    --primary-color:      var(--card-color-1);
+    --income-color:       var(--card-color-2);
+    --expense-color:      var(--card-color-3);
+    --deposit-color:      var(--card-color-4);
+    --debt-color:         var(--card-color-5);
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
+  
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  #000000;
+    --an-tertiary-color:   #ffffff;
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      background-color: var(--text-primary);
+      color:            var(--dark-color);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--text-primary);
+    }
+
+    #month-filter-input {
+        background-color: var(--card-color-2);
+        color: #000;
+    }
+
+    #detail-debt-progress {
+        background-color: var(--card-color-1);
+    }
+
+    .currency-chip {
+        background: #778899;
+    }
+  }
+  
+  :root[data-theme="shark"] {
+    --main-ground:    #0d0d0d;
+    --tertiary-color: #1a1a1a;
+    --accent-color:   #561b2f; /* Бордовая кофточка */
+    --sidebar-bg:     #000000;
+  
+    --secondary-color: #e0e0e0;
+    --text-muted:      #888888;
+    --bg-secondary-color: #0d0d0d;
+  
+    --primary-color:  #00ff66;  /* Яркий зелёный акцент */
+    --income-color:   #00c87f;
+    --expense-color:  #ff4c4c;
+    --deposit-color:  #8e44ad;
+    --debt-color:     #e67e22;
+  
+    --dark-color:      #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.6);
+    --shadow-lg: 0 -2px 25px rgba(0,255,102,0.3);
+  
+    /* Аналитика */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(0,255,102,0.3);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn, #add-budget-btn {
+      background-color: var(--primary-color);
+      color: #000000;
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select, .close-category-sheet {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    }
+
+    #summary-blocks, button {
+        color: #000;
+    }
+
+    .category-select-button {
+        color: var(--secondary-color);
+    }
+
+    .chip-btn {
+        color: #fff;
+    }
+    .chip-btn.active {
+        color: #000;
+    }
+
+
+    main {
+        background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
+        url('/assets/shark-pattern.png');
+        background-size: 300px 300px;
+        background-repeat: repeat;
+      }
+  }
+  
+  :root[data-theme="dolphin"] {
+    --main-ground:        #c2f0ff;      /* нежно-голубой фон */
+    --tertiary-color:     #ffffff;      /* карточки и блоки */
+    --accent-color:       #00c4cc;      /* яркий акцентный голубой */
+    --sidebar-bg:         #b2e9f3;
+  
+    --secondary-color:    #004d66;      /* текст на светлом фоне */
+    --text-muted:         #6b8a99;
+    --bg-secondary-color: #e0faff;
+  
+    --primary-color:      #00cc88;      /* зелёный (доходы/кнопки) */
+    --income-color:       #66e2af;
+    --expense-color:      #ff6666;
+    --deposit-color:      #a58fff;
+    --debt-color:         #ffaa55;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0, 77, 102, 0.1);
+    --shadow-md: 0 4px 8px rgba(0, 77, 102, 0.2);
+    --shadow-lg: 0 6px 20px rgba(0, 77, 102, 0.25);
+  
+    /* Аналитика */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(0, 77, 102, 0.2);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    /* Кнопки, поля, и фон */
+    #add-btn {
+      background-color: var(--primary-color);
+      color: #ffffff;
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    /* input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    } */
+
+    #month-filter-container {
+        color: var(--accent-color);
+    }
+  
+    main {
+      background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
+      url('/assets/dolphin-pattern.png'); /* Путь к твоему паттерну */
+      background-size: 300px;
+      background-repeat: repeat;
+      background-color: var(--main-ground);
+    }
+  }
+
+  :root[data-theme="cola"] {
+    --main-ground:        #8c1116;   /* более тёмный красный */
+    --tertiary-color:     #fff6f6;   /* мягкий светлый фон */
+    --accent-color:       #ffd633;   /* тёплый жёлтый */
+    --sidebar-bg:         #731014;
+  
+    --secondary-color:    #2a2a2a;   /* тёмный текст */
+    --text-muted:         #914848;
+    --bg-secondary-color: #b61a1f;
+  
+    --primary-color:      #dfded0;
+    --income-color:       #ffe066;
+    --expense-color:      #ff6b6b;
+    --deposit-color:      #c69cff;
+    --debt-color:         #ffc48a;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.4);
+  
+    /* Аналитика */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(255, 214, 51, 0.2);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      background-color: var(--accent-color);
+      color: var(--secondary-color);
+      box-shadow: var(--shadow-md);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    #month-filter-container {
+        color: var(--accent-color);
+    }
+  
+  
+    /* input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    }
+   */
+    main {
+      background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
+      url('assets/Cocacola-pattern.png');
+      background-size: 300px;
+      background-repeat: repeat;
+      background-color: var(--main-ground);
+    }
+  }
+
+  :root[data-theme="amethyst"] {
+    --main-ground:        #f2e1ae;  /* светлая пастель для фона */
+    --tertiary-color:     #b4a3d9;  /* карточки/блоки */
+    --accent-color:       #341c8c;  /* глубокий фиолетовый */
+    --sidebar-bg:         #9475bf;
+  
+    --secondary-color:    #341c8c;  /* основной текст */
+    --text-muted:         #657ebe;
+    --bg-secondary-color: #d9ccf2;
+  
+    --primary-color:      #9475bf;  /* для доходов */
+    --income-color:       #b4a3d9;
+    --expense-color:      #ed6a6a;
+    --deposit-color:      #657ebe;
+    --debt-color:         #f0c78e;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(52, 28, 140, 0.1);
+    --shadow-md: 0 4px 8px rgba(52, 28, 140, 0.2);
+    --shadow-lg: 0 6px 20px rgba(52, 28, 140, 0.3);
+  
+    /* Аналитика */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(52, 28, 140, 0.2);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      background-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    .currency-chip {
+        color: var(--bg-secondary-color);
+    }
+
+    #month-filter-input {
+        background-color: var(--income-color);
+    }
+
+    .category-select-button, .category-item {
+        color: var(--bg-secondary-color);
+    }
+
+    .chip-btn {
+        color: var(--income-color);
+    }
+    .chip-btn.active {
+        color: var(--bg-secondary-color);
+    }
+  
+    body {
+      background-color: var(--main-ground);
+      color: #000;
+    }
+  }
+  
+  :root[data-theme="grape"] {
+    --main-ground:        #0c080d;   /* тёмный глубокий фон */
+    --tertiary-color:     #1f1823;   /* карточки/блоки */
+    --accent-color:       #7a6284;   /* мягкий сиренево-розовый */
+    --sidebar-bg:         #382b3f;
+  
+    --secondary-color:    #e0d7e6;   /* светлый текст */
+    --text-muted:         #a098a8;
+    --bg-secondary-color: #211524;
+  
+    --primary-color:      #52425c;   /* основной фиолетовый */
+    --income-color:       #7a6284;
+    --expense-color:      #d95678;
+    --deposit-color:      #9571b5;
+    --debt-color:         #f8c48d;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(255,255,255,0.05);
+    --shadow-md: 0 4px 8px rgba(255,255,255,0.1);
+    --shadow-lg: 0 6px 20px rgba(0,0,0,0.4);
+  
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(255,255,255,0.08);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      background-color: var(--accent-color);
+      color: var(--tertiary-color);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    }
+  
+    body {
+      background-color: var(--main-ground);
+    }
+  }
+
+  :root[data-theme="blackberry"] {
+    --main-ground:        #040209;   /* глубокий ночной фон */
+    --tertiary-color:     #0c091c;   /* карточки, блоки */
+    --accent-color:       #595aad;   /* светлый фиолетово-синий */
+    --sidebar-bg:         #141333;
+  
+    --secondary-color:    #f1f1f1;   /* текст — светлый на фоне */
+    --text-muted:         #8e8ea0;
+    --bg-secondary-color: #141333;
+  
+    --primary-color:      #595aad;   /* кнопки и доходы */
+    --income-color:       #595aad;
+    --expense-color:      #a44d66;
+    --deposit-color:      #24245c;
+    --debt-color:         #d18bff;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(255,255,255,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 6px 20px rgba(0,0,0,0.6);
+  
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(255, 255, 255, 0.06);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn {
+      background-color: var(--primary-color);
+      color: var(--secondary-color);
+      box-shadow: var(--shadow-md);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    }
+  
+    main {
+        background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
+        url('assets/blackbberry-pattern.png');
+        background-size: 300px;
+        background-repeat: repeat;
+        background-color: var(--main-ground);
+      }
+      
+  }
+  
+  :root[data-theme="hookah"] {
+    --main-ground:        #0d3a3a;      /* глубокий тёмно-бирюзовый */
+    --tertiary-color:     #123c42;      /* карточки и элементы */
+    --accent-color:       #8e24aa;      /* фиолетовый акцент (шланг кальяна) */
+    --sidebar-bg:         #092d2d;
+  
+    --secondary-color:    #f0f0f0;      /* светлый текст */
+    --text-muted:         #a2bbc2;
+    --bg-secondary-color: #0f4646;
+  
+    --primary-color:      #00ff88;      /* зелёный $ акцент */
+    --income-color:       #00e676;
+    --expense-color:      #ff4d4d;
+    --deposit-color:      #64b5f6;
+    --debt-color:         #ffd54f;
+  
+    --dark-color:         #000000;
+  
+    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.6);
+  
+    /* Аналитика */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--tertiary-color);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        0 4px 12px rgba(0, 255, 136, 0.2);
+    --an-border-radius-md: var(--border-radius-md);
+  
+    #add-btn, #add-budget-btn {
+      background-color: var(--accent-color);
+      color: var(--secondary-color);
+      box-shadow: var(--shadow-md);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+  
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--secondary-color);
+      background-color: var(--tertiary-color);
+    }
+  
+    main {
+      background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
+      url('assets/hookah-pattern.png');
+      background-size: 420px;
+      background-repeat: repeat;
+      background-color: var(--main-ground);
+      
+    }
+  }
+  

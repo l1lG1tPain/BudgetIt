@@ -1,59 +1,4 @@
-:root {
-  /* Основные цвета */
-  --primary-color:  #2be82a;  /* Бюджет (яркий зелёный) */
-  --income-color:   #2aace8;  /* Доходы (свежий голубой) */
-  --expense-color:  #e82b2a;  /* Расходы (яркий красный) */
-  --deposit-color:  #8a2be2;  /* Вклады (насыщенный фиолетовый) */
-  --debt-color:     #e8a22a;  /* Долги (яркий оранжевый) */
-  
-  /* Базовые цвета */
-  --secondary-color: #000000;
-  --tertiary-color:  #ffffff;
-  --dark-color:      #171717;
-  --accent-color:    #dbe4db;
-  --main-ground:     #f8f9fa;
-
-  --an-primary-color:    #2be82a;
-  --an-income-color:     #2aace8;
-  --an-expense-color:    #e82b2a;
-  --an-debt-color:       #e8a22a;
-  --an-secondary-color:  #ffffff;
-  --an-tertiary-color:   #1f1f1f;
-  --an-accent-color:     #555;
-  --an-shadow-md:        0 4px 12px rgba(0,0,0,0.3);
-  --an-border-radius-md: 12px;
-
-
-  /* Размеры и отступы */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 14px; /* было 16 */
-  --spacing-lg: 20px;
-  --spacing-xl: 32px;
-  
-  /* Радиусы скругления */
-  --border-radius-sm: 4px;
-  --border-radius-md: 10px;
-  --border-radius-lg: 16px;
-  --border-radius-xl: 24px;
-  
-  /* Тени */
-  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 -2px 25px rgba(0, 0, 0, 0.9);
-  
-  /* Переходы */
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  
-  /* Z-index уровни */
-  --z-index-header: 900;
-  --z-index-backdrop: 1099;
-  --z-index-bottom-sheet: 1100;
-  --z-index-modal: 1200;
-  --z-index-loading: 9999;
-}
+@import './themes.css';
 
 /* Эффект нажатия для всех button, .chip-btn, .category-item и других интерактивных элементов */
 button:active,
@@ -66,20 +11,6 @@ button:active,
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
   /* быстрый откат */
   transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-
-/* Темная тема */
-[data-theme="dark"] {
-  --secondary-color: #ffffff;
-  --tertiary-color:  #1a1a1a;
-  --dark-color:      #e8e8e8;
-  --accent-color:    #2a2a2a;
-  --main-ground:     #121212;
-  
-  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 -2px 25px rgba(0, 0, 0, 0.8);
 }
 
 /* Стили для селектора темы */
@@ -272,7 +203,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--secondary-color);
+  background-color: var(--bg-secondary-color);
   color: var(--primary-color);
   padding: var(--spacing-sm) var(--spacing-md);
   position: fixed;
@@ -353,7 +284,7 @@ main {
   padding: 8px 10px;
   border: 2px solid var(--secondary-color);
   border-radius: var(--border-radius-md);
-  background: #f4f4f4;
+  background: var(--accent-color);
   cursor: pointer;
 }
 #month-filter-container ul {
@@ -565,6 +496,7 @@ button {
   font-size: 18px;
   margin-top: 5;
   padding: 0;
+  background: none;
 }
 
 /* Стили для страницы настроек */
@@ -602,14 +534,13 @@ button {
 .settings-header p {
   font-size: 0.95rem;
   line-height: 1.4;
-  color: #444; /* Можно другой цвет */
 }
 
 /* Блок "версия, автор, ссылка" */
 .settings-info p {
   margin: 4px 0;
   font-size: 0.95rem;
-  color: #333;
+
 }
 .settings-info a {
   color: var(--deposit-color);
@@ -749,7 +680,7 @@ footer {
 #add-btn {
   font-size: 16px;
   font-weight: 600;
-  background: var(--secondary-color);
+  background: var(--bg-secondary-color);
   color: var(--tertiary-color);
   border: none;
   /* border-radius: 80%; */
@@ -920,7 +851,7 @@ main::-webkit-scrollbar-thumb {
 
 /* Содержимое модального окна */
 .modal-content {
-  background: #fff;
+  background: var(--tertiary-color);
   padding: 20px;
   border-radius: var(--border-radius-md);
   width: 90%;
@@ -1151,8 +1082,8 @@ main::-webkit-scrollbar-thumb {
   left: 0;
   width: 100%;
   height: 100vh;
-  background: var(--primary-color);
-  color: var(--secondary-color);
+  background: var(--dark-color);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1168,7 +1099,7 @@ main::-webkit-scrollbar-thumb {
 .loader {
   width: 50px;
   height: 50px;
-  border: 5px solid var(--secondary-color);
+  border: 5px solid var(--primary-color);
   border-top: 5px solid transparent;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1432,7 +1363,7 @@ main::-webkit-scrollbar-thumb {
 .category-group-label {
   font-weight: bold;
   padding: 8px 12px;
-  background-color: #f3f3f3;
+  background-color: var(--accent-color);
   border-radius: 6px;
   cursor: pointer;
   margin-top: 10px;
@@ -1440,7 +1371,8 @@ main::-webkit-scrollbar-thumb {
 }
 
 .category-group-label:hover {
-  background-color: #e0e0e0;
+  background-color: var(--secondary-color);
+  color: var(--accent-color);
 }
 
 .group-options {
@@ -1491,8 +1423,8 @@ main::-webkit-scrollbar-thumb {
 
 
 .currency-chip {
-  background-color: var(--secondary-color);
-  color: #fff;
+  background-color: var(--an-secondary-color);
+  color: var(--accent-color);
   border-radius: var(--border-radius-md);
   padding: 6px 10px;
   min-width: 140px;
@@ -1562,7 +1494,7 @@ main::-webkit-scrollbar-thumb {
   background: var(--an-tertiary-color);
   border-radius: var(--an-border-radius-md);
   box-shadow: var(--an-shadow-md);
-  color: var(--an-secondary-color);
+  color: #fff;
   padding: 12px;
   max-width: 960px;
   /* margin: 40px auto; */
@@ -1603,6 +1535,7 @@ main::-webkit-scrollbar-thumb {
   font-size: 1.3rem;
   font-weight: 500;
   text-align: center;
+  color: #000;
 }
 .analytics-slide canvas {
   .analytics-slide canvas {
@@ -1710,6 +1643,7 @@ main::-webkit-scrollbar-thumb {
 .custom-select-button {
   background-color: var(--dark-color);
   border: 1px solid var(--accent-color);
+  color: var(--tertiary-color);
   border-radius: 12px;
   padding: 10px;
   cursor: pointer;
@@ -1746,7 +1680,6 @@ main::-webkit-scrollbar-thumb {
   background-color: var(--primary-color);
   color: var(--dark-color);
 }
-
 
 /* Общий стиль текста ошибки */
 .inline-error-message {

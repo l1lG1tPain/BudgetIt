@@ -10,12 +10,16 @@ let currentSlideIndex = 0;
 let analyticsSwipeInited = false;
 let swipeLocked = false;
 let budgetManagerInstance = null;
-let currentAnalyticsMonthFilter = 'all'; // Новый фильтр только для аналитики
+let currentAnalyticsMonthFilter = 'all';
 
 // 3) Инициализация аналитики
 function initializeAnalytics(budgetManager) {
   budgetManagerInstance = budgetManager;
-  
+
+  if (typeof getSavedTheme === 'function' && typeof setTheme === 'function') {
+    setTheme(getSavedTheme());
+  }
+
   const settingsPage = document.getElementById('settings-page');
   const wasHidden = settingsPage.classList.contains('hidden');
   if (wasHidden) settingsPage.classList.remove('hidden');
@@ -26,8 +30,6 @@ function initializeAnalytics(budgetManager) {
 
   if (wasHidden) settingsPage.classList.add('hidden');
 }
-
-
 
 // 4) Инициализация карусели
 function initializeAnalyticsCarousel() {
@@ -144,24 +146,17 @@ function setupAnalyticsFilter() {
   const selected = customSelect.querySelector('.custom-select-button');
   const options = customSelect.querySelector('.custom-select-options');
 
-  // Дефолт
   selected.textContent = 'Все месяцы ▼';
   currentAnalyticsMonthFilter = 'all';
 
-  // Явно УДАЛЯЕМ hidden если был мусор
   options.classList.remove('hidden');
-
-  // Сразу СКРЫВАЕМ чисто через код
   options.classList.add('hidden');
 
-  // Клик по кнопке
   selected.addEventListener('click', (e) => {
-    e.stopImmediatePropagation(); // <-- ВАЖНО
+    e.stopImmediatePropagation();
     options.classList.toggle('hidden');
   });
-  
 
-  // Клик по пункту
   options.querySelectorAll('div').forEach(option => {
     option.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -178,7 +173,6 @@ function setupAnalyticsFilter() {
     });
   });
 
-  // Клик вне селектора
   document.addEventListener('click', (e) => {
     if (!customSelect.contains(e.target)) {
       options.classList.add('hidden');
@@ -186,17 +180,17 @@ function setupAnalyticsFilter() {
   });
 }
 
-
-
-
-// 7) Получение транзакций
+// 7) Получение транзакций с исключением категорий
 function getCurrentBudgetTransactions(filterByMonth = true) {
   const transactions = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
   if (!transactions.length) return [];
 
-  if (currentAnalyticsMonthFilter === 'all' || !filterByMonth) return transactions;
+  const excludedCategories = ['Не знаю на что потратил (без учёта)', 'Другая категория (без учёта)']; // Категории, исключённые из аналитики
+  const filteredTransactions = transactions.filter(t => !excludedCategories.includes(t.category));
 
-  return transactions.filter(t => {
+  if (currentAnalyticsMonthFilter === 'all' || !filterByMonth) return filteredTransactions;
+
+  return filteredTransactions.filter(t => {
     const month = new Date(t.date).toISOString().slice(5, 7);
     return month === currentAnalyticsMonthFilter;
   });
@@ -243,7 +237,7 @@ function renderExpensesByCategoryChart() {
     options: {
       cutout: '65%',
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } } }
+      plugins: { legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } } }
     }
   });
 
@@ -261,7 +255,7 @@ function renderMonthlyExpensesChart() {
   const canvas = document.getElementById('monthlyExpensesChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions(false); // Тут без фильтра по месяцу
+  const tx = getCurrentBudgetTransactions(false);
 
   const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
   const monthlyData = {};
@@ -296,17 +290,10 @@ function renderMonthlyExpensesChart() {
     },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 60,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 60, left: 0, right: 0 } },
       scales: {
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
-        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: {
         tooltip: {
@@ -348,14 +335,7 @@ function renderIncomeVsExpensesChart() {
     },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 40,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 40, left: 0, right: 0 } },
       plugins: {
         tooltip: {
           callbacks: {
@@ -398,27 +378,20 @@ function renderTopExpensesChart() {
     options: {
       indexAxis: 'y',
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 30,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
       scales: {
-        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } },
       elements: {
         bar: {
           borderSkipped: false,
           borderWidth: 0,
-          borderRadius: 8, // красивее
-          barThickness: 20, // <-- вот это ширина бара!
-          maxBarThickness: 30, // максимум если мало данных
-          minBarLength: 10 // чтобы совсем маленькие бары были видны
+          borderRadius: 8,
+          barThickness: 20,
+          maxBarThickness: 30,
+          minBarLength: 10
         }
       }
     }
@@ -444,11 +417,7 @@ function renderTopExpensesChart() {
       chart.update();
     }
   });
-
-
 }
-
-
 
 // ---- 5. Динамика баланса (line) ----
 function renderBalanceDynamicsChart() {
@@ -474,17 +443,10 @@ function renderBalanceDynamicsChart() {
     data: { labels: days, datasets: [{ data, fill: false, tension: 0.3, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 30,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
       scales: {
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
-        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } }
     }
@@ -521,17 +483,10 @@ function renderCategoryHistoryChart() {
     data: { labels, datasets: [{ data, fill: false, tension: 0.4, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 30,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
       scales: {
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
-        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } }
     }
@@ -565,39 +520,32 @@ function renderCategoriesByDescendingChart() {
     options: {
       indexAxis: 'y',
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 30,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },  
+      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
       scales: {
         y: {
           ticks: {
-            color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'),
-            font: {
-              size: 9, // Увеличиваем размер шрифта чтобы текст был чётче
-            },
-            padding: 10, // Отступы слева для текста
+            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
+            font: { size: Math.max(7, 10 - labels.length / 10) },
+            padding: 10,
           }
         },
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } },
       elements: {
         bar: {
           borderSkipped: false,
           borderWidth: 0,
-          borderRadius: 10, // красивее
-          barThickness: 100, // <-- вот это ширина бара!
-          maxBarThickness: 30, // максимум если мало данных
-          minBarLength: 40 // чтобы совсем маленькие бары были видны
+          borderRadius: 10,
+          barThickness: 100,
+          maxBarThickness: 30,
+          minBarLength: 40
         }
-      }
+      },
+      responsive: true
     }
   });
+
   const chart = charts.categoriesByDescending;
   const yScale = chart.scales.y;
 
@@ -618,7 +566,6 @@ function renderCategoriesByDescendingChart() {
       chart.update();
     }
   });
-
 }
 
 // ---- 8. Психопортрет: траты по дням недели (bar) ----
@@ -644,17 +591,10 @@ function renderSpendingByWeekdayChart() {
     data: { labels: days, datasets: [{ data: sums, backgroundColor: colors }] },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 0,     // Чуть воздуха сверху
-          bottom: 30,  // Чуть воздуха снизу под легенду
-          left: 0,
-          right: 0
-        }
-      },      
+      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
       scales: {
-        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
-        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color'), callback: formatNumber } }
+        x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } }
     }
@@ -696,37 +636,27 @@ function renderSpendingByAmountRangeChart() {
     'rgb(43,232,42)', 'rgb(42,172,232)', 'rgb(232,43,42)', 'rgb(138,43,226)', 'hsl(270,70%,60%)', 'hsl(320,70%,60%)'
   ];
 
-  
   charts.spendingByAmountRange = new Chart(ctx, {
     type: 'pie',
     data: { labels, datasets: [{ data, backgroundColor: baseColors }] },
     options: {
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 10,     // Чуть воздуха сверху
-          bottom: 50,  // Чуть воздуха снизу под легенду
-          left: 10,
-          right: 10
-        }
-      },      
+      layout: { padding: { top: 10, bottom: 50, left: 10, right: 10 } },
       plugins: {
-        legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--tertiary-color') } },
+        legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} чеков` } }
       }
     }
   });
 }
 
-
-// === Активируем клик по тексту категорий
+// === Активируем клик по тексту категорий ===
 function attachCategoryClickHandlers(chart) {
-  if (!chart || !chart.scales?.y) return; // Защита от ошибок если вдруг нет шкалы Y
+  if (!chart || !chart.scales?.y) return;
 
   const canvas = chart.canvas;
   const yScale = chart.scales.y;
 
-  // Очищаем старые обработчики, чтобы не плодить
   canvas.onclick = (event) => {
     const { offsetY } = event;
     const top = yScale.top;

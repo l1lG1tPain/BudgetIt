@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="theme.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Добро пожаловать в BudgetIt</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--dark-color);
+      color: var(--accent-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+      padding: 20px;
+      height: auto;
+      overflow: hidden;
+      user-select: none;   
+    }
+    .logo {
+      max-width: 250px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 1em;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+    input[type="text"] {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      margin-bottom: 15px;
+      width: 90%;
+
+    }
+    button, label[for="file-input"] {
+      background-color: var(--tertiary-color);
+      color: #000;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 8px;
+      width: 90%;
+
+      display: inline-block;
+      box-sizing: border-box;
+    }
+    button:hover, label[for="file-input"]:hover {
+      background-color: var(--accent-color);
+    }
+    #file-input {
+      display: none;
+    }
+    .link {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: var(--accent-color);
+      cursor: pointer;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background-color: var(--dark-color);
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 90%;
+      color: var(--text);
+      text-align: left;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+    .close-modal {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 1.5em;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      cursor: pointer;
+    }
+    
+  </style>
+</head>
+<body>
+  <img src="assets/onbording-img.jpg" alt="BudgetIt Shark" class="logo" />
+  <h1>Добро пожаловать в BudgetIt 🦈</h1>
+  <p>Создай новый бюджет или импортируй свой, чтобы начать отслеживать расходы, долги и накопления.</p>
+
+  <input type="text" id="budget-name" placeholder="Название бюджета" /> <br />
+  <button onclick="createBudget()">Создать бюджет</button>
+  <label for="file-input">📥 Импортировать бюджет (JSON)</label>
+  <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)" />
+
+  <div class="link" onclick="openHelpModal()">
+    📖 Как это работает?
+  </div>
+
+  <div id="help-modal" class="modal hidden" style="display: none;">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeHelpModal()">&times;</button>
+      <h2>Как пользоваться BudgetIt?</h2>
+      <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p>
+      <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p>
+      <p><strong>3. Анализируй.</strong> Визуализации помогут понять, на что ты тратишь больше всего, каков баланс и сколько ты должен или накопил.</p>
+      <p><strong>4. Переключай бюджеты и сохраняй данные.</strong> Все данные хранятся локально. Можно экспортировать и импортировать бюджеты через JSON.</p>
+      <p>Добро пожаловать в акулий клуб учёта! 🦈</p>
+    </div>
+  </div>
+
+  <script>
+    function createBudget() {
+      const name = document.getElementById('budget-name').value.trim();
+      if (!name) return showModal("Введите название бюджета");
+      const budget = { name, transactions: [] };
+      localStorage.setItem('budgets', JSON.stringify([budget]));
+      localStorage.setItem('currentBudgetIndex', '0');
+      location.replace('index.html');
+    }
+
+    function importBudget(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          localStorage.setItem('budgets', JSON.stringify(data));
+          localStorage.setItem('currentBudgetIndex', '0');
+          location.replace('index.html');
+        } catch (e) {
+          showModal('Ошибка чтения JSON файла');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function openHelpModal() {
+      const help = document.getElementById('help-modal'); help.classList.remove('hidden'); help.style.display = 'flex';
+    }
+
+    function closeHelpModal() {
+      const help = document.getElementById('help-modal'); help.classList.add('hidden'); help.style.display = 'none';
+    }
+
+    function showModal(message) {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">&times;</button>
+          <h2>Внимание</h2>
+          <p>${message}</p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+  </script>
+</body>
+</html>
