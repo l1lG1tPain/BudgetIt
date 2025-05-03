@@ -83,7 +83,7 @@ input, select, textarea {
 }
 body {
   /* font-family: 'JetBrains Mono', 'Apple Color Emoji', monospace; */
-  font-family: 'Poppins', 'Montserrat', sans-serif;
+  font-family: 'Poppins', 'Montserrat';
   font-weight: 600;
   background-color: var(--main-ground);
   color: var(--secondary-color);

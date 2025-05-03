@@ -29,7 +29,7 @@ if ('serviceWorker' in navigator) {
       updateModal.style.borderRadius = '10px';
       updateModal.style.boxShadow = '0 4px 10px rgba(0,0,0,0.3)';
       updateModal.style.zIndex = '9999';
-      updateModal.style.fontFamily = 'Poppins, sans-serif';
+      updateModal.style.fontFamily = 'Poppins', 'Montserrat';
       updateModal.innerHTML = `
         Новая версия доступна <button style="margin-left: 10px; padding: 5px 10px; background: #2be82a; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Обновить</button>
       `;
