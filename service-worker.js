@@ -1,12 +1,12 @@
 // === CONFIG ===
-const CACHE_VERSION = "budgetit-v2.9.0";
-const CACHE_NAME = `budgetit-cache-v2.9.0`;
+const CACHE_VERSION = "budgetit-v2.9.1";
+const CACHE_NAME = `budgetit-cache-v2.9.1`;
 const ASSETS = [
   "/", // Главная страница
   "/index.html",
   "/style.css",
   "/app.js",
-  "/manifest.json?v=2.9.0", // Манифест с версией
+  "/manifest.json?v=2.9.1", // Манифест с версией
   "/assets/icon-192x192v2.9.png", // Иконки для PWA
   "/assets/icon-512x512v2.9.png"
 ];
