@@ -30,11 +30,10 @@ export class UIManager {
   this.updateHeader();
   this.initializeMonthFilter();
   this.updateUI();
-
   this.attachEventListeners();
   this.bindNumericFormats();
-  this.initializeBannerCarousel(); 
-  }
+  this.initializeBannerCarousel();
+}
 
   initializeMonthFilter() {
     const container = document.getElementById('month-filter-container');
