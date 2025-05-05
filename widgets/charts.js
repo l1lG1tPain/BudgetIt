@@ -124,7 +124,8 @@ function renderCharts() {
     renderCategoriesByDescendingChart,
     renderCategoryHistoryChart,
     renderSpendingByWeekdayChart,
-    renderSpendingByAmountRangeChart
+    renderSpendingByAmountRangeChart,
+    renderAnnualSummaryChart
   ].forEach(fn => fn());
 }
 
@@ -649,6 +650,91 @@ function renderSpendingByAmountRangeChart() {
     }
   });
 }
+
+function renderAnnualSummaryChart() {
+  const canvas = document.getElementById('annualSummaryChart');
+  if (!canvas || !budgetManagerInstance?.calculateTotals) return;
+  const ctx = canvas.getContext('2d');
+
+  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+  const labels = months;
+  const keys = [...Array(12)].map((_, i) => String(i + 1).padStart(2, '0'));
+
+  const dataBudget = [];
+  const dataIncome = [];
+  const dataExpense = [];
+  const dataDeposit = [];
+  const dataDebt = [];
+
+  keys.forEach(month => {
+    const result = budgetManagerInstance.calculateTotals(month);
+    dataBudget.push(result.overallBudget);
+    dataIncome.push(result.monthlyIncome);
+    dataExpense.push(result.monthlyExpense);
+    dataDeposit.push(result.depositBalance);
+    dataDebt.push(result.totalDebt);
+  });
+
+  charts.annualSummary = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Бюджет', data: dataBudget, backgroundColor: 'hsl(130, 70%, 60%)' },
+        { label: 'Доходы', data: dataIncome, backgroundColor: 'hsl(210, 70%, 60%)' },
+        { label: 'Расходы', data: dataExpense, backgroundColor: 'hsl(0, 70%, 60%)' },
+        { label: 'Вклад', data: dataDeposit, backgroundColor: 'hsl(270, 70%, 60%)' },
+        { label: 'Долг', data: dataDebt, backgroundColor: 'hsl(45, 70%, 60%)' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 30
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум`
+          }
+        },
+        legend: {
+          position: 'bottom',
+          labels: {
+            boxWidth: 14,
+            boxHeight: 14,
+            padding: 12,
+            font: {
+              size: 12
+            },
+            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color')
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            font: { size: 11 },
+            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color')
+          }
+        },
+        y: {
+          ticks: {
+            font: { size: 11 },
+            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
+            callback: formatNumber
+          }
+        }
+      }
+    }
+  });
+}
+
+
 
 // === Активируем клик по тексту категорий ===
 function attachCategoryClickHandlers(chart) {

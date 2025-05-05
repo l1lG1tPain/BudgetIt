@@ -2,14 +2,16 @@
 const CACHE_VERSION = "budgetit-v2.9.1";
 const CACHE_NAME = `budgetit-cache-v2.9.1`;
 const ASSETS = [
-  "/", // Главная страница
+  "/",
   "/index.html",
+  "/onboarding.html", 
   "/style.css",
   "/app.js",
-  "/manifest.json?v=2.9.1", // Манифест с версией
-  "/assets/icon-192x192v2.9.png", // Иконки для PWA
+  "/manifest.json?v=2.9.1",
+  "/assets/icon-192x192v2.9.png",
   "/assets/icon-512x512v2.9.png"
 ];
+
 
 // === INSTALL ===
 self.addEventListener("install", (event) => {
@@ -34,7 +36,7 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
-  self.clients.claim(); // 👈 Применяет SW ко всем вкладкам
+  self.clients.claim();
 });
 
 // === FETCH ===

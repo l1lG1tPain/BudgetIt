@@ -69,7 +69,7 @@
     <div id="currency-chips-placeholder"></div>
 
     <!-- Блоки суммарной информации -->
-    <div id="summary-blocks">
+    <div id="summary-blocks" class="wrapper">
       <!-- Блок Бюджет – 100% ширины -->
       <div class="summary-block full" id="block-budget">
         <div class="block-title">Бюджет <span class="emoji"></span></div>
@@ -94,30 +94,31 @@
         <div class="block-value">0</div>
       </div>
     </div>
-    
-    <!-- Фильтр по месяцу -->
-    <div id="month-filter-container">
-      <label for="month-filter-input">Месяц:</label>
-      <input type="text" id="month-filter-input" placeholder="Все" readonly data-value="all">
-      <ul id="month-filter-dropdown" class="hidden">
-        <li data-value="all">Все</li>
-        <li data-value="01">Январь</li>
-        <li data-value="02">Февраль</li>
-        <li data-value="03">Март</li>
-        <li data-value="04">Апрель</li>
-        <li data-value="05">Май</li>
-        <li data-value="06">Июнь</li>
-        <li data-value="07">Июль</li>
-        <li data-value="08">Август</li>
-        <li data-value="09">Сентябрь</li>
-        <li data-value="10">Октябрь</li>
-        <li data-value="11">Ноябрь</li>
-        <li data-value="12">Декабрь</li>
-      </ul>
+
+    <div class="month-selector wrapper">
+      <div id="month-filter-container" class="custom-select">
+        <div class="custom-select-button">Все месяцы</div>
+        <div class="custom-select-options hidden">
+          <div data-value="all">Все месяцы</div>
+          <div data-value="01">Январь</div>
+          <div data-value="02">Февраль</div>
+          <div data-value="03">Март</div>
+          <div data-value="04">Апрель</div>
+          <div data-value="05">Май</div>
+          <div data-value="06">Июнь</div>
+          <div data-value="07">Июль</div>
+          <div data-value="08">Август</div>
+          <div data-value="09">Сентябрь</div>
+          <div data-value="10">Октябрь</div>
+          <div data-value="11">Ноябрь</div>
+          <div data-value="12">Декабрь</div>
+        </div>
+      </div> 
     </div>
+   
     
     <!-- Список транзакций -->
-    <ul id="transaction-list"></ul>
+    <ul id="transaction-list" class="wrapper"></ul>
   </main>
 
   <div id="transaction-sheet" class="bottom-sheet hidden">
@@ -1402,10 +1403,13 @@
     
       <!-- Информация о версии, авторе и т.д. -->
       <div class="settings-info">
-        <p><strong>Версия:</strong> 2.9.0</p>
+        <p><strong>Версия:</strong> 2.9.1</p>
         <p><strong>Автор:</strong> l1lG1tPain</p>
         <p><strong>Telegram:</strong> 
           <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
+        </p>
+        <p><strong>Стикерпак:</strong> 
+          <a href="https://t.me/addstickers/Shark_BudgetIt" target="_blank">Акулка BudgetIt</a>
         </p>
       </div>
     
@@ -1545,6 +1549,12 @@
               <!-- Психопортрет трат: размер чека -->
               <canvas id="spendingByAmountRangeChart"></canvas>
             </div>
+
+            <div class="analytics-slide">
+              <h4>Годовая сводка бюджета 📊</h4>
+              <canvas id="annualSummaryChart"></canvas>
+            </div>
+            
     
           </div>
           

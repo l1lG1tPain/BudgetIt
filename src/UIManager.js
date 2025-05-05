@@ -27,12 +27,53 @@ export class UIManager {
       this.openModal('budget-modal');
     } else {
       this.updateHeader();
-      this.setDefaultMonthFilter();
+      // this.setDefaultMonthFilter();
+      this.initializeMonthFilter();
       this.updateUI();
     }
     this.attachEventListeners();
     this.bindNumericFormats();
     this.initializeBannerCarousel(); 
+  }
+
+  initializeMonthFilter() {
+    const container = document.getElementById('month-filter-container');
+    if (!container) return;
+
+    const button = container.querySelector('.custom-select-button');
+    const optionsContainer = container.querySelector('.custom-select-options');
+    const options = optionsContainer.querySelectorAll('div');
+
+    // Установка текущего месяца по умолчанию
+    const today = new Date();
+    const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const defaultOption = Array.from(options).find(opt => opt.getAttribute('data-value') === currentMonth) || options[0];
+    button.textContent = defaultOption.textContent;
+    button.setAttribute('data-value', defaultOption.getAttribute('data-value'));
+    this.monthFilter = defaultOption.getAttribute('data-value');
+
+    // Обработчик клика по кнопке для показа/скрытия списка
+    button.addEventListener('click', () => {
+        optionsContainer.classList.toggle('hidden');
+    });
+
+    // Обработчик выбора опции
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            button.textContent = option.textContent;
+            button.setAttribute('data-value', option.getAttribute('data-value'));
+            this.monthFilter = option.getAttribute('data-value');
+            optionsContainer.classList.add('hidden');
+            this.updateUI(); // Обновляем UI при выборе месяца
+        });
+    });
+
+    // Закрытие списка при клике вне селекта
+    document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+            optionsContainer.classList.add('hidden');
+        }
+    });
   }
 
   updateHeader() {
@@ -41,27 +82,27 @@ export class UIManager {
   }
 
   updateUI() {
-    const monthInput = document.getElementById('month-filter-input');
-    this.monthFilter = monthInput?.getAttribute('data-value') || 'all';
+    const selectButton = document.querySelector('#month-filter-container .custom-select-button');
+    this.monthFilter = selectButton?.getAttribute('data-value') || 'all';
 
     const totals = this.budgetManager.calculateTotals(this.monthFilter);
-    ['budget','income','expense','deposit','debt'].forEach(type => {
-      const value = totals[{
-        budget: 'overallBudget', income: 'monthlyIncome', expense: 'monthlyExpense',
-        deposit: 'depositBalance', debt: 'totalDebt'
-      }[type]];
-      const el = document.querySelector(`#block-${type} .block-value`);
-      this.animateValue(el, value, 800);
-      document.querySelector(`#block-${type} .emoji`).textContent = {
-        budget: getBudgetEmoji, income: getIncomeEmoji, expense: getExpenseEmoji,
-        deposit: getDepositEmoji, debt: getDebtEmoji
-      }[type](value);
+    ['budget', 'income', 'expense', 'deposit', 'debt'].forEach(type => {
+        const value = totals[{
+            budget: 'overallBudget', income: 'monthlyIncome', expense: 'monthlyExpense',
+            deposit: 'depositBalance', debt: 'totalDebt'
+        }[type]];
+        const el = document.querySelector(`#block-${type} .block-value`);
+        this.animateValue(el, value, 800);
+        document.querySelector(`#block-${type} .emoji`).textContent = {
+            budget: getBudgetEmoji, income: getIncomeEmoji, expense: getExpenseEmoji,
+            deposit: getDepositEmoji, debt: getDebtEmoji
+        }[type](value);
     });
 
     const allTx = this.budgetManager.getCurrentBudget().transactions || [];
     const filtered = allTx.filter(tx =>
-      (this.transactionFilter === 'all' || tx.type === this.transactionFilter)
-      && (this.monthFilter === 'all' || tx.date.slice(5,7) === this.monthFilter)
+        (this.transactionFilter === 'all' || tx.type === this.transactionFilter)
+        && (this.monthFilter === 'all' || tx.date.slice(5, 7) === this.monthFilter)
     );
     this.updateTransactionList(filtered);
   }
@@ -523,19 +564,6 @@ export class UIManager {
       } else {
         this.showInlineError(newNameInput, 'Некорректное название бюджета!');
       }
-    });
-
-    document.getElementById('month-filter-input')?.addEventListener('click', function () {
-      this.nextElementSibling.classList.toggle('hidden');
-    });
-
-    document.querySelectorAll('#month-filter-dropdown li').forEach(li => {
-      li.addEventListener('click', () => {
-        document.getElementById('month-filter-input').value = li.textContent;
-        document.getElementById('month-filter-input').setAttribute('data-value', li.getAttribute('data-value'));
-        document.getElementById('month-filter-dropdown').classList.add('hidden');
-        this.updateUI();
-      });
     });
 
     ['budget', 'income', 'expense', 'deposit', 'debt'].forEach(type => {

@@ -116,112 +116,121 @@ export class BudgetManager {
   }
 
   // Рассчитываем итоги с учётом фильтра по месяцу (формат 'MM' или 'all')
-calculateTotals(monthFilter = 'all') {
-  const budget = this.getCurrentBudget();
-  if (!budget) return {
-    overallBudget: 0,
-    monthlyIncome: 0,
-    monthlyExpense: 0,
-    depositBalance: 0,
-    totalDebt: 0
-  };
-
-  const txs = budget.transactions || [];
-
-  // Вспомогательная: дата <= выбранного месяца
-  const upTo = dateStr =>
-    monthFilter === 'all' || dateStr.slice(5, 7) <= monthFilter;
-
-  // --- 1) Кумулятивный доход/расход с начала года до фильтруемого месяца ---
-  const cumulativeIncome = txs
-    .filter(t => t.type === 'income' && upTo(t.date))
-    .reduce((s, t) => s + t.amount, 0);
-
-  const cumulativeExpense = txs
-    .filter(t => t.type === 'expense' && upTo(t.date))
-    .reduce((s, t) => s + t.amount, 0);
-
-  // --- 2) Баланс по вкладам ---
-  const withdrawalStatus = '➖ Снятие';
-  const specialStatuses = ['🛏 Под подушкой', '💾 Уже лежало'];
-
-  let depositBalance = 0;
-  let specialDepositEffect = 0;
-
-  txs.filter(t => t.type === 'deposit').forEach(t => {
-    const cleanStatus = (t.status || '').trim();
-    if (specialStatuses.includes(cleanStatus)) {
-      depositBalance += t.amount; // Увеличиваем баланс вкладов
-      specialDepositEffect += t.amount; // Увеличиваем бюджет
-    } else if (cleanStatus === withdrawalStatus) {
-      depositBalance -= t.amount; // Уменьшаем баланс вкладов
-    } else {
-      depositBalance += t.amount; // Увеличиваем баланс вкладов для пополнения
+  calculateTotals(monthFilter = 'all') {
+    const budget = this.getCurrentBudget();
+    if (!budget) return {
+      overallBudget: 0,
+      monthlyIncome: 0,
+      monthlyExpense: 0,
+      depositBalance: 0,
+      totalDebt: 0,
+      carryOver: 0
+    };
+  
+    const txs = budget.transactions || [];
+  
+    // --- Подготовка
+    const isAll = monthFilter === 'all';
+    const monthInt = parseInt(monthFilter, 10);
+  
+    // --- Перенос с предыдущего месяца
+    let carryOver = 0;
+    if (!isAll && !isNaN(monthInt) && monthInt > 1) {
+      const prevMonth = String(monthInt - 1).padStart(2, '0');
+      const prevTotals = this.calculateTotals(prevMonth);
+      carryOver = Math.max(0, prevTotals.overallBudget);
     }
-  });
-
-  // --- 3) Учёт долгов ---
-  let debtAsExpense = 0;
-  let debtInitEffect = 0;
-  let debtPayEffect = 0;
-  let totalDebtRem = 0;
-
-  txs.filter(t => t.type === 'debt').forEach(d => {
-    const initAmt = d.initialAmount || 0;
-
-    if (upTo(d.date)) {
-      if (d.direction === 'owe') {
-        debtInitEffect += initAmt;
-      } else {
-        debtInitEffect -= initAmt;
-        debtAsExpense += initAmt;
-      }
-    }
-
-    (d.payments || []).forEach(p => {
-      if (upTo(p.date)) {
-        if (d.direction === 'owe') {
-          debtPayEffect -= p.amount;
-          debtAsExpense += p.amount;
+  
+    // --- Фильтр транзакций за месяц
+    const txsInMonth = txs.filter(t =>
+      isAll || (t.date && t.date.slice(5, 7) === monthFilter)
+    );
+  
+    // --- Доходы
+    const monthlyIncome = txsInMonth
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+  
+    // --- Расходы
+    let baseExpense = txsInMonth
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+  
+    // --- Вклады
+    let depositBalance = 0;
+  
+    txs.filter(t => t.type === 'deposit' && t.date).forEach(t => {
+      const status = (t.status || '').trim();
+      const tMonth = t.date.slice(5, 7);
+  
+      // Баланс вкладов по состоянию на текущий месяц
+      if (isAll || tMonth <= monthFilter) {
+        if (status === '➖ Снятие') {
+          depositBalance -= t.amount;
         } else {
-          debtPayEffect += p.amount;
+          depositBalance += t.amount;
+        }
+      }
+  
+      // Влияние на бюджет в текущем месяце
+      if (tMonth === monthFilter) {
+        if (status === '➖ Снятие') {
+          carryOver += t.amount;
+        } else if (status === '➕ Пополнение') {
+          baseExpense += t.amount;
+          carryOver -= t.amount;
         }
       }
     });
-
-    const paidSum = (d.payments || [])
-      .filter(p => upTo(p.date))
-      .reduce((s, p) => s + p.amount, 0);
-
-    totalDebtRem += Math.max(0, initAmt - paidSum);
-  });
-
-  // --- 4) Доходы/расходы за фильтруемый месяц (в том числе долги) ---
-  const monthlyIncome = txs
-    .filter(t => t.type === 'income' && (monthFilter === 'all' || t.date.slice(5, 7) === monthFilter))
-    .reduce((s, t) => s + t.amount, 0);
-
-  const monthlyExpense = txs
-    .filter(t => t.type === 'expense' && (monthFilter === 'all' || t.date.slice(5, 7) === monthFilter))
-    .reduce((s, t) => s + t.amount, 0) + debtAsExpense;
-
-  // --- 5) Общий итоговый бюджет ---
-  const overallBudget =
-    cumulativeIncome
-    - cumulativeExpense
-    + debtInitEffect
-    + debtPayEffect
-    - depositBalance
-    + specialDepositEffect; // Добавляем спец. вклады напрямую
-
-  return {
-    overallBudget,
-    monthlyIncome,
-    monthlyExpense,
-    depositBalance,
-    totalDebt: totalDebtRem
-  };
-}
+  
+    // --- Долги
+    let debtAsExpense = 0;
+    let totalDebtRem = 0;
+    let debtBudgetEffect = 0;
+  
+    txsInMonth.filter(t => t.type === 'debt').forEach(d => {
+      const initAmt = d.initialAmount || d.amount || 0;
+      const payments = d.payments || [];
+  
+      const paidThisMonth = payments
+        .filter(p => p.date?.slice(5, 7) === monthFilter)
+        .reduce((sum, p) => sum + p.amount, 0);
+  
+      const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+      const remaining = Math.max(0, initAmt - totalPaid);
+      totalDebtRem += remaining;
+  
+      if (d.direction === 'owe') {
+        // Взял в долг — это приток бюджета
+        debtBudgetEffect += initAmt;
+      
+        // Погашение — это либо бюджетный эффект, либо расход, но не оба
+        debtAsExpense += paidThisMonth;
+        // budgetEffect не нужен здесь
+      } else {
+        // Дал в долг — это расход
+        debtAsExpense += initAmt;
+      
+        // Возврат — это как доход
+        debtBudgetEffect += paidThisMonth;
+      }
+      
+    });
+  
+    // --- Финальный расчёт
+    const monthlyExpense = baseExpense + debtAsExpense;
+    const overallBudget = carryOver + monthlyIncome + debtBudgetEffect - monthlyExpense;
+    const carryOverForNext = Math.max(0, overallBudget);
+  
+    return {
+      overallBudget,
+      monthlyIncome,
+      monthlyExpense,
+      depositBalance,
+      totalDebt: totalDebtRem,
+      carryOver: carryOverForNext
+    };
+  }
   
 
   getCurrentBudget() {
