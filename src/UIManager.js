@@ -22,19 +22,18 @@ export class UIManager {
   }
 
   initialize() {
-    this.budgetManager.loadFromStorage();
-    if (!this.budgetManager.budgets.length) {
-      this.openModal('budget-modal');
-    } else {
-      this.updateHeader();
-      // this.setDefaultMonthFilter();
-      this.initializeMonthFilter();
-      this.updateUI();
-    }
-    this.attachEventListeners();
-    this.bindNumericFormats();
-    this.initializeBannerCarousel(); 
-  }
+  this.budgetManager.loadFromStorage();
+
+  // Защита от запуска без бюджета
+  if (!this.budgetManager.budgets.length) return;
+
+  this.updateHeader();
+  this.initializeMonthFilter();
+  this.updateUI();
+  this.attachEventListeners();
+  this.bindNumericFormats();
+  this.initializeBannerCarousel();
+}
 
   initializeMonthFilter() {
     const container = document.getElementById('month-filter-container');
