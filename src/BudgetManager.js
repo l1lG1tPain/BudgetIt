@@ -147,7 +147,7 @@ export class BudgetManager {
     );
   
     // --- Доходы
-    const monthlyIncome = txsInMonth
+    let monthlyIncome = txsInMonth
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
   
@@ -186,40 +186,36 @@ export class BudgetManager {
     // --- Долги
     let debtAsExpense = 0;
     let totalDebtRem = 0;
-    let debtBudgetEffect = 0;
   
-    txsInMonth.filter(t => t.type === 'debt').forEach(d => {
+    txs.filter(t => t.type === 'debt').forEach(d => {
       const initAmt = d.initialAmount || d.amount || 0;
+      const createdMonth = d.date?.slice(5, 7);
       const payments = d.payments || [];
   
       const paidThisMonth = payments
-        .filter(p => p.date?.slice(5, 7) === monthFilter)
-        .reduce((sum, p) => sum + p.amount, 0);
+      .filter(p => isAll || p.date?.slice(5, 7) === monthFilter)
+      .reduce((sum, p) => sum + p.amount, 0);
+
   
       const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
       const remaining = Math.max(0, initAmt - totalPaid);
       totalDebtRem += remaining;
   
+      const createdInRange = isAll || createdMonth === monthFilter;
+
       if (d.direction === 'owe') {
-        // Взял в долг — это приток бюджета
-        debtBudgetEffect += initAmt;
-      
-        // Погашение — это либо бюджетный эффект, либо расход, но не оба
+        if (createdInRange) monthlyIncome += initAmt;
         debtAsExpense += paidThisMonth;
-        // budgetEffect не нужен здесь
       } else {
-        // Дал в долг — это расход
-        debtAsExpense += initAmt;
-      
-        // Возврат — это как доход
-        debtBudgetEffect += paidThisMonth;
+        if (createdInRange) debtAsExpense += initAmt;
+        monthlyIncome += paidThisMonth;
       }
-      
+
     });
   
     // --- Финальный расчёт
     const monthlyExpense = baseExpense + debtAsExpense;
-    const overallBudget = carryOver + monthlyIncome + debtBudgetEffect - monthlyExpense;
+    const overallBudget = carryOver + monthlyIncome - monthlyExpense;
     const carryOverForNext = Math.max(0, overallBudget);
   
     return {
