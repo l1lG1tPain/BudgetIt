@@ -21,19 +21,19 @@ export class UIManager {
     this.getTypeColor      = getTypeColor;
   }
 
-  initialize() {
-  this.budgetManager.loadFromStorage();
+    initialize() {
+    this.budgetManager.loadFromStorage();
 
-  // Защита от запуска без бюджета
-  if (!this.budgetManager.budgets.length) return;
+    // Защита от запуска без бюджета
+    if (!this.budgetManager.budgets.length) return;
 
-  this.updateHeader();
-  this.initializeMonthFilter();
-  this.updateUI();
-  this.attachEventListeners();
-  this.bindNumericFormats();
-  this.initializeBannerCarousel();
-}
+    this.updateHeader();
+    this.initializeMonthFilter();
+    this.updateUI();
+    this.attachEventListeners();
+    this.bindNumericFormats();
+    this.initializeBannerCarousel();
+  }
 
   initializeMonthFilter() {
     const container = document.getElementById('month-filter-container');
