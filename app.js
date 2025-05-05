@@ -12,6 +12,7 @@ const isOnboarding = window.location.pathname.includes('onboarding.html');
 if (!Array.isArray(list) || list.length === 0) {
   if (!isOnboarding) {
     location.replace('onboarding.html');
+    return;
   }
 }
 
