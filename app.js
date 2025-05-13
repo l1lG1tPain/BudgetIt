@@ -13,20 +13,16 @@ if (!Array.isArray(list) || list.length === 0) {
   if (!isOnboarding) {
     location.replace('onboarding.html');
   }
+} else {
+  // Приложение может продолжать работу
+  document.addEventListener('DOMContentLoaded', () => {
+    initThemeSelector();  
+    uiManager.initialize();
+    document
+      .getElementById('settings-btn')
+      ?.addEventListener('click', () => {
+        uiManager.openModal('settings-page');
+        setTimeout(() => initializeAnalytics(budgetManager), 100);
+      });
+  });
 }
-
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  initThemeSelector();  
-  uiManager.initialize();
-  document
-    .getElementById('settings-btn')
-    ?.addEventListener('click', () => {
-      uiManager.openModal('settings-page');
-      setTimeout(
-        () => initializeAnalytics(budgetManager),
-        100
-      );
-    });
-});

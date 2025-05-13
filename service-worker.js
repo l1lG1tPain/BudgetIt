@@ -1,13 +1,13 @@
 // === CONFIG ===
-const CACHE_VERSION = "budgetit-v2.9.1";
-const CACHE_NAME = `budgetit-cache-v2.9.1`;
+const CACHE_VERSION = "budgetit-v2.9.2";
+const CACHE_NAME = `budgetit-cache-v2.9.2`;
 const ASSETS = [
   "/",
   "/index.html",
   "/onboarding.html", 
   "/style.css",
   "/app.js",
-  "/manifest.json?v=2.9.1",
+  "/manifest.json?v=2.9.2",
   "/assets/icon-192x192v2.9.png",
   "/assets/icon-512x512v2.9.png"
 ];

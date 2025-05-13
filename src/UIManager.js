@@ -21,11 +21,30 @@ export class UIManager {
     this.getTypeColor      = getTypeColor;
   }
 
-    initialize() {
+  initialize() {
     this.budgetManager.loadFromStorage();
 
+    // Трекаем инициализацию UI (даже если бюджета нет)
+    if (typeof window.trackSafe === 'function') {
+      trackSafe('ui-initialized', {
+        tag: 'session',
+        hasBudgets: this.budgetManager.budgets.length > 0,
+        budgetsCount: this.budgetManager.budgets.length,
+      });
+    }
+
+    const userIdText = localStorage.getItem('budgetit-user-id');
+    const userIdEl = document.getElementById('user-id');
+    if (userIdText && userIdEl) {
+      userIdEl.textContent = `ID: ${userIdText}`;
+    }
+
+
     // Защита от запуска без бюджета
-    if (!this.budgetManager.budgets.length) return;
+    if (!this.budgetManager.budgets.length) {
+      location.replace('onboarding.html');
+      return;
+    }
 
     this.updateHeader();
     this.initializeMonthFilter();
@@ -34,6 +53,7 @@ export class UIManager {
     this.bindNumericFormats();
     this.initializeBannerCarousel();
   }
+
 
   initializeMonthFilter() {
     const container = document.getElementById('month-filter-container');
@@ -400,10 +420,19 @@ export class UIManager {
     }
 
     document.getElementById('delete-transaction').onclick = () => {
+      if (typeof window.trackSafe === 'function') {
+        trackSafe('delete-transaction', {
+          id: transaction.id,
+          type: transaction.type,
+          amount: transaction.amount || transaction.initialAmount || 0
+        });
+      }
+
       this.budgetManager.deleteTransaction(transaction.id);
       this.closeModal('transaction-detail-sheet');
       this.updateUI();
     };
+
 
     this.openModal('transaction-detail-sheet');
   }
@@ -416,6 +445,13 @@ export class UIManager {
       div.classList.add('budget-item');
       div.innerHTML = `<span>${b.name}</span><button class="delete-budget-btn" data-index="${index}">🗑️</button>`;
       div.addEventListener('click', () => {
+        if (typeof window.trackSafe === 'function') {
+          trackSafe('switch-budget', {
+            index,
+            name: b.name
+          });
+        }
+
         this.budgetManager.switchBudget(index);
         this.updateHeader();
         this.updateUI();
@@ -440,6 +476,9 @@ export class UIManager {
     document.getElementById('bottom-sheet-backdrop').classList.remove('hidden');
 
     document.getElementById('confirm-delete-budget').onclick = () => {
+      const name = this.budgetManager.budgets[index]?.name || 'Unnamed';
+      trackSafe?.('delete-budget', { tag: 'transaction', index, name });
+
       this.budgetManager.deleteBudget(index);
       modal.classList.add('hidden');
       document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
@@ -463,7 +502,11 @@ export class UIManager {
       document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
     };
 
-    document.getElementById('export-before-delete').onclick = () => this.exportData();
+    document.getElementById('export-before-delete').onclick = () => {
+      trackSafe?.('export-before-delete', { name: this.budgetManager.budgets[index]?.name });
+      this.exportData();
+    };
+
   }
 
   exportData() {
@@ -558,6 +601,9 @@ export class UIManager {
       this.clearInlineError(newNameInput);
       const newName = newNameInput.value.trim();
       if (this.budgetManager.createBudget(newName)) {
+        if (typeof window.trackSafe === 'function') {
+          trackSafe('create-budget', { name: newName });
+        }
         this.populateBudgetList();
         newNameInput.value = '';
       } else {
@@ -566,11 +612,15 @@ export class UIManager {
     });
 
     ['budget', 'income', 'expense', 'deposit', 'debt'].forEach(type => {
-      document.getElementById(`block-${type}`)?.addEventListener('click', () => {
-        this.transactionFilter = type === 'budget' ? 'all' : type;
-        this.updateUI();
-      });
+    document.getElementById(`block-${type}`)?.addEventListener('click', () => {
+      this.transactionFilter = type === 'budget' ? 'all' : type;
+      if (typeof window.trackSafe === 'function') {
+        trackSafe('filter-type', { type: this.transactionFilter });
+      }
+      this.updateUI();
     });
+  });
+
 
     document.getElementById('add-btn')?.addEventListener('click', () => {
       const today = new Date().toLocaleDateString('en-CA');
@@ -605,8 +655,16 @@ export class UIManager {
     document.getElementById('add-product')?.addEventListener('click', () => this.addProduct());
 
     document.getElementById('close-settings')?.addEventListener('click', () => this.closeModal('settings-page'));
-    document.getElementById('export-btn')?.addEventListener('click', () => this.exportData());
-    document.getElementById('import-file')?.addEventListener('change', e => this.importData(e));
+    document.getElementById('export-btn')?.addEventListener('click', () => {
+      trackSafe?.('export-from-settings');
+      this.exportData();
+    });
+
+    document.getElementById('import-file')?.addEventListener('change', e => {
+      trackSafe?.('import-from-settings');
+      this.importData(e);
+    });
+
     document.getElementById('close-detail')?.addEventListener('click', () => this.closeModal('transaction-detail-sheet'));
 
     let deferredPrompt;
@@ -619,8 +677,12 @@ export class UIManager {
     });
     document.getElementById('install-btn')?.addEventListener('click', () => {
       if (deferredPrompt) {
+        trackSafe?.('pwa-install-clicked');
+
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(() => {
+          trackSafe?.('pwa-installed');
+
           deferredPrompt = null;
           document.getElementById('install-btn').style.display = 'none';
         });
@@ -663,6 +725,13 @@ export class UIManager {
       amount
     };
     this.budgetManager.addTransaction(transaction);
+    trackSafe('create-income', {
+      tag: 'transaction',
+      category: hiddenCategoryInput.value,
+      amount,
+      date: form['income-date'].value
+    });
+
     form.reset();
     this.closeModal('transaction-sheet');
     this.updateUI();
@@ -721,6 +790,11 @@ export class UIManager {
     };
     this.budgetManager.addTransaction(transaction);
     this.updateProductDatalist();
+    trackSafe('create-expense', {
+      category: hiddenCategoryInput.value,
+      amount: totalAmount,
+      products: products.map(p => p.name)
+    });
     form.reset();
     document.getElementById('products-list').innerHTML = `
       <div class="product-item">
@@ -777,6 +851,12 @@ export class UIManager {
     nameInput.value = '';
     amountInput.value = '';
     directionSelect.value = '';
+    trackSafe('create-debt', {
+      name: nameInput.value.trim(),
+      amount,
+      direction: directionSelect.value,
+      date: dateInput.value
+    });
     this.closeModal('transaction-sheet');
     this.updateUI();
   }
@@ -821,6 +901,13 @@ export class UIManager {
     nameInput.value = '';
     amountInput.value = '';
     statusInput.value = '';
+    trackSafe('create-deposit', {
+      tag: 'transaction',
+      name: nameInput.value.trim(),
+      amount,
+      status: statusInput.value,
+      date: dateInput.value
+    });
     this.closeModal('transaction-sheet');
     this.updateUI();
   }

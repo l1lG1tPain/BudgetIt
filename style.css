@@ -1730,3 +1730,19 @@ main::-webkit-scrollbar-thumb {
   background-color: var(--primary-color);
   color: #000;
 }
+
+
+
+
+.user-id-display.legendary {
+  color: gold;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
+  animation: sparkle 2s infinite ease-in-out;
+}
+
+@keyframes sparkle {
+  0%   { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+  50%  { text-shadow: 0 0 12px rgba(255, 255, 100, 0.9); }
+  100% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+}

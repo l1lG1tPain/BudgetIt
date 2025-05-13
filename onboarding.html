@@ -147,7 +147,14 @@
       const budget = { name, transactions: [] };
       localStorage.setItem('budgets', JSON.stringify([budget]));
       localStorage.setItem('currentBudgetIndex', '0');
-      location.replace('index.html');
+      if (typeof window.trackSafe === 'function') {
+        trackSafe('onboarding-create-budget', { name });
+        setTimeout(() => {
+          location.replace('index.html');
+        }, 200); // 200–300 мс достаточно
+      } else {
+        location.replace('index.html');
+      }
     }
 
     function importBudget(event) {
@@ -159,13 +166,21 @@
           const data = JSON.parse(reader.result);
           localStorage.setItem('budgets', JSON.stringify(data));
           localStorage.setItem('currentBudgetIndex', '0');
-          location.replace('index.html');
+
+          if (typeof window.trackSafe === 'function') {
+            trackSafe('onboarding-import-budget', { name: file.name });
+            setTimeout(() => location.replace('index.html'), 200);
+          } else {
+            location.replace('index.html');
+          }
+
         } catch (e) {
           showModal('Ошибка чтения JSON файла');
         }
       };
       reader.readAsText(file);
     }
+
 
     function openHelpModal() {
       const help = document.getElementById('help-modal'); help.classList.remove('hidden'); help.style.display = 'flex';
@@ -191,6 +206,8 @@
   <!-- Vercel Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
   
-  <script src="./src/umami-events.js"></script>
+  <script src="./src/utils/umami-events.js"></script>
+  <script type="module" src="./src/utils/analytics.js"></script>
+
 </body>
 </html>

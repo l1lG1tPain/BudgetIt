@@ -1405,7 +1405,8 @@
     
       <!-- Информация о версии, авторе и т.д. -->
       <div class="settings-info">
-        <p><strong>Версия:</strong> 2.9.1</p>
+        <p id="user-id" class="user-id-display"></p>
+        <p><strong>Версия:</strong> 2.9.2</p>
         <p><strong>Автор:</strong> l1lG1tPain</p>
         <p><strong>Telegram:</strong> 
           <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
@@ -1737,6 +1738,8 @@
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
 
-  <script src="umami-events.js" defer></script>
+  <script src="./src/utils/umami-events.js" defer></script>
+  <script type="module" src="./src/utils/analytics.js"></script>
+
 </body>
 </html>
