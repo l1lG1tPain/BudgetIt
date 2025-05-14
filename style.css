@@ -368,6 +368,36 @@ main {
   border: 1px solid var(--secondary-color);
   border-radius: 8px;
 }
+#budget-switch-sheet img {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+  display: block; 
+}
+#budget-switch-sheet .budget-description {
+  font-size: 14px;
+  color: var(--text-muted, #666);
+  margin: 10px 0 20px;
+  line-height: 1.5;
+}
+
+#budget-switch-sheet .budget-description ul {
+  padding-left: 20px;
+  margin: 10px 0;
+}
+
+#budget-switch-sheet .budget-description li {
+  margin-bottom: 6px;
+  list-style: disc;
+}
+
+#budget-switch-sheet .tip {
+  font-weight: bold;
+  color: var(--income-color);
+}
+
+
+
 #budget-form {
   background: var(--tertiary-color);
   padding: 30px;

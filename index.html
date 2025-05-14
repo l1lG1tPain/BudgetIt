@@ -6,10 +6,14 @@
   <title>B$dgetIt</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./theme.css">
-  <link rel="manifest" href="manifest.json?v=2.9.1">
+  <link rel="manifest" href="manifest.json?v=2.9.3">
 
   <!-- <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"></script> -->
-  <script src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"></script>
+  <script defer
+        src="https://cloud.umami.is/script.js"
+        data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
+        data-auto-track="false"></script>
+        
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -39,11 +43,25 @@
 
   <!-- Bottom-sheet для переключения между бюджетами -->
   <div id="budget-switch-sheet" class="bottom-sheet hidden">
+    <h2><b>Мои бюджеты</b></h2>
+    <img src="./assets/switch-budget-img.png" alt="switch-budget-img">
+    
+    <div class="budget-description">
+      <p>Создавай, удаляй и переключайся между своими бюджетами — легко и быстро.</p>
+      <ul>
+        <li>Например: «Работа», «Личное», (можно Emoji)</li>
+      </ul>
+      <p><span class="tip">💡 Акулка советует:</span> начни с одного, а там разберёмся!</p>
+    </div>
+
+
     <div class="budget-list"></div>
+
     <div class="budget-add">
       <span>Бюджет:</span>
       <input type="text" id="new-budget-name" placeholder="Название" maxlength="13">
     </div>
+
     <button id="add-budget-btn">Добавить</button>
     <button id="close-budget-sheet">Закрыть</button>
   </div>
@@ -1406,7 +1424,7 @@
       <!-- Информация о версии, авторе и т.д. -->
       <div class="settings-info">
         <p id="user-id" class="user-id-display"></p>
-        <p><strong>Версия:</strong> 2.9.2</p>
+        <p><strong>Версия:</strong> 2.9.3</p>
         <p><strong>Автор:</strong> l1lG1tPain</p>
         <p><strong>Telegram:</strong> 
           <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>
@@ -1737,9 +1755,10 @@
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
+  <script type="module" src="./src/utils/analytics.js"></script>
+
 
   <script src="./src/utils/umami-events.js" defer></script>
-  <script type="module" src="./src/utils/analytics.js"></script>
 
 </body>
 </html>

@@ -178,7 +178,7 @@ export class BudgetManager {
           carryOver += t.amount;
         } else if (status === '➕ Пополнение') {
           baseExpense += t.amount;
-          carryOver -= t.amount;
+          // carryOver -= t.amount;
         }
       }
     });

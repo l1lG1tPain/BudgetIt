@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="stylesheet" href="theme.css">
-  <link rel="manifest" href="manifest.json?v=2.9.1">
+  <link rel="manifest" href="manifest.json?v=2.9.3">
 
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"></script>
+  <script defer
+        src="https://cloud.umami.is/script.js"
+        data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
+        data-auto-track="false"></script>
 
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BudgetIt">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">      
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Добро пожаловать в BudgetIt</title>
   <style>
@@ -205,9 +213,10 @@
   </script>
   <!-- Vercel Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
+  <script type="module" src="./src/utils/analytics.js"></script>
+
   
   <script src="./src/utils/umami-events.js"></script>
-  <script type="module" src="./src/utils/analytics.js"></script>
 
 </body>
 </html>
