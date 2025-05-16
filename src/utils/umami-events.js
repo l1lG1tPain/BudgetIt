@@ -4,13 +4,19 @@
  */
 
 /* === SAFE WRAPPER ===================================================== */
+// === GLOBAL SAFE WRAPPER ===
 window.trackSafe = function trackSafe(event, props = {}) {
-  if (typeof umami?.track === 'function') {
-    umami.track(event, { userId: window.budgetItUserId || 'unknown', ...props });
-  } else {
-    console.warn('[Umami] Tracking skipped:', event, props);
+  try {
+    if (typeof umami !== 'undefined' && typeof umami.track === 'function') {
+      umami.track(event, props);
+    } else {
+      console.warn('[Umami] Tracking skipped:', event, props);
+    }
+  } catch (err) {
+    console.warn('[Umami] trackSafe error:', err);
   }
 };
+
 
 /* === WAIT UNTIL TRACKER LOADED ======================================== */
 function waitForUmami(timeout = 10_000) {

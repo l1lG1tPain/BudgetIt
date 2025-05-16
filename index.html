@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>B$dgetIt</title>
+  <title>BudgetIt — учёт бюджета и расходов</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./theme.css">
   <link rel="manifest" href="manifest.json?v=2.9.3">
@@ -13,14 +13,15 @@
         src="https://cloud.umami.is/script.js"
         data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
         data-auto-track="false"></script>
-        
+
+  <meta name="theme-color" content="#000000">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BudgetIt">
+  <meta name="mobile-web-app-title" content="BudgetIt">
   <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
   <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">
 
@@ -1783,6 +1784,14 @@
 
 
   <script src="./src/utils/umami-events.js" defer></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('[SW] Registered', reg))
+        .catch(err => console.warn('[SW] Failed', err));
+    }
+  </script>
 
 </body>
 </html>

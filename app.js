@@ -5,24 +5,40 @@ import { initThemeSelector } from './src/ThemeManager.js';
 const budgetManager = new BudgetManager();
 const uiManager = new UIManager(budgetManager);
 const raw = localStorage.getItem('budgets');
-const list = raw ? JSON.parse(raw) : [];
+let list = [];
+
+try {
+  list = raw ? JSON.parse(raw) : [];
+} catch (error) {
+  console.error('[BudgetIt] Ошибка при парсинге бюджетов:', error);
+  list = [];
+}
 
 const isOnboarding = window.location.pathname.includes('onboarding.html');
 
 if (!Array.isArray(list) || list.length === 0) {
   if (!isOnboarding) {
-    location.replace('onboarding.html');
+    console.warn('[BudgetIt] Нет бюджетов, переход на onboarding...');
+    location.href = `${window.location.origin}/onboarding.html`;
   }
 } else {
-  // Приложение может продолжать работу
   document.addEventListener('DOMContentLoaded', () => {
     initThemeSelector();  
     uiManager.initialize();
-    document
-      .getElementById('settings-btn')
-      ?.addEventListener('click', () => {
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
         uiManager.openModal('settings-page');
-        setTimeout(() => initializeAnalytics(budgetManager), 100);
+        setTimeout(() => {
+          if (typeof initializeAnalytics === 'function') {
+            initializeAnalytics(budgetManager);
+          } else {
+            console.warn('[BudgetIt] Функция initializeAnalytics не определена');
+          }
+        }, 100);
       });
+    } else {
+      console.warn('[BudgetIt] Элемент с id "settings-btn" не найден');
+    }
   });
 }
