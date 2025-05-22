@@ -53,19 +53,6 @@
 <body>
   <!-- Backdrop for bottom-sheets -->
   <div id="bottom-sheet-backdrop" class="hidden"></div>
-  
-  <!-- Модальное окно для создания первого бюджета -->
-  <div id="budget-modal" class="overlay hidden">
-    <form id="budget-form">
-      <h2>Добавить бюджет</h2>
-      <label for="budget-name">Название бюджета (макс 13 символов):</label>
-      <input type="text" id="budget-name" placeholder="Введите название бюджета" required maxlength="13">
-      <!-- Контейнер для inline-ошибки -->
-      <button type="submit">Добавить</button>
-      <!-- Можно раскомментировать кнопку «Закрыть», но тогда приложение останется без бюджета -->
-      <!-- <button type="button" id="close-budget-modal">Закрыть</button> -->
-    </form>
-  </div>
 
   <!-- Bottom-sheet для переключения между бюджетами -->
   <div id="budget-switch-sheet" class="bottom-sheet hidden">
@@ -1446,11 +1433,22 @@
           Помогает удобно вести финансы и быстро видеть общую картину вашего бюджета.
         </p>
       </div>
-    
+      <p><strong>Версия:</strong> 2.9.8</p>
       <!-- Информация о версии, авторе и т.д. -->
       <div class="settings-info">
-        <p id="user-id" class="user-id-display"></p>
-        <p><strong>Версия:</strong> 2.9.5</p>
+        <div id="user-profile-block" class="user-profile-card">
+          <div class="user-emoji" id="user-emoji"></div>
+
+          <div class="user-level-info">
+            <div class="user-level-text">Lvl: <span id="user-level">1</span></div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="user-progress"></div>
+            </div>
+            <div class="tx-counter">Points: <span id="tx-count">0</span> / <span id="tx-next">50</span></div>
+            <div id="user-id" class="user-id-display">ID: <span id="user-id-text">🦈abc123</span></div>
+          </div>
+        </div>
+
         <p><strong>Автор:</strong> l1lG1tPain</p>
         <p><strong>Telegram:</strong> 
           <a href="https://t.me/cybersnitch" target="_blank">Cybersnitch</a>

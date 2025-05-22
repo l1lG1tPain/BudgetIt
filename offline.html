@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Оффлайн — BudgetIt</title>
+
+  <link rel="stylesheet" href="/theme.css">
+  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: var(--dark-color);
+      color: var(--tertiary-color);
+      font-family: 'Montserrat', sans-serif;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    h1.big-404 {
+      position: absolute;
+      top: 25%;
+      left: 49%;
+      transform: translate(-50%, -55%);
+      margin: 0;
+      font-size: clamp(120px, 30vw, 280px);
+      line-height: .8;
+      font-weight: 800;
+      opacity: .9;
+      background: #ff0033;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(255, 0, 0, 0.7));
+      user-select: none;
+      pointer-events: none;
+      text-decoration: line-through;
+    }
+
+    h1 {
+      color: #ffffff;
+    }
+
+    .shark {
+      position: relative;
+      z-index: 2;
+      width: min(500px, 90vw);
+      max-width: 580px;
+    }
+
+    .shark img {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .45));
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-36px); }
+    }
+
+    p {
+      font-size: 1.25rem;
+      max-width: 480px;
+      margin: 18px 20px 28px;
+      z-index: 2;
+      color: #ff0033;
+    }
+
+    .actions {
+      position: absolute;
+      bottom: 6vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      width: 90%;
+      max-width: 480px;
+      z-index: 3;
+    }
+
+    button {
+      width: 100%;
+      background: #fff;
+      color: #000;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+      transition: transform .2s, box-shadow .2s, background .3s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+      background: #c40000;
+    }
+    button:disabled {
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+
+    .tiny {
+      margin: 0;
+      font-size: .85rem;
+      opacity: .6;
+      text-align: center;
+    }
+
+    a {
+      color: inherit;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="current-budget" title="На главную" onclick="location.href='/'">BudgetIt</h1>
+  </header>
+
+  <h1 class="big-404">Offline</h1>
+
+  <div class="shark" role="img" aria-label="Offline Shark">
+    <img src="assets/offline.png" alt="🦈 Offline shark illustration">
+  </div>
+
+  <p>📡 Нет интернета. <br>Акулка потеряла связь с сетью и теперь зависла в оффлайне…</p>
+
+  <div class="actions">
+    <button id="reload-btn" onclick="tryReload()">🔁 Попробовать снова</button>
+  </div>
+
+  <script>
+    function tryReload() {
+        const btn = document.getElementById('reload-btn');
+        btn.disabled = true;
+        btn.textContent = '🔄 ПереАкуливаемся…';
+        btn.style.opacity = '0.7';
+        setTimeout(() => {
+        location.reload();
+        }, 600); // небольшая задержка для UX
+    }
+    </script>
+
+</body>
+</html>

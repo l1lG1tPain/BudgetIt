@@ -1,4 +1,13 @@
 import { APP_VERSION } from '../../constants/constants.js';
+import {
+  marine,
+  financial,
+  tech,
+  calm,
+  active,
+  meme,
+  legendary
+} from './emojiMap.js';   // ← проверь путь под свою структуру
 
 (function () {
   try {
@@ -7,36 +16,33 @@ import { APP_VERSION } from '../../constants/constants.js';
     const userIdKey     = 'budgetit-user-id';
     const firstVisitKey = 'first-visit-date';
 
-    /* ---------- 1. Расширенный пул эмодзи ---------- */
+    /* ---------- 1. Общий пул эмодзи из категорий ---------- */
+    const emojis = [
+      ...marine,
+      ...financial,
+      ...tech,
+      ...calm,
+      ...active,
+      ...meme,
+      ...legendary
+    ];
 
-    const marine = [ '🦈','🐬','🐙','🐢','🐠','🐳','🦭','🪸','🐡','🦞','🦀','🦐','🐟','🐋','🪼','🛥️','🌊' ];
-    const financial = [ '💼','💸','📊','🧾','🪙','🔐','💰','🏦','🧮','💳','💵','💶','💷','💴','🏧','📈','📉','🪙' ];
-    const tech = [ '🤖','📱','🔋','💾','🧊','🛰️','🧬','🖥️','📡','🖱️','🖨️','🎧','💿','📀','🧑‍💻','🔌','🪫','🪛' ];
-    const calm = [ '🕊️','🌿','🐧','🌙','🍃','☁️','🕯️','🧘‍♂️','🪷','🌅','🌸','🌺','🌄','🌻','🪹','🌞','🛶','🫖' ];
-    const active = [ '🔥','🎯','🚀','🎩','💣','🌪️','🏆','💪','🏃‍♂️','🥇','💥','⛹️‍♂️','🤸‍♂️','⛷️','🏄‍♂️','🚴‍♂️','🏹','🥊' ];
-    const meme = [ '🐸','🐷','🍩','🧃','🦄','🍕','🧌','🦑','🤡','🧟‍♂️','😂','💩','😎','🫠','🤓','🙃','👀','🐶','🐱','🤯' ];
-    const legendary = [ '🧙‍♂️','🐉','👑','🧛‍♂️','🦸‍♂️','🧝‍♂️','🧞‍♂️','🧜‍♂️','🦅','🧙‍♀️' ];
-
-    const emojis = [...marine, ...financial, ...tech, ...calm, ...active, ...meme, ...legendary];
-
-    /* ---------- 2. userId с генерацией ---------- */
-
+    /* ---------- 2. userId с сохранением ---------- */
     let userId = localStorage.getItem(userIdKey);
     if (!userId) {
-      const idCore = Math.random().toString(36).substring(2, 8);
+      const idCore     = Math.random().toString(36).substring(2, 8);
       const isMyDevice = navigator.userAgent.includes('SM-S918B/DS');
       const isFlagSet  = localStorage.getItem('i-am-akulka') === 'yes';
       const isMe       = isMyDevice || isFlagSet;
 
       const emoji = isMe ? '🦈' : emojis[Math.floor(Math.random() * emojis.length)];
-      userId = `${emoji}${idCore}`;
+      userId      = `${emoji}${idCore}`;
       localStorage.setItem(userIdKey, userId);
     }
 
     window.budgetItUserId = userId;
 
     /* ---------- 3. Первая дата визита ---------- */
-
     let firstVisit = localStorage.getItem(firstVisitKey);
     if (!firstVisit) {
       firstVisit = new Date().toISOString().slice(0, 10);
@@ -48,12 +54,11 @@ import { APP_VERSION } from '../../constants/constants.js';
     );
 
     /* ---------- 4. Сбор данных о бюджетах ---------- */
-
-    const budgetsRaw = localStorage.getItem('budgets');
-    let budgetNames = [];
-    let totalTx = 0;
-    let debtCount = 0;
-    let txTypeCounts = {};
+    const budgetsRaw   = localStorage.getItem('budgets');
+    let budgetNames    = [];
+    let totalTx        = 0;
+    let debtCount      = 0;
+    let txTypeCounts   = {};
 
     try {
       const parsed = JSON.parse(budgetsRaw || '[]');
@@ -76,7 +81,6 @@ import { APP_VERSION } from '../../constants/constants.js';
       .sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
     /* ---------- 5. Формирование payload ---------- */
-
     const data = {
       tag: 'session',
       version: APP_VERSION || 'unknown',
@@ -92,8 +96,7 @@ import { APP_VERSION } from '../../constants/constants.js';
     console.log('[Analytics] id:', userId);
     console.log('[Analytics] Данные identify:', data);
 
-    /* ---------- 6. Отправка ---------- */
-
+    /* ---------- 6. Отправка в Umami ---------- */
     try {
       if (typeof umami !== 'undefined' && typeof umami.identify === 'function') {
         umami.identify(userId, data);
@@ -105,6 +108,7 @@ import { APP_VERSION } from '../../constants/constants.js';
       console.warn('[Analytics] Ошибка при вызове identify:', err);
     }
 
+    /* ---------- 7. Доп. событие через trackSafe ---------- */
     try {
       if (typeof window.trackSafe === 'function') {
         window.trackSafe('session-start', data);

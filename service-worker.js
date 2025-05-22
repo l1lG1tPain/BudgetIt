@@ -6,6 +6,7 @@ const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/', '/index.html', '/onboarding.html',
   '/style.css', '/theme.css',
+  '/404.html', '/500.html', '/offline.html',
   '/app.js',
   '/src/BudgetManager.js', '/src/UIManager.js',
   '/src/ThemeManager.js',  '/src/utils/utils.js',
@@ -53,10 +54,19 @@ self.addEventListener('fetch', event => {
   if (request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(request)
-        .then(resp => { cacheIfAllowed(request, resp); return resp; })
+        .then(resp => {
+          // Сервер ответил, но неуспешно
+          if (!resp.ok) {
+            if (resp.status === 404)  return caches.match('/404.html');
+            if (resp.status >= 500)   return caches.match('/500.html');
+          }
+          // Успешный ответ → кладём в кеш, возвращаем
+          cacheIfAllowed(request, resp);
+          return resp;
+        })
         .catch(() =>
-          caches.match(request, { ignoreSearch: true })
-            .then(cached => cached || caches.match('/index.html'))
+          // Сеть недоступна / DNS-ошибка → fallback
+          caches.match('/offline.html')
         )
     );
     return;

@@ -115,6 +115,13 @@ export class BudgetManager {
     return regex.test(name);
   }
 
+  getTotalTransactions() {
+    return this.budgets.reduce((sum, budget) => {
+      return sum + (budget.transactions?.length || 0);
+    }, 0);
+  }
+
+
   // Рассчитываем итоги с учётом фильтра по месяцу (формат 'MM' или 'all')
   calculateTotals(monthFilter = 'all') {
     const budget = this.getCurrentBudget();

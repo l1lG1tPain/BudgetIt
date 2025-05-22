@@ -725,7 +725,7 @@ footer {
   justify-content: center;
   background: linear-gradient(45deg, #6a11cb, #2575fc);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   padding: 10px 15px;
   color: white;
   font-size: 1rem;
@@ -1191,7 +1191,7 @@ main::-webkit-scrollbar-thumb {
   height: 100%;
   object-fit: cover; /* или contain, если хотите видеть всю картинку целиком */
   display: block;    /* убирает лишние пробелы и отступы */
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
 }
 
 /* Стили для bottom-sheet выбора категорий */
@@ -1664,7 +1664,7 @@ main::-webkit-scrollbar-thumb {
   background-color: var(--dark-color);
   border: 1px solid var(--accent-color);
   color: var(--tertiary-color);
-  border-radius: 12px;
+  border-radius: var(--border-radius-md);
   /* padding-right: 20px; */
   padding: 10px;
   cursor: pointer;
@@ -1776,3 +1776,104 @@ main::-webkit-scrollbar-thumb {
   50%  { text-shadow: 0 0 12px rgba(255, 255, 100, 0.9); }
   100% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
 }
+
+
+.user-profile-card {
+  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+  padding: 20px;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-profile-card::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(circle, var(--primary-color, rgba(102,204,255,0.1)), transparent 70%);
+  animation: floatBlob 6s infinite linear;
+  z-index: 0;
+}
+
+
+@keyframes floatBlob {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-emoji {
+  z-index: 1;
+}
+
+.emoji-avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  border: 3px solid transparent;
+  background: linear-gradient(135deg, var(--primary-color), var(--income-color)) border-box;
+  box-shadow: 0 0 15px var(--primary-color, rgba(102, 204, 255, 0.5));
+  /* padding: 3px; */
+  background-origin: border-box;
+  background-clip: content-box, border-box;
+}
+
+
+.user-level-info {
+  flex-grow: 1;
+  z-index: 1;
+}
+
+.user-level-text {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--secondary-color);
+}
+
+.progress-bar {
+  background: linear-gradient(135deg, var(--primary-color), var(--income-color)) border-box;
+  /* background: linear-gradient(to right, #66ccff, #00ffcc); */
+  height: 100%;
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 12px;
+}
+
+
+.progress-bar-container {
+  background: #2e2e2e;
+  border-radius: 12px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 1px solid #444;
+}
+
+.tx-counter {
+  font-size: 0.9em;
+  color: var(--an-tertiary-color, #ccc);
+  margin-top: 4px;
+}
+
+.user-id-display {
+  font-size: 0.9em;
+  color: var(--secondary-color, #aaa);
+  margin-top: 6px;
+  background: var(--tertiary-color, #333);
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-block;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+

@@ -5,7 +5,8 @@ import {
   getIncomeEmoji,
   getExpenseEmoji,
   getDebtEmoji,
-  getDepositEmoji
+  getDepositEmoji,
+  emojiProfiles
 } from './utils/emojiMap.js';
 import { monthNames } from '../constants/constants.js';
 
@@ -39,6 +40,14 @@ export class UIManager {
       userIdEl.textContent = `ID: ${userIdText}`;
     }
 
+    const userIdElement = document.getElementById('user-id');
+    const userId = userIdElement?.textContent?.trim().replace('ID:', '').trim() || localStorage.getItem('budgetit-user-id');
+    console.log('[userId]', userId);
+    const emoji = Array.from(userId || '')[0] || '❔';
+
+    const totalTx = this.budgetManager.getTotalTransactions?.() || 0;
+
+
 
     // Защита от запуска без бюджета
     if (!this.budgetManager.budgets.length) {
@@ -52,6 +61,7 @@ export class UIManager {
     this.attachEventListeners();
     this.bindNumericFormats();
     this.initializeBannerCarousel();
+    this.updateUserLevelInfo(totalTx, emoji);
   }
 
 
@@ -125,6 +135,64 @@ export class UIManager {
     );
     this.updateTransactionList(filtered);
   }
+
+  updateUserLevelInfo(totalTx = 0, emoji = '❔') {
+    console.log('[LOG] updateUserLevelInfo()', { totalTx, emoji });
+    const levels = [50, 100, 200, 500, 1000, 2500, 5000];
+    let currentLevel = 1;
+    let nextThreshold = 50;
+
+    for (let i = 0; i < levels.length; i++) {
+      if (totalTx >= levels[i]) {
+        currentLevel = i + 2;
+        nextThreshold = levels[i + 1] || levels[i];
+      } else {
+        nextThreshold = levels[i];
+        break;
+      }
+    }
+
+    const currentThreshold = levels[currentLevel - 2] || 0;
+    const progress = Math.min(100, ((totalTx - currentThreshold) / (nextThreshold - currentThreshold)) * 100);
+
+    
+    const levelEl = document.getElementById('user-level');
+    const countEl = document.getElementById('tx-count');
+    const nextEl = document.getElementById('tx-next');
+    const emojiEl = document.getElementById('user-emoji');
+    console.log('[LOG] emojiEl:', emojiEl);
+    const barEl   = document.getElementById('user-progress');
+    const idTextEl = document.getElementById('user-id-text');
+    const nameEl = document.getElementById('user-emoji-name'); // опционально для подписи
+
+    if (levelEl) levelEl.textContent = currentLevel;
+    if (countEl) countEl.textContent = totalTx;
+    if (nextEl)  nextEl.textContent = nextThreshold;
+
+    const profile = emojiProfiles.find(p => p.emoji === emoji);
+    console.log('[LOG] profile', profile);
+
+    if (emojiEl && profile?.img) {
+      emojiEl.innerHTML = `
+        <img 
+          src="${profile.img}" 
+          alt="${emoji}" 
+          class="emoji-avatar"
+          onerror="this.onerror=null;this.src='${profile.fallbackImg}'"
+        >
+      `;
+    }
+
+
+
+    if (nameEl && profile?.name) {
+      nameEl.textContent = profile.name;
+    }
+
+    if (barEl) barEl.style.width = `${progress}%`;
+    if (idTextEl && window.budgetItUserId) idTextEl.textContent = window.budgetItUserId;
+}
+
 
   updateTransactionList(transactions) {
     console.log('updateTransactionList called, count =', transactions.length);
