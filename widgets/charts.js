@@ -2,6 +2,22 @@
 // Chart.js: аналитика BudgetIt
 // ===============================
 
+// --- глобальные настройки Chart.js ------------------------------
+Chart.defaults.maintainAspectRatio = false; // управляем высотой сами
+Chart.defaults.aspectRatio        = 2;     //  ширина : высота ≈ 2 : 1
+
+const CHART_DEFAULT_HEIGHT = 260;          // базовая высота всех графиков
+
+function setCanvasHeight(canvas, pct = 0.6) {
+  if (!canvas) return;
+
+  const cssPx = Math.round(window.innerHeight * pct);      // 50 % окна
+  canvas.style.height = cssPx + 'px';                      // CSS-высота
+  canvas.height       = cssPx * window.devicePixelRatio;   // внутренний буфер
+}
+
+// ----------------------------------------------------------------
+
 // 1) Хранилище экземпляров графиков
 let charts = {};
 
@@ -26,47 +42,11 @@ function initializeAnalytics(budgetManager) {
 
   setupAnalyticsFilter();
   renderCharts();
-  initializeAnalyticsCarousel();
 
   if (wasHidden) settingsPage.classList.add('hidden');
 }
 
-// 4) Инициализация карусели
-function initializeAnalyticsCarousel() {
-  const container = document.querySelector('.analytics-slides-container');
-  const slides = document.querySelectorAll('.analytics-slide');
-  const dotsContainer = document.querySelector('.analytics-dots');
-  if (!container || slides.length === 0 || !dotsContainer) return;
-
-  dotsContainer.innerHTML = '';
-  slides.forEach((_, i) => {
-    const dot = document.createElement('div');
-    dot.classList.add('dot');
-    dot.dataset.index = i;
-    dot.addEventListener('click', () => showAnalyticsSlide(i));
-    dotsContainer.append(dot);
-  });
-
-  if (!analyticsSwipeInited) {
-    let startX = 0;
-    container.style.touchAction = 'pan-y';
-    container.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') startX = e.clientX; });
-    container.addEventListener('pointerup', e => {
-      if (e.pointerType === 'touch' && !swipeLocked) {
-        swipeLocked = true;
-        setTimeout(() => swipeLocked = false, 300);
-        const diff = e.clientX - startX;
-        if (diff > 50) showAnalyticsSlide(Math.max(currentSlideIndex - 1, 0));
-        else if (diff < -50) showAnalyticsSlide(Math.min(currentSlideIndex + 1, slides.length - 1));
-      }
-    });
-    analyticsSwipeInited = true;
-  }
-
-  showAnalyticsSlide(0);
-}
-
-// 5) Переключение слайда
+// 5) Переключение слайда (оставлено на будущее)
 function showAnalyticsSlide(index) {
   const container = document.querySelector('.analytics-slides-container');
   const dots = document.querySelectorAll('.analytics-dots .dot');
@@ -107,12 +87,16 @@ function isChartRendered(index) {
     'spendingByWeekday',
     'spendingByAmountRange'
   ];
-  const key = chartKeys[index];
-  return charts[key];
+  return charts[chartKeys[index]];
 }
 
 // 6) Рендер всех графиков
 function renderCharts() {
+  if (!budgetManagerInstance) {
+    console.warn('[Charts] budgetManagerInstance is null');
+    return;
+  }
+
   destroyAllCharts();
 
   [
@@ -145,7 +129,7 @@ function setupAnalyticsFilter() {
   if (!customSelect) return;
 
   const selected = customSelect.querySelector('.custom-select-button');
-  const options = customSelect.querySelector('.custom-select-options');
+  const options   = customSelect.querySelector('.custom-select-options');
 
   selected.textContent = 'Все месяцы ▼';
   currentAnalyticsMonthFilter = 'all';
@@ -153,69 +137,64 @@ function setupAnalyticsFilter() {
   options.classList.remove('hidden');
   options.classList.add('hidden');
 
-  selected.addEventListener('click', (e) => {
+  selected.addEventListener('click', e => {
     e.stopImmediatePropagation();
     options.classList.toggle('hidden');
   });
 
   options.querySelectorAll('div').forEach(option => {
-    option.addEventListener('click', (e) => {
+    option.addEventListener('click', e => {
       e.stopPropagation();
-      const monthName = option.textContent;
-      const monthValue = option.getAttribute('data-value');
-
-      selected.textContent = monthName + ' ▼';
-      currentAnalyticsMonthFilter = monthValue;
-
+      selected.textContent = option.textContent + ' ▼';
+      currentAnalyticsMonthFilter = option.getAttribute('data-value');
       options.classList.add('hidden');
-
       destroyAllCharts();
       renderCharts();
     });
   });
 
-  document.addEventListener('click', (e) => {
-    if (!customSelect.contains(e.target)) {
-      options.classList.add('hidden');
-    }
+  document.addEventListener('click', e => {
+    if (!customSelect.contains(e.target)) options.classList.add('hidden');
   });
 }
 
 // 7) Получение транзакций с исключением категорий
 function getCurrentBudgetTransactions(filterByMonth = true) {
-  const transactions = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
-  if (!transactions.length) return [];
+  const tx = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+  if (!tx.length) return [];
 
-  const excludedCategories = ['Не знаю на что потратил (без учёта)', 'Другая категория (без учёта)']; // Категории, исключённые из аналитики
-  const filteredTransactions = transactions.filter(t => !excludedCategories.includes(t.category));
+  const excluded = ['Не знаю на что потратил (без учёта)', 'Другая категория (без учёта)'];
+  const filtered = tx.filter(t => !excluded.includes(t.category));
 
-  if (currentAnalyticsMonthFilter === 'all' || !filterByMonth) return filteredTransactions;
+  if (currentAnalyticsMonthFilter === 'all' || !filterByMonth) return filtered;
 
-  return filteredTransactions.filter(t => {
-    const month = new Date(t.date).toISOString().slice(5, 7);
-    return month === currentAnalyticsMonthFilter;
-  });
+  return filtered.filter(t =>
+      new Date(t.date).toISOString().slice(5, 7) === currentAnalyticsMonthFilter
+  );
 }
 
 // 8) Форматирование чисел
-function formatNumber(n) {
-  return n.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
+const formatNumber = n =>
+    n.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-// 9) Функция для пустых графиков
+// 9) Для пустых графиков
 function ensureNonEmptyData(labels, data) {
-  if (data.length === 0) {
+  if (!data.length) {
     labels.push('');
     data.push(0.001);
   }
 }
 
-// ---- 1. Расходы по категориям (doughnut) ----
+// -----------------------------------------------------------------
+// 1. Расходы по категориям (doughnut)
+// -----------------------------------------------------------------
 function renderExpensesByCategoryChart() {
   const canvas = document.getElementById('expensesByCategoryChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
@@ -224,57 +203,58 @@ function renderExpensesByCategoryChart() {
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const labels = sorted.map(([cat]) => cat);
-  const data = sorted.map(([, amount]) => amount);
+  const labels = sorted.map(([c]) => c);
+  const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-
-  const count = labels.length;
-  const colors = labels.map((_, i) => `hsl(${i * 360 / count}, 70%, 60%)`);
+  const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`);
 
   charts.expensesByCategory = new Chart(ctx, {
     type: 'doughnut',
     data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
     options: {
       cutout: '65%',
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } } }
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') }
+        }
+      }
     }
   });
 
-  const centerEl = document.getElementById('expensesByCategoryCenterText');
-  if (centerEl) {
-    centerEl.innerHTML = `
-      <div class="center-total">${formatNumber(data.reduce((s, v) => s + v, 0))}</div>
-      <div class="center-label">сум</div>
-    `;
-  }
+  const center = document.getElementById('expensesByCategoryCenterText');
+  if (center)
+    center.innerHTML = `<div class="center-total">${formatNumber(data.reduce((s, v) => s + v, 0))}</div><div class="center-label">сум</div>`;
 }
 
-// ---- 2. Ежемесячные расходы/доходы (bar) ----
+// -----------------------------------------------------------------
+// 2. Ежемесячные расходы/доходы (bar)
+// -----------------------------------------------------------------
 function renderMonthlyExpensesChart() {
   const canvas = document.getElementById('monthlyExpensesChart');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions(false);
+  setCanvasHeight(canvas, 0.6);
 
-  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+  const ctx = canvas.getContext('2d');
+  const tx  = getCurrentBudgetTransactions(false);
+
+  const months      = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
   const monthlyData = {};
 
   tx.forEach(t => {
     if (t.type !== 'income' && t.type !== 'expense') return;
-    const d = new Date(t.date);
+    const d   = new Date(t.date);
     const key = `${months[d.getMonth()]} ${d.getFullYear()}`;
     monthlyData[key] = monthlyData[key] || { income: 0, expense: 0 };
     monthlyData[key][t.type] += t.amount;
   });
 
-  const keys = Object.keys(monthlyData).sort((a, b) => {
+  const keys    = Object.keys(monthlyData).sort((a, b) => {
     const [mA, yA] = a.split(' '), [mB, yB] = b.split(' ');
     return (+yA - +yB) || (months.indexOf(mA) - months.indexOf(mB));
   });
-
-  const income = keys.map(k => monthlyData[k].income);
+  const income  = keys.map(k => monthlyData[k].income);
   const expense = keys.map(k => monthlyData[k].expense);
 
   ensureNonEmptyData(keys, income);
@@ -285,41 +265,39 @@ function renderMonthlyExpensesChart() {
     data: {
       labels: keys,
       datasets: [
-        { label: 'Доходы', data: income, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') },
+        { label: 'Доходы', data: income,  backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') },
         { label: 'Расходы', data: expense, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--expense-color') }
       ]
     },
     options: {
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 60, left: 0, right: 0 } },
+      layout: { padding: { bottom: 60 } },
       scales: {
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум`
-          }
-        }
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум` } }
       }
     }
   });
 }
 
-// ---- 3. Доходы против расходов (pie) ----
+// -----------------------------------------------------------------
+// 3. Доходы vs Расходы (pie)
+// -----------------------------------------------------------------
 function renderIncomeVsExpensesChart() {
   const canvas = document.getElementById('incomeVsExpensesChart');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  setCanvasHeight(canvas, 0.6);
 
-  const income = tx.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expense = tx.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const ctx = canvas.getContext('2d');
+  const tx  = getCurrentBudgetTransactions();
+
+  const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   const labels = ['Доходы', 'Расходы'];
-  const data = [income, expense];
-
+  const data   = [income, expense];
   ensureNonEmptyData(labels, data);
 
   charts.incomeVsExpenses = new Chart(ctx, {
@@ -335,14 +313,13 @@ function renderIncomeVsExpensesChart() {
       }]
     },
     options: {
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 40, left: 0, right: 0 } },
+      layout: { padding: { bottom: 40 } },
       plugins: {
         tooltip: {
           callbacks: {
             label: ctx => {
               const total = income + expense;
-              const pct = total ? Math.round(ctx.raw / total * 100) : 0;
+              const pct   = total ? Math.round(ctx.raw / total * 100) : 0;
               return `${ctx.label}: ${formatNumber(ctx.raw)} сум (${pct}%)`;
             }
           }
@@ -352,25 +329,28 @@ function renderIncomeVsExpensesChart() {
   });
 }
 
-// ---- 4. Топ расходов (horizontal bar) ----
+// -----------------------------------------------------------------
+// 4. Топ расходов (horizontal bar)
+// -----------------------------------------------------------------
 function renderTopExpensesChart() {
   const canvas = document.getElementById('topExpensesChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
     const label = t.products?.[0]?.name || t.category || 'Без категории';
-    map[label] = (map[label] || 0) + t.amount;
+    map[label]  = (map[label] || 0) + t.amount;
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 15);
-  const labels = sorted.map(([label]) => label);
-  const data = sorted.map(([, amount]) => amount);
+  const labels = sorted.map(([l]) => l);
+  const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-
   const colors = labels.map((_, i) => `hsl(${360 - i * 36}, 70%, 60%)`);
 
   charts.topExpenses = new Chart(ctx, {
@@ -378,73 +358,60 @@ function renderTopExpensesChart() {
     data: { labels, datasets: [{ data, backgroundColor: colors }] },
     options: {
       indexAxis: 'y',
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
+      layout: { padding: { bottom: 30 } },
       scales: {
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } },
-      elements: {
-        bar: {
-          borderSkipped: false,
-          borderWidth: 0,
-          borderRadius: 8,
-          barThickness: 20,
-          maxBarThickness: 30,
-          minBarLength: 10
-        }
-      }
+      elements: { bar: { borderRadius: 30, barThickness: 30, maxBarThickness: 30, minBarLength: 10 } }
     }
   });
 
-  const chart = charts.topExpenses;
+  // кликабельные бары
+  const chart  = charts.topExpenses;
   const yScale = chart.scales.y;
-
-  chart.canvas.addEventListener('click', (event) => {
-    const { offsetX, offsetY } = event;
-    const top = yScale.top;
-    const bottom = yScale.bottom;
-    const height = bottom - top;
-    const step = height / yScale.ticks.length;
-
-    if (offsetY < top || offsetY > bottom) return;
-
-    const clickedIndex = Math.floor((offsetY - top) / step);
-
-    if (clickedIndex >= 0 && clickedIndex < yScale.ticks.length) {
-      chart.setActiveElements([{ datasetIndex: 0, index: clickedIndex }]);
-      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: clickedIndex }], { x: 0, y: 0 });
+  chart.canvas.addEventListener('click', evt => {
+    const { offsetY } = evt;
+    const step = (yScale.bottom - yScale.top) / yScale.ticks.length;
+    const idx  = Math.floor((offsetY - yScale.top) / step);
+    if (idx >= 0 && idx < yScale.ticks.length) {
+      chart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 });
       chart.update();
     }
   });
 }
 
-// ---- 5. Динамика баланса (line) ----
+// -----------------------------------------------------------------
+// 5. Динамика баланса (line)
+// -----------------------------------------------------------------
 function renderBalanceDynamicsChart() {
   const canvas = document.getElementById('balanceDynamicsChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const dayMap = {};
   tx.forEach(t => {
-    const day = new Date(t.date).getDate();
-    dayMap[day] = (dayMap[day] || 0) + (t.type === 'income' ? t.amount : (t.type === 'expense' ? -t.amount : 0));
+    const d = new Date(t.date).getDate();
+    dayMap[d] = (dayMap[d] || 0) +
+        (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0);
   });
 
-  const days = Object.keys(dayMap).map(Number).sort((a, b) => a - b);
-  let balance = 0;
-  const data = days.map(d => (balance += dayMap[d]));
+  const days   = Object.keys(dayMap).map(Number).sort((a, b) => a - b);
+  let balance  = 0;
+  const data   = days.map(d => balance += dayMap[d]);
 
   ensureNonEmptyData(days, data);
 
   charts.balanceDynamics = new Chart(ctx, {
     type: 'line',
-    data: { labels: days, datasets: [{ data, fill: false, tension: 0.3, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
+    data: { labels: days, datasets: [{ data, tension: 0.3, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
+      layout: { padding: { bottom: 30 } },
       scales: {
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
@@ -454,18 +421,22 @@ function renderBalanceDynamicsChart() {
   });
 }
 
-// ---- 6. История категории (line) ----
+// -----------------------------------------------------------------
+// 6. История категории (line)
+// -----------------------------------------------------------------
 function renderCategoryHistoryChart() {
   const canvas = document.getElementById('categoryHistoryChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const cat = charts.expensesByCategory?.data?.labels?.[0] || '';
 
   const monthMap = {};
   tx.filter(t => t.category === cat && t.type === 'expense').forEach(t => {
-    const d = new Date(t.date);
+    const d   = new Date(t.date);
     const key = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     monthMap[key] = (monthMap[key] || 0) + t.amount;
   });
@@ -474,17 +445,15 @@ function renderCategoryHistoryChart() {
     const [mA, yA] = a.split('/').map(Number), [mB, yB] = b.split('/').map(Number);
     return (yA - yB) || (mA - mB);
   });
-
   const data = labels.map(k => monthMap[k]);
 
   ensureNonEmptyData(labels, data);
 
   charts.categoryHistory = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{ data, fill: false, tension: 0.4, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
+    data: { labels, datasets: [{ data, tension: 0.4, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
+      layout: { padding: { bottom: 30 } },
       scales: {
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
@@ -494,25 +463,28 @@ function renderCategoryHistoryChart() {
   });
 }
 
-// ---- 7. Категории по убыванию (horizontal bar) ----
+// -----------------------------------------------------------------
+// 7. Категории по убыванию (horizontal bar)
+// -----------------------------------------------------------------
 function renderCategoriesByDescendingChart() {
   const canvas = document.getElementById('categoriesByDescendingChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.7);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
-    const cat = t.category || 'Без категории';
-    map[cat] = (map[cat] || 0) + t.amount;
+    const cat  = t.category || 'Без категории';
+    map[cat]    = (map[cat] || 0) + t.amount;
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  const labels = sorted.map(([cat]) => cat);
-  const data = sorted.map(([, amount]) => amount);
+  const labels = sorted.map(([c]) => c);
+  const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-
   const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`);
 
   charts.categoriesByDescending = new Chart(ctx, {
@@ -520,63 +492,49 @@ function renderCategoriesByDescendingChart() {
     data: { labels, datasets: [{ data, backgroundColor: colors }] },
     options: {
       indexAxis: 'y',
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
+      layout: { padding: { bottom: 30 } },
       scales: {
         y: {
           ticks: {
             color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
-            font: { size: Math.max(5, 10 - labels.length / 10) },
-            padding: 10,
+            font: { size: Math.max(6, 10 - labels.length / 10) },
+            padding: 10
           }
         },
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
       plugins: { legend: { display: false } },
-      elements: {
-        bar: {
-          borderSkipped: false,
-          borderWidth: 0,
-          borderRadius: 10,
-          barThickness: 100,
-          maxBarThickness: 30,
-          minBarLength: 40
-        }
-      },
-      responsive: true
+      elements: { bar: { borderRadius: 10, barThickness: 100, maxBarThickness: 30, minBarLength: 40 } }
     }
   });
 
-  const chart = charts.categoriesByDescending;
+  // кликабельные бары
+  const chart  = charts.categoriesByDescending;
   const yScale = chart.scales.y;
-
-  chart.canvas.addEventListener('click', (event) => {
-    const { offsetX, offsetY } = event;
-    const top = yScale.top;
-    const bottom = yScale.bottom;
-    const height = bottom - top;
-    const step = height / yScale.ticks.length;
-
-    if (offsetY < top || offsetY > bottom) return;
-
-    const clickedIndex = Math.floor((offsetY - top) / step);
-
-    if (clickedIndex >= 0 && clickedIndex < yScale.ticks.length) {
-      chart.setActiveElements([{ datasetIndex: 0, index: clickedIndex }]);
-      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: clickedIndex }], { x: 0, y: 0 });
+  chart.canvas.addEventListener('click', evt => {
+    const { offsetY } = evt;
+    const step = (yScale.bottom - yScale.top) / yScale.ticks.length;
+    const idx  = Math.floor((offsetY - yScale.top) / step);
+    if (idx >= 0 && idx < yScale.ticks.length) {
+      chart.setActiveElements([{ datasetIndex: 0, index: idx }]);
+      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 });
       chart.update();
     }
   });
 }
 
-// ---- 8. Психопортрет: траты по дням недели (bar) ----
+// -----------------------------------------------------------------
+// 8. Траты по дням недели (bar)
+// -----------------------------------------------------------------
 function renderSpendingByWeekdayChart() {
   const canvas = document.getElementById('spendingByWeekdayChart');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  setCanvasHeight(canvas, 0.6);
 
-  const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  const ctx = canvas.getContext('2d');
+  const tx  = getCurrentBudgetTransactions();
+
+  const days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
   const sums = Array(7).fill(0);
 
   tx.filter(t => t.type === 'expense').forEach(t => {
@@ -584,15 +542,13 @@ function renderSpendingByWeekdayChart() {
   });
 
   ensureNonEmptyData(days, sums);
-
   const colors = days.map((_, i) => `hsl(${i * 50}, 70%, 60%)`);
 
   charts.spendingByWeekday = new Chart(ctx, {
     type: 'bar',
     data: { labels: days, datasets: [{ data: sums, backgroundColor: colors }] },
     options: {
-      maintainAspectRatio: false,
-      layout: { padding: { top: 0, bottom: 30, left: 0, right: 0 } },
+      layout: { padding: { bottom: 30 } },
       scales: {
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
@@ -602,46 +558,45 @@ function renderSpendingByWeekdayChart() {
   });
 }
 
-// ---- 9. Психопортрет: траты по размеру чека (pie) ----
+// -----------------------------------------------------------------
+// 9. Траты по размеру чека (pie)
+// -----------------------------------------------------------------
 function renderSpendingByAmountRangeChart() {
   const canvas = document.getElementById('spendingByAmountRangeChart');
   if (!canvas) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
-  const tx = getCurrentBudgetTransactions();
+  const tx  = getCurrentBudgetTransactions();
 
   const ranges = {
-    '<100 000': 0,
-    '100 000–500 000': 0,
-    '500 000–1 000 000': 0,
-    '1 000 000–5 000 000': 0,
-    '5 000 000–10 000 000': 0,
-    '>10 000 000': 0
+    '<100 000': 0, '100 000–500 000': 0, '500 000–1 000 000': 0,
+    '1 000 000–5 000 000': 0, '5 000 000–10 000 000': 0, '>10 000 000': 0
   };
 
   tx.filter(t => t.type === 'expense').forEach(t => {
     const a = t.amount;
-    if (a < 100_000) ranges['<100 000']++;
-    else if (a < 500_000) ranges['100 000–500 000']++;
-    else if (a < 1_000_000) ranges['500 000–1 000 000']++;
-    else if (a < 5_000_000) ranges['1 000 000–5 000 000']++;
-    else if (a < 10_000_000) ranges['5 000 000–10 000 000']++;
-    else ranges['>10 000 000']++;
+    if      (a < 100_000)    ranges['<100 000']++;
+    else if (a < 500_000)    ranges['100 000–500 000']++;
+    else if (a < 1_000_000)  ranges['500 000–1 000 000']++;
+    else if (a < 5_000_000)  ranges['1 000 000–5 000 000']++;
+    else if (a <10_000_000)  ranges['5 000 000–10 000 000']++;
+    else                     ranges['>10 000 000']++;
   });
 
   const labels = Object.keys(ranges);
-  const data = Object.values(ranges);
-
+  const data   = Object.values(ranges);
   ensureNonEmptyData(labels, data);
 
   const baseColors = [
-    'rgb(43,232,42)', 'rgb(42,172,232)', 'rgb(232,43,42)', 'rgb(138,43,226)', 'hsl(270,70%,60%)', 'hsl(320,70%,60%)'
+    'rgb(43,232,42)','rgb(42,172,232)','rgb(232,43,42)',
+    'rgb(138,43,226)','hsl(270,70%,60%)','hsl(320,70%,60%)'
   ];
 
   charts.spendingByAmountRange = new Chart(ctx, {
     type: 'pie',
     data: { labels, datasets: [{ data, backgroundColor: baseColors }] },
     options: {
-      maintainAspectRatio: false,
       layout: { padding: { top: 10, bottom: 50, left: 10, right: 10 } },
       plugins: {
         legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
@@ -651,113 +606,69 @@ function renderSpendingByAmountRangeChart() {
   });
 }
 
+// -----------------------------------------------------------------
+// 10. Годовая сводка (bar)
+// -----------------------------------------------------------------
 function renderAnnualSummaryChart() {
   const canvas = document.getElementById('annualSummaryChart');
   if (!canvas || !budgetManagerInstance?.calculateTotals) return;
+  setCanvasHeight(canvas, 0.6);
+
   const ctx = canvas.getContext('2d');
 
-  const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-  const labels = months;
-  const keys = [...Array(12)].map((_, i) => String(i + 1).padStart(2, '0'));
+  const months = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+  const keys   = [...Array(12)].map((_, i) => String(i + 1).padStart(2, '0'));
 
-  const dataBudget = [];
-  const dataIncome = [];
-  const dataExpense = [];
-  const dataDeposit = [];
-  const dataDebt = [];
+  const dataBudget = [], dataIncome = [], dataExpense = [], dataDeposit = [], dataDebt = [];
 
-  keys.forEach(month => {
-    const result = budgetManagerInstance.calculateTotals(month);
-    dataBudget.push(result.overallBudget);
-    dataIncome.push(result.monthlyIncome);
-    dataExpense.push(result.monthlyExpense);
-    dataDeposit.push(result.depositBalance);
-    dataDebt.push(result.totalDebt);
+  keys.forEach(m => {
+    const r = budgetManagerInstance.calculateTotals(m);
+    dataBudget.push(r.overallBudget);
+    dataIncome .push(r.monthlyIncome);
+    dataExpense.push(r.monthlyExpense);
+    dataDeposit.push(r.depositBalance);
+    dataDebt  .push(r.totalDebt);
   });
 
   charts.annualSummary = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
+      labels: months,
       datasets: [
-        { label: 'Бюджет', data: dataBudget, backgroundColor: 'hsl(130, 70%, 60%)' },
-        { label: 'Доходы', data: dataIncome, backgroundColor: 'hsl(210, 70%, 60%)' },
-        { label: 'Расходы', data: dataExpense, backgroundColor: 'hsl(0, 70%, 60%)' },
-        { label: 'Вклад', data: dataDeposit, backgroundColor: 'hsl(270, 70%, 60%)' },
-        { label: 'Долг', data: dataDebt, backgroundColor: 'hsl(45, 70%, 60%)' }
+        { label: 'Бюджет', data: dataBudget,  backgroundColor: 'hsl(130, 70%, 60%)' },
+        { label: 'Доходы', data: dataIncome,  backgroundColor: 'hsl(210, 70%, 60%)' },
+        { label: 'Расходы', data: dataExpense, backgroundColor: 'hsl(0,   70%, 60%)' },
+        { label: 'Вклад',   data: dataDeposit, backgroundColor: 'hsl(270, 70%, 60%)' },
+        { label: 'Долг',    data: dataDebt,    backgroundColor: 'hsl(45,  70%, 60%)' }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 10,
-          bottom: 30
-        }
-      },
+      layout: { padding: { top: 10, bottom: 30 } },
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум`
-          }
-        },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум` } },
         legend: {
           position: 'bottom',
           labels: {
-            boxWidth: 14,
-            boxHeight: 14,
-            padding: 12,
-            font: {
-              size: 12
-            },
+            boxWidth: 14, boxHeight: 14, padding: 12, font: { size: 12 },
             color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color')
           }
         }
       },
       scales: {
-        x: {
-          ticks: {
-            font: { size: 11 },
-            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color')
-          }
-        },
-        y: {
-          ticks: {
-            font: { size: 11 },
-            color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
-            callback: formatNumber
-          }
-        }
+        x: { ticks: { font: { size: 11 }, color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        y: { ticks: { font: { size: 11 }, color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       }
     }
   });
 }
 
-
-
-// === Активируем клик по тексту категорий ===
-function attachCategoryClickHandlers(chart) {
-  if (!chart || !chart.scales?.y) return;
-
-  const canvas = chart.canvas;
-  const yScale = chart.scales.y;
-
-  canvas.onclick = (event) => {
-    const { offsetY } = event;
-    const top = yScale.top;
-    const bottom = yScale.bottom;
-    const height = bottom - top;
-    const step = height / yScale.ticks.length;
-
-    if (offsetY < top || offsetY > bottom) return;
-
-    const clickedIndex = Math.floor((offsetY - top) / step);
-
-    if (clickedIndex >= 0 && clickedIndex < yScale.ticks.length) {
-      chart.setActiveElements([{ datasetIndex: 0, index: clickedIndex }]);
-      chart.tooltip.setActiveElements([{ datasetIndex: 0, index: clickedIndex }], { x: 0, y: 0 });
-      chart.update();
-    }
-  };
-}
+// ---------------------------------------------------------------
+// Экспорт
+// ---------------------------------------------------------------
+export {
+  destroyAllCharts,
+  renderCharts,
+  initializeAnalytics,
+  renderExpensesByCategoryChart,
+  renderTopExpensesChart
+};

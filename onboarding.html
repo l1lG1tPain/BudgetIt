@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <link rel="stylesheet" href="theme.css">
   <link rel="manifest" href="manifest.json?v=2.9.3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -19,11 +22,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Добро пожаловать в BudgetIt</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
     body {
       margin: 0;
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Montserrat';
       background-color: var(--dark-color);
       color: var(--accent-color);
       display: flex;
@@ -58,6 +60,8 @@
       font-size: 1em;
       margin-bottom: 15px;
       width: 90%;
+      font-family: 'Montserrat';
+      font-weight: 500;
 
     }
     button, label[for="file-input"] {
@@ -68,8 +72,9 @@
       border-radius: 10px;
       cursor: pointer;
       font-size: 1em;
+      font-weight: 600;
       margin: 8px;
-      width: 90%;
+      width: 95%;
 
       display: inline-block;
       box-sizing: border-box;
@@ -139,7 +144,7 @@
 
   <div id="help-modal" class="modal hidden" style="display: none;">
     <div class="modal-content">
-      <button class="close-modal" onclick="closeHelpModal()">&times;</button>
+      <button class="close-modal" onclick="closeHelpModal()">Закрыть</button>
       <h2>Как пользоваться BudgetIt?</h2>
       <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p>
       <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p>
@@ -152,7 +157,7 @@
   <script>
   function createBudget() {
     const name = document.getElementById('budget-name').value.trim();
-    if (!name) return showModal("Введите название бюджета");
+    if (!name) return showModal("Бюджет не может быть пустым.");
 
     const budget = { name, transactions: [] };
     localStorage.setItem('budgets', JSON.stringify([budget]));
@@ -207,7 +212,7 @@
       modal.className = 'modal';
       modal.innerHTML = `
         <div class="modal-content">
-          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">&times;</button>
+          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть</button>
           <h2>Внимание</h2>
           <p>${message}</p>
         </div>

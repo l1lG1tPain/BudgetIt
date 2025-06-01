@@ -8,7 +8,45 @@ import {
   getDepositEmoji,
   emojiProfiles
 } from './utils/emojiMap.js';
+import {
+  incomeCategories,
+  expenseCategories,
+  depositCategories,
+  debtCategories
+} from '../constants/index.js';
+
 import { monthNames } from '../constants/constants.js';
+import { refreshExportAnalytics } from './settings.js';
+import { refreshUserProfile, normalizeEmoji, getFirstGraphemeCluster } from './profileAnalytics.js';
+
+const categoryMap = {
+  'income-category': incomeCategories,
+  'expense-category': expenseCategories,
+  'deposit-status': depositCategories,
+  'debt-direction': debtCategories
+};
+
+function updateHeaderAvatar(userEmoji = '❔') {
+  const btn = document.getElementById('open-profile-btn');
+  if (!btn) return;
+
+  // Сначала нормализуем переданный emoji (убираем VS-16, ZWJ, skin-tone и т. д.)
+  const normalized = normalizeEmoji(userEmoji);
+  const profile = emojiProfiles.find(p => normalizeEmoji(p.emoji) === normalized);
+
+  if (!profile?.img) {
+    btn.innerHTML = `<span style="font-size:24px;line-height:32px">${userEmoji}</span>`;
+    return;
+  }
+  btn.innerHTML = `
+    <img
+      src="${profile.img}"
+      alt="${userEmoji}"
+      onerror="this.onerror=null;this.src='${profile.fallbackImg}'"
+    >
+  `;
+}
+
 
 export class UIManager {
   constructor(budgetManager) {
@@ -41,11 +79,18 @@ export class UIManager {
     }
 
     const userIdElement = document.getElementById('user-id');
-    const userId = userIdElement?.textContent?.trim().replace('ID:', '').trim() || localStorage.getItem('budgetit-user-id');
-    console.log('[userId]', userId);
-    const emoji = Array.from(userId || '')[0] || '❔';
+    const userId = userIdElement?.textContent?.trim().replace('ID:', '').trim()
+        || localStorage.getItem('budgetit-user-id');
+    // НОВЫЙ ВАРИАНТ: берём целиком первый графемный кластер
+    const emoji = getFirstGraphemeCluster(userId) || '❔';
+    updateHeaderAvatar(emoji);
+
 
     const totalTx = this.budgetManager.getTotalTransactions?.() || 0;
+
+    document.getElementById('open-profile-btn')
+        ?.addEventListener('click', () => this.openModal('settings-page'));
+
 
 
 
@@ -61,7 +106,8 @@ export class UIManager {
     this.attachEventListeners();
     this.bindNumericFormats();
     this.initializeBannerCarousel();
-    this.updateUserLevelInfo(totalTx, emoji);
+    refreshUserProfile(this.budgetManager);
+
   }
 
 
@@ -136,62 +182,7 @@ export class UIManager {
     this.updateTransactionList(filtered);
   }
 
-  updateUserLevelInfo(totalTx = 0, emoji = '❔') {
-    console.log('[LOG] updateUserLevelInfo()', { totalTx, emoji });
-    const levels = [50, 100, 200, 500, 1000, 2500, 5000];
-    let currentLevel = 1;
-    let nextThreshold = 50;
 
-    for (let i = 0; i < levels.length; i++) {
-      if (totalTx >= levels[i]) {
-        currentLevel = i + 2;
-        nextThreshold = levels[i + 1] || levels[i];
-      } else {
-        nextThreshold = levels[i];
-        break;
-      }
-    }
-
-    const currentThreshold = levels[currentLevel - 2] || 0;
-    const progress = Math.min(100, ((totalTx - currentThreshold) / (nextThreshold - currentThreshold)) * 100);
-
-    
-    const levelEl = document.getElementById('user-level');
-    const countEl = document.getElementById('tx-count');
-    const nextEl = document.getElementById('tx-next');
-    const emojiEl = document.getElementById('user-emoji');
-    console.log('[LOG] emojiEl:', emojiEl);
-    const barEl   = document.getElementById('user-progress');
-    const idTextEl = document.getElementById('user-id-text');
-    const nameEl = document.getElementById('user-emoji-name'); // опционально для подписи
-
-    if (levelEl) levelEl.textContent = currentLevel;
-    if (countEl) countEl.textContent = totalTx;
-    if (nextEl)  nextEl.textContent = nextThreshold;
-
-    const profile = emojiProfiles.find(p => p.emoji === emoji);
-    console.log('[LOG] profile', profile);
-
-    if (emojiEl && profile?.img) {
-      emojiEl.innerHTML = `
-        <img 
-          src="${profile.img}" 
-          alt="${emoji}" 
-          class="emoji-avatar"
-          onerror="this.onerror=null;this.src='${profile.fallbackImg}'"
-        >
-      `;
-    }
-
-
-
-    if (nameEl && profile?.name) {
-      nameEl.textContent = profile.name;
-    }
-
-    if (barEl) barEl.style.width = `${progress}%`;
-    if (idTextEl && window.budgetItUserId) idTextEl.textContent = window.budgetItUserId;
-}
 
 
   updateTransactionList(transactions) {
@@ -463,8 +454,15 @@ export class UIManager {
 
     if (transaction.type === 'expense' && transaction.products?.length) {
       prodDiv.classList.remove('hidden');
-      prodDiv.innerHTML = `<strong>Товары:</strong><br>` +
-        transaction.products.map(p => `${p.name} (${p.quantity} x ${this.formatNumber(p.price)})`).join('<br>');
+      prodDiv.innerHTML = `
+     <strong>Товары:</strong>
+     <div class="detail-products-list">
+       ${transaction.products.map(p => `
+         <div class="detail-product-row">
+           <span class="product-title">${p.name}</span>
+           <span class="product-meta">${p.quantity} × ${this.formatNumber(p.price)}</span>
+         </div>`).join('')}
+     </div>`;
     } else {
       prodDiv.classList.add('hidden');
     }
@@ -499,6 +497,8 @@ export class UIManager {
       this.budgetManager.deleteTransaction(transaction.id);
       this.closeModal('transaction-detail-sheet');
       this.updateUI();
+      refreshExportAnalytics(this.budgetManager);
+      refreshUserProfile(this.budgetManager);
     };
 
 
@@ -523,6 +523,8 @@ export class UIManager {
         this.budgetManager.switchBudget(index);
         this.updateHeader();
         this.updateUI();
+        refreshExportAnalytics(this.budgetManager);
+        refreshUserProfile(this.budgetManager);
         this.closeModal('budget-switch-sheet');
       });
       listDiv.appendChild(div);
@@ -723,15 +725,6 @@ export class UIManager {
     document.getElementById('add-product')?.addEventListener('click', () => this.addProduct());
 
     document.getElementById('close-settings')?.addEventListener('click', () => this.closeModal('settings-page'));
-    document.getElementById('export-btn')?.addEventListener('click', () => {
-      trackSafe?.('export-from-settings');
-      this.exportData();
-    });
-
-    document.getElementById('import-file')?.addEventListener('change', e => {
-      trackSafe?.('import-from-settings');
-      this.importData(e);
-    });
 
     document.getElementById('close-detail')?.addEventListener('click', () => this.closeModal('transaction-detail-sheet'));
 
@@ -803,6 +796,8 @@ export class UIManager {
     form.reset();
     this.closeModal('transaction-sheet');
     this.updateUI();
+    refreshExportAnalytics(this.budgetManager);
+    refreshUserProfile(this.budgetManager);
   }
 
   submitExpense(e) {
@@ -874,6 +869,8 @@ export class UIManager {
     this.bindNumericFormats();
     this.closeModal('transaction-sheet');
     this.updateUI();
+    refreshExportAnalytics(this.budgetManager);
+    refreshUserProfile(this.budgetManager);
   }
   
   submitDebt(e) {
@@ -927,6 +924,8 @@ export class UIManager {
     });
     this.closeModal('transaction-sheet');
     this.updateUI();
+    refreshExportAnalytics(this.budgetManager);
+    refreshUserProfile(this.budgetManager);
   }
 
   submitDeposit(e) {
@@ -978,6 +977,8 @@ export class UIManager {
     });
     this.closeModal('transaction-sheet');
     this.updateUI();
+    refreshExportAnalytics(this.budgetManager);
+    refreshUserProfile(this.budgetManager);
   }
 
   addProduct() {
@@ -1022,6 +1023,55 @@ export class UIManager {
 
   initializeCategoryButtons() {
     document.querySelectorAll('select[id$="-category"], select[id$="-status"], select[id$="-direction"]').forEach(select => {
+      const categories = categoryMap[select.id];
+      if (!categories) return;
+
+      // 🧹 Очищаем select перед вставкой
+      select.innerHTML = '';
+
+      // 🎯 Добавляем плейсхолдер по типу
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+
+      if (select.id === 'expense-category') {
+        placeholder.textContent = '🛒 Выберите категорию';
+      } else if (select.id === 'income-category') {
+        placeholder.textContent = '🛠️ Выберите категорию';
+      } else if (select.id === 'debt-direction') {
+        placeholder.textContent = '🔄 Выберите тип долга';
+      } else if (select.id === 'deposit-status') {
+        placeholder.textContent = '🔄 Выберите статус';
+      } else {
+        placeholder.textContent = 'Выберите...';
+      }
+
+      select.appendChild(placeholder);
+
+      // 💡 Только expense-category поддерживает группы
+      if (select.id === 'expense-category' && Array.isArray(categories) && typeof categories[0] === 'object') {
+        categories.forEach(group => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = group.label;
+          group.options.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt;
+            option.textContent = opt;
+            optgroup.appendChild(option);
+          });
+          select.appendChild(optgroup);
+        });
+      } else {
+        categories.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          select.appendChild(option);
+        });
+      }
+
+      // ⚙️ Кастомная обёртка
       if (select.previousElementSibling?.classList.contains('category-select-container')) return;
       const container = document.createElement('div');
       container.className = 'category-select-container';
@@ -1040,6 +1090,7 @@ export class UIManager {
         const currentSheet = select.closest('.bottom-sheet');
         this.openCategorySheet(currentSheet, select);
       });
+
       const hiddenInput = document.createElement('input');
       hiddenInput.type = 'hidden';
       hiddenInput.name = select.name;

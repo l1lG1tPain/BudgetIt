@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ошибка сервера — BudgetIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <!-- общие стили приложения -->
   <link rel="stylesheet" href="./theme.css">
@@ -14,9 +17,15 @@
     html,body{height:100%;margin:0;}
     body{
       position:relative;
-      display:flex;flex-direction:column;justify-content:center;align-items:center;
-      background:var(--dark-color);color:var(--tertiary-color);
-      font-family:'Montserrat';text-align:center;overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      background:var(--dark-color);
+      color:var(--tertiary-color);
+      font-family:'Montserrat';
+      text-align:center;
+      overflow:hidden;
     }
 
     .content-wrapper{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:var(--header-height,70px);}
@@ -24,7 +33,7 @@
     /* ===== 500-фон ===== */
     h1.big-500{
       position:absolute;top:20%;left:50%;transform:translate(-50%,-55%);
-      margin:0;font-size:clamp(200px,35vw,420px);line-height:.8;font-weight:800;
+      margin:0;font-size:clamp(200px,35vw,420px);line-height:.8;font-weight:700;
       opacity:.9;
       background: #ffffff;
       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
@@ -81,6 +90,6 @@
     <!-- <div class="tiny">Проблема повторяется? <a href="mailto:support@budgetit.app">support@budgetit.app</a></div> -->
   </div>
 
-  <!-- <script>setTimeout(()=>location.href='/',10000);</script> -->
+  <script>setTimeout(()=>location.href='/',10000);</script>
 </body>
 </html>
