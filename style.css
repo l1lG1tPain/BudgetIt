@@ -1,4 +1,4 @@
-@import './themes.css';
+@import '/theme.css';
 
 /* Эффект нажатия для всех button, .chip-btn, .category-item и других интерактивных элементов */
 button:active,
@@ -61,7 +61,7 @@ div:focus {
 }
 
 .theme-selector select:focus {
-  outline: 1.5px solid var(--primary-color);
+  outline: 2px solid var(--primary-color);
   box-shadow: 0 0 0 2px rgba(43, 232, 42, 0.1);
 }
 
@@ -75,6 +75,9 @@ div:focus {
 }
 
 button, input, select, textarea {
+  font-family: 'Montserrat', 'sans-serif';
+  /*font-weight: 700;*/
+
   user-select: none;              /* Отключает выделение текста */
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -85,8 +88,13 @@ button, input, select, textarea {
 
 input, select, textarea {
   background-color: var(--tertiary-color);
+  font-family: 'Montserrat', 'sans-serif';
+  font-weight: 500;
 }
 
+h2 {
+  font-size: 1.2rem;
+}
 
 /* Общие стили */
 * {
@@ -96,7 +104,8 @@ input, select, textarea {
 }
 body {
   /* font-family: 'JetBrains Mono', 'Apple Color Emoji', monospace; */
-  font-family: 'Poppins', 'Montserrat';
+  /* font-family: 'Poppins', 'Montserrat'; */
+  font-family: 'Montserrat', 'sans-serif';
   font-weight: 600;
   background-color: var(--main-ground);
   color: var(--secondary-color);
@@ -144,7 +153,7 @@ button:hover {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 1.5px solid var(--secondary-color);
+  outline: 2px solid var(--secondary-color);
 }
 
 
@@ -269,13 +278,13 @@ main {
 }
 /* Стили заголовков и значений */
 .block-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin-bottom: 5px;
   font-weight: 600;
 }
 .block-value {
   font-size: 1.1rem;
-  font-weight: bold;
+  font-weight: 600;
   color: var(--dark-color);
 }
 /* Стиль для смайликов */
@@ -360,7 +369,7 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 #budget-switch-sheet .budget-add input {
   flex: 1;
@@ -402,7 +411,7 @@ main {
   background: var(--tertiary-color);
   padding: 30px;
   border-radius: 8px;
-  margin: 0px 40px;
+  margin: 0 40px;
 }
 #budget-name {
   width: 100%;
@@ -423,12 +432,35 @@ main {
   font-size: 16px;
 }
 
-#close-settings {
-  background: var(--secondary-color) !important;
+
+/* Кнопка "Закрыть" закреплена внизу */
+.close-settings-btn {
+  width: 100%;
+  bottom: 0;
+  background: var(--secondary-color);
+  color: var(--tertiary-color);
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--border-radius-md);
 }
 
-#pay-debt, #delete-transaction, #confirm-delete-budget, #cancel-delete-budget, #pay-debt-detail{
+
+.close-settings-btn:hover {
+  background: var(--tertiary-color);
+  color: var(--secondary-color);
+}
+
+
+
+#pay-debt, #delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache, #cancel-clear-data, #cancel-clear-cache, #cancel-delete-budget, #pay-debt-detail{
   width: 49%;
+}
+
+#delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache, #cancel-clear-data, #cancel-clear-cache {
+  font-weight: 700;
 }
 
 /* Отключил кнопку Оплатить времено пока не сделаю нормальную логику */
@@ -442,7 +474,7 @@ main {
   width: 100%;
 }
 
-#delete-transaction, #confirm-delete-budget {
+#delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache {
   background-color: var(--expense-color);
 }
 #close-detail, #close-budget-sheet {
@@ -473,15 +505,16 @@ main {
 .settings-content {
   background: var(--tertiary-color);
   padding: 20px;
-  border-radius: 8x;
+  border-radius: var(--border-radius-md);
   text-align: left;
 }
 .settings-content button,
 .settings-content label,
 button {
   margin-top: 10px;
-  /* font-size: 16px; */
+  font-size: 16px;
   padding: 10px 20px;
+  font-weight: 700;
   border: none;
   border-radius: 8px;
   background: var(--secondary-color);
@@ -494,10 +527,76 @@ button {
 
 #settings-btn {
   font-size: 18px;
-  margin-top: 5;
+  margin-top: 5px;
   padding: 0;
   background: none;
 }
+
+.settings-nav-list button {
+  width: 100%;
+  margin: 10px 0;
+  font-size: 1.1rem;
+  padding: 10px;
+  text-align: left;
+  border-radius: var(--border-radius-md);
+  background: var(--main-ground);
+  color: var(--secondary-color);
+  font-weight: 700;
+}
+
+#export-import-page button {
+  font-weight: 700;
+}
+
+.theme-option {
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: var(--tertiary-color);
+  color: var(--secondary-color);
+  font-weight: 600;
+  transition: background 0.3s;
+  text-align: left;
+}
+
+.theme-option:hover {
+  background: var(--primary-color);
+  color: var(--dark-color);
+}
+
+.theme-option.active {
+  border: 2px solid var(--primary-color);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.fullscreen-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  max-height: none;
+  padding: var(--spacing-md);
+  overflow-y: auto;
+  background: var(--tertiary-color);
+  z-index: var(--z-index-bottom-sheet, 1100);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  border-radius: 0;
+}
+
+/* Появление */
+.fullscreen-sheet:not(.hidden) {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+
 
 /* Стили для страницы настроек */
 /* Контейнер для страницы настроек как bottom-sheet на 80% экрана */
@@ -515,6 +614,14 @@ button {
   opacity: 0;
   transition: transform 0.3s ease-out, opacity 0.3s ease-out;
 }
+#settings-page {
+  top: 0;
+  height: 100vh;
+  max-height: none;
+  border-radius: 0;
+  padding-bottom: 60px; /* чтобы кнопка Закрыть не наезжала на контент */
+}
+
 
 /* При удалении класса .hidden bottom-sheet «въезжает» и становится видимым */
 #settings-page:not(.hidden) {
@@ -601,37 +708,19 @@ button {
   margin: 10px 0;
 }
 
-/* Кнопка "Закрыть" закреплена внизу */
-.close-settings-btn {
-  /* position: absolute;
-  bottom: 20px; 
-  left: 20px;
-  right: 20px; */
-  /* height: 48px; */
-  /* max-width: 90%; */
-  background: var(--secondary-color);
-  color: var(--tertiary-color);
-  font-weight: bold;
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.close-settings-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
 
 @media (max-width: 768px) {
   #settings-page h2 {
     font-size: 1.2rem;
+    font-weight: 700;
   }
   #settings-page button {
-    font-size: 0.9rem;
+    font-size: 1rem;
+    font-weight: 700;
   }
   #settings-page input {
     font-size: 0.9rem;
+    font-weight: 700;
   }
 }
 @keyframes fadeIn {
@@ -725,7 +814,7 @@ footer {
   justify-content: center;
   background: linear-gradient(45deg, #6a11cb, #2575fc);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   padding: 10px 15px;
   color: white;
   font-size: 1rem;
@@ -734,7 +823,7 @@ footer {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 10px 5px; /* Центровка кнопки */
+  margin: 10px 0; /* Центровка кнопки */
 }
 
 .settings-buttons button:hover,
@@ -747,6 +836,12 @@ footer {
 .settings-buttons i {
   margin-right: 8px;
   font-size: 1.2rem;
+}
+
+#clear-cache-btn, #clear-data-btn {
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
 }
 
 #import-label {
@@ -763,10 +858,7 @@ footer {
   cursor: pointer;
 }
 
-#export-btn {
-  width: 50%;
-  display: flex;
-}
+
 
 .settings-buttons button,
 #import-label {
@@ -1012,6 +1104,9 @@ main::-webkit-scrollbar-thumb {
   padding: 5px;
 }
 
+.open-subpage-btn {
+  font-weight: 700;
+}
 
 /* Ошибки (hint) - всплывающие */
 .product-item {
@@ -1060,7 +1155,6 @@ main::-webkit-scrollbar-thumb {
 
 .chip-btn {
   flex: 1;
-  padding: 8px 12px;
   background: #f0f0f0;
   border: none;
   border-radius: 16px;
@@ -1134,7 +1228,7 @@ main::-webkit-scrollbar-thumb {
 
 .chip-btn {
   flex-shrink: 0;        
-  padding: 8px 12px;
+  padding: 8px;
   background: var(--accent-color);
   color: var(--secondary-color);
   border: none;
@@ -1167,7 +1261,7 @@ main::-webkit-scrollbar-thumb {
   width: 100%;
   /* Высоту можно задать фиксированную, например 120px или 150px, чтобы ужать 
      (зависит от вашего дизайна). Или можно вообще не задавать, тогда height:auto. */
-  height: 120px; 
+  height: auto;
   overflow: hidden;
 }
 
@@ -1191,7 +1285,7 @@ main::-webkit-scrollbar-thumb {
   height: 100%;
   object-fit: cover; /* или contain, если хотите видеть всю картинку целиком */
   display: block;    /* убирает лишние пробелы и отступы */
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
 }
 
 /* Стили для bottom-sheet выбора категорий */
@@ -1497,89 +1591,78 @@ main::-webkit-scrollbar-thumb {
 /* Стили для раздела «Аналитика» */
 /* =================================== */
 
-.analytics-section {
-  background: var(--an-tertiary-color);
-  border-radius: var(--an-border-radius-md);
-  box-shadow: var(--an-shadow-md);
-  color: #fff;
-  padding: 12px;
-  max-width: 960px;
-  /* margin: 40px auto; */
-  overflow: hidden;
-}
-.analytics-title {
-  text-align: center;
-  color: var(--an-primary-color);
-  font-size: 1.8rem;
-  margin-bottom: 16px;
-}
-.analytics-carousel {
-  position: relative;
-  width: 100%;
-  height: 500px;
-  overflow: hidden;
-}
-.analytics-slides-container {
-  display: flex;
-  height: 100%;
-  transition: transform 0.5s ease;
-  touch-action: pan-y;
-  cursor: grab;
-}
-.analytics-slides-container:active {
-  cursor: grabbing;
-}
-.analytics-slide {
-  flex: 0 0 100%;
-  box-sizing: border-box;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.analytics-slide h4 {
-  margin: 0 0 12px;
-  font-size: 1.3rem;
-  font-weight: 600;
-  text-align: center;
-  color: #000;
-}
-.analytics-slide canvas {
-  .analytics-slide canvas {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 1 / 1; /* всегда квадрат */
-    max-height: 400px; /* <-- ограничим максимум */
-    background: var(--an-tertiary-color);
-    border-radius: var(--an-border-radius-md);
-  }
-  
-}
-.analytics-dots {
-  position: relative;
-  bottom: 0;
-  left: 75%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  padding: 8px 0;
-}
-.analytics-dots .dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--an-accent-color);
-  transition: background-color 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-}
-.analytics-dots .dot.active {
-  background: var(--an-primary-color);
-  box-shadow: 0 0 6px var(--an-primary-color);
-}
+/*.analytics-title {*/
+/*  text-align: center;*/
+/*  color: var(--an-primary-color);*/
+/*  font-size: 1.8rem;*/
+/*  margin-bottom: 16px;*/
+/*}*/
+/*.analytics-carousel {*/
+/*  position: relative;*/
+/*  width: 100%;*/
+/*  height: 500px;*/
+/*  overflow: hidden;*/
+/*}*/
+/*.analytics-slides-container {*/
+/*  display: flex;*/
+/*  height: 100%;*/
+/*  transition: transform 0.5s ease;*/
+/*  touch-action: pan-y;*/
+/*  cursor: grab;*/
+/*}*/
+/*.analytics-slides-container:active {*/
+/*  cursor: grabbing;*/
+/*}*/
+/*.analytics-slide {*/
+/*  flex: 0 0 100%;*/
+/*  box-sizing: border-box;*/
+/*  padding: 16px;*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  align-items: center;*/
+/*}*/
+/*.analytics-slide h4 {*/
+/*  margin: 0 0 12px;*/
+/*  font-size: 1.3rem;*/
+/*  font-weight: 600;*/
+/*  text-align: center;*/
+/*  color: #000;*/
+/*}*/
+/*.analytics-slide canvas {*/
+/*  .analytics-slide canvas {*/
+/*    width: 100% !important;*/
+/*    height: auto !important;*/
+/*    aspect-ratio: 1 / 1; !* всегда квадрат *!*/
+/*    max-height: 400px; !* <-- ограничим максимум *!*/
+/*    background: var(--an-tertiary-color);*/
+/*    border-radius: var(--an-border-radius-md);*/
+/*  }*/
+
+/*.analytics-dots {*/
+/*  position: relative;*/
+/*  bottom: 0;*/
+/*  left: 75%;*/
+/*  transform: translateX(-50%);*/
+/*  display: flex;*/
+/*  gap: 8px;*/
+/*  padding: 8px 0;*/
+/*}*/
+/*.analytics-dots .dot {*/
+/*  width: 12px;*/
+/*  height: 12px;*/
+/*  border-radius: 50%;*/
+/*  background: var(--an-accent-color);*/
+/*  transition: background-color 0.3s, box-shadow 0.3s;*/
+/*  cursor: pointer;*/
+/*}*/
+/*.analytics-dots .dot.active {*/
+/*  background: var(--an-primary-color);*/
+/*  box-shadow: 0 0 6px var(--an-primary-color);*/
+/*}*/
 /* Центр doughnut */
 #expensesByCategoryCenterText {
   position: absolute;
-  top: 50%; left: 50%;
+  top: 43%; left: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   text-align: center;
@@ -1664,7 +1747,7 @@ main::-webkit-scrollbar-thumb {
   background-color: var(--dark-color);
   border: 1px solid var(--accent-color);
   color: var(--tertiary-color);
-  border-radius: 12px;
+  border-radius: var(--border-radius-md);
   /* padding-right: 20px; */
   padding: 10px;
   cursor: pointer;
@@ -1775,4 +1858,487 @@ main::-webkit-scrollbar-thumb {
   0%   { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
   50%  { text-shadow: 0 0 12px rgba(255, 255, 100, 0.9); }
   100% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+}
+
+
+.user-profile-card {
+  background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+  padding: 20px;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-profile-card::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(circle, var(--primary-color, rgba(102,204,255,0.1)), transparent 70%);
+  animation: floatBlob 6s infinite linear;
+  z-index: 0;
+}
+
+
+@keyframes floatBlob {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.user-emoji {
+  z-index: 1;
+}
+
+.emoji-avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  border: 3px solid transparent;
+  background: linear-gradient(135deg, var(--primary-color), var(--income-color)) border-box;
+  box-shadow: 0 0 15px var(--primary-color, rgba(102, 204, 255, 0.5));
+  /* padding: 3px; */
+  background-origin: border-box;
+  background-clip: content-box, border-box;
+}
+
+
+.user-level-info {
+  flex-grow: 1;
+  z-index: 1;
+}
+
+.user-level-text {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--secondary-color);
+}
+
+.progress-bar {
+  background: linear-gradient(135deg, var(--primary-color), var(--income-color)) border-box;
+  /* background: linear-gradient(to right, #66ccff, #00ffcc); */
+  height: 100%;
+  transition: width 0.4s ease;
+  border-radius: 12px;
+}
+
+
+.progress-bar-container {
+  background: #2e2e2e;
+  border-radius: 12px;
+  height: 12px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border: 1px solid #444;
+}
+
+.tx-counter {
+  font-size: 0.9em;
+  color: var(--an-tertiary-color, #ccc);
+  margin-top: 4px;
+}
+
+.user-id-display {
+  font-size: 0.9em;
+  color: var(--secondary-color, #aaa);
+  margin-top: 6px;
+  background: var(--tertiary-color, #333);
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-block;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+#detail-type, #detail-name, #detail-products {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+#detail-type {
+  margin-top: 10px;
+}
+
+
+.about-container {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.about-container h2 {
+  font-size: 1.8rem;
+  color: var(--primary-color, #00ffc3);
+  margin-bottom: 10px;
+}
+
+.app-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.about-info-block {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0, 255, 195, 0.1);
+  font-size: 0.95rem;
+}
+
+.about-info-block p {
+  margin: 8px 0;
+}
+
+.about-info-block a {
+  color: var(--primary-color, #66ccff);
+  text-decoration: none;
+}
+
+.about-info-block a:hover {
+  text-decoration: underline;
+}
+
+.budget-list-grid {
+  font-size: 0.8em;
+  background: #2e2e2e;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 16px 0;
+  color: #eee;
+}
+
+.avatar-btn {
+  width: 32px;               /* размер значка в хедере */
+  height: 32px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;        /* круглая форма */
+}
+
+/* analytics.css */
+#analytics-page canvas {
+  flex: 0 0 60vh;   /* ← фиксируем и flex-basis, и максимальную высоту */
+  height: 60vh !important;
+  max-height: 60vh;
+  /*margin: 0 0 28px;*/
+}
+
+#categoriesByDescendingChart {
+  flex: 0 0 70vh;   /* ← фиксируем и flex-basis, и максимальную высоту */
+  height: 70vh !important;
+  max-height: 70vh;
+}
+
+#analytics-page h4 {
+  margin: 16px 0 10px;
+}
+
+#analytics-page #analytics-custom-select {
+  margin: 8px auto;
+}
+
+.analytics-scroll {
+  max-height: 75vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+.analytics-scroll > section {
+  /* …ваши старые правила… */
+  position: relative;          /* ← добавили */
+}
+
+.analytics-scroll::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 12px;
+  box-shadow: 0 0 10px #2be82a;
+}
+
+.analytics-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.analytics-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+#export-import-page canvas {
+  flex: 0 0 35vh;   /* ← фиксируем и flex-basis, и максимальную высоту */
+  height: 35vh !important;
+  max-height: 35vh;
+}
+
+.hr-spacing {
+  margin: 20px 0;
+  border-color: var(--dark-color);
+  border-radius: var(--spacing-lg);
+}
+
+.settings-nav-list button {
+  position: relative;
+  display: flex;
+  justify-content: space-between;   /* текст слева, стрелка справа */
+  align-items: center;
+  width: 100%;
+  /*padding: 12px 18px;*/
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.settings-nav-list button:hover {
+  background: #3a3a3a;
+}
+
+/* стрелочка */
+.settings-nav-list button::after {
+  content: '›';                    /* можно заменить на ➡️ или → */
+  font-size: 1.5em;
+  line-height: 1;
+  margin-left: 12px;
+  color: inherit;
+  transform: translateY(1px);      /* лёгкое выравнивание по оптике */
+}
+
+/* Transaction-detail: товары */
+.detail-products-list{
+  margin-top: 6px;
+}
+
+.detail-product-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;          /* чуть воздуха между колонками */
+  line-height: 1.25;
+}
+
+.product-title{
+  flex: 1 1 60%;
+  word-break: break-word;   /* длинные названия переносятся */
+}
+
+.product-meta{
+  flex: 0 0 auto;
+  white-space: nowrap;      /* не переносим "n × цена" */
+  text-align: right;
+}
+
+/* ===== FAQ section ============================================== */
+#faq-container {
+  flex: 1 1 auto;
+  max-height: 75vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+  padding-right: 8px; /* небольшой отступ для скроллбара */
+  margin: 10px 0;
+}
+
+.faq-item {
+  margin: 10px 0;
+  border: 1px solid transparent;               /* для анимации бордера */
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1b1b1d 0%, #25252a 100%);
+  overflow: hidden;                            /* прячет анимацию summary */
+  transition: border-color .25s ease,
+  background   .25s ease;
+}
+
+.faq-item[open] {
+  border-color: var(--primary-color, #2be82a); /* подсветка открытого */
+  background: linear-gradient(135deg, #202024 0%, #2c2c32 100%);
+}
+
+/* --------- Заголовок -------------------------------------------- */
+.faq-item summary {
+  list-style: none;            /* убираем стандартный треугольник */
+  padding: 12px 16px;
+  font-weight: 600;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  font-size: 1rem;
+}
+
+.faq-item summary::marker { content: ''; }     /* Safari fallback */
+.faq-item summary::-webkit-details-marker { display: none; }
+
+/* кастомный треугольник */
+.faq-item summary::after {
+  content: '▸';
+  font-size: 1rem;
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%) rotate(0deg);
+  transition: transform .25s ease;
+}
+
+.faq-item[open] summary::after {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+/* --------- Текст ответа ----------------------------------------- */
+.faq-item p {
+  padding: 0 16px 14px;
+  line-height: 1.45;
+  color: #c5c6ce;
+  animation: fadeIn .25s ease;
+  font-size: 0.95rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+#faq-container::-webkit-scrollbar {
+  width: 3px;
+}
+
+#faq-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color, #2be82a);
+  border-radius: 12px;
+}
+
+#faq-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================== */
+/* 1) Стили для контейнера:    */
+/* =========================== */
+.tweak-container {
+  position: fixed;
+  /* вместо bottom: 24px; */
+  top: 24px;            /* теперь отступ от верхнего края */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* =========================== */
+/* 2) Скрытие контейнера       */
+/* =========================== */
+.tweak-container.hidden {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* =========================== */
+/* 3) Стили для твикса:        */
+/* =========================== */
+.tweak {
+  /* Пусть твикс занимает всю ширину с отступами 20px слева и справа */
+  width: calc(100% - 40px);
+  max-width: none;
+  margin: 0 20px;
+
+  /* Запрещаем перенос слов */
+  white-space: nowrap;
+
+  /* Если текст слишком длинный, обрезаем его с тремя точками */
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  padding: 12px 16px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 14px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: tweak-slide-in 0.3s forwards;
+  pointer-events: auto;
+  position: relative;
+}
+
+
+
+/* =========================== */
+/* 4) Цвета твиксов:           */
+/* =========================== */
+.tweak.success {
+  background-color: #28a745;
+}
+.tweak.error {
+  background-color: #dc3545;
+}
+
+/* =========================== */
+/* 5) Анимации:                */
+/* =========================== */
+/* Появление «сверху → вниз» */
+@keyframes tweak-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Исчезновение: «двигаемся вниз и таем» */
+@keyframes tweak-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* =========================== */
+/* 6) Кнопка закрытия (крестик) */
+/* =========================== */
+.tweak-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.tweak-close:hover {
+  opacity: 1;
 }

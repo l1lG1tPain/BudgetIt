@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ошибка сервера — BudgetIt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- общие стили приложения -->
+  <link rel="stylesheet" href="./theme.css">
+  <link rel="stylesheet" href="./style.css">
+
+  <style>
+    /* ===== БАЗА ===== */
+    html,body{height:100%;margin:0;}
+    body{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      background:var(--dark-color);
+      color:var(--tertiary-color);
+      font-family:'Montserrat';
+      text-align:center;
+      overflow:hidden;
+    }
+
+    .content-wrapper{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:var(--header-height,70px);}
+
+    /* ===== 500-фон ===== */
+    h1.big-500{
+      position:absolute;top:20%;left:50%;transform:translate(-50%,-55%);
+      margin:0;font-size:clamp(200px,35vw,420px);line-height:.8;font-weight:700;
+      opacity:.9;
+      background: #ffffff;
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      filter:drop-shadow(0 0 22px rgba(255,255,255,0.85));
+      user-select:none;pointer-events:none;
+    }
+
+    h1 {
+        color: #ffffff;
+    }
+
+    /* ===== изображение Акулки ===== */
+    .shark{position:relative;z-index:2;width:min(480px,95vw);max-width:600px;}
+    .shark img{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 18px rgba(0,0,0,.45));animation:shake 3s ease-in-out infinite;}
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px) rotate(-2deg)}
+      40%{transform:translateX(6px) rotate(2deg)}
+      60%{transform:translateX(-4px) rotate(-1.5deg)}
+      80%{transform:translateX(4px) rotate(1.5deg)}
+    }
+
+    /* ===== сообщение ===== */
+    p{font-size:1.25rem;max-width:540px;margin:18px 20px 28px;z-index:2;}
+
+    /* ===== действия ===== */
+    .actions{position:absolute;bottom:6vh;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:18px;width:90%;max-width:480px;z-index:3;}
+    button{width:100%;background: #ffffff;color:var(--secondary-color);border:none;padding:12px 28px;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .2s,box-shadow .2s,background .3s;}
+    button:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.45);background:var(--secondary-color);color:var(--accent-color);}
+    .tiny{margin:0;font-size:.85rem;opacity:.6;text-align:center;}
+    a{color:inherit;}
+  </style>
+</head>
+<body>
+  <!-- Хедер -->
+  <header>
+    <h1 id="current-budget" title="На главную" onclick="location.href='/'">BudgetIt</h1>
+  </header>
+
+  <!-- гигантские цифры -->
+  <h1 class="big-500">500</h1>
+
+  <!-- центральный контент -->
+  <div class="content-wrapper">
+    <div class="shark" role="img" aria-label="Shark confusion">
+      <img src="assets/500.png" alt="🦈 Confused Shark">
+    </div>
+    <p>Что‑то пошло не так на сервере.<br>Акулка уже чешет плавники и чинит проблему…</p>
+  </div>
+
+  <!-- действия -->
+  <div class="actions">
+    <button onclick="location.href='/'">🚀 На главную</button>
+    <!-- <div class="tiny">Проблема повторяется? <a href="mailto:support@budgetit.app">support@budgetit.app</a></div> -->
+  </div>
+
+  <script>setTimeout(()=>location.href='/',10000);</script>
+</body>
+</html>

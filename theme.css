@@ -78,8 +78,16 @@
       color: #FFFFFF;
     }
 
+    #add-budget-btn {
+      color: #000000;
+    }
+
     .analytics-slide h4 {
         color: var(--secondary-color);
+    }
+
+    .faq-item summary {
+      color: #ffffff;
     }
   
     input, select, textarea,
@@ -132,6 +140,10 @@
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
+
+    .theme-option:hover {
+      color: #fff;
+    }
   
     input, select, textarea,
     .custom-select-button, .custom-select {
@@ -183,6 +195,10 @@
     #add-btn {
       background-color: var(--text-primary);
       color:            var(--dark-color);
+    }
+
+    .faq-item summary {
+      color: #ffffff;
     }
 
     .analytics-slide h4 {
@@ -244,6 +260,11 @@
     #add-btn, #add-budget-btn {
       background-color: var(--primary-color);
       color: #000000;
+    }
+
+    .open-subpage-btn {
+      background: var(--accent-color);
+      color: var(--secondary-color);
     }
 
     .analytics-slide h4 {
@@ -319,15 +340,18 @@
       color: #ffffff;
     }
 
+    .open-subpage-btn {
+      background: var(--accent-color);
+      color: var(--secondary-color);
+    }
+
+    .faq-item summary {
+      color: #ffffff;
+    }
+
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
-  
-    /* input, select, textarea,
-    .custom-select-button, .custom-select {
-      color: var(--secondary-color);
-      background-color: var(--tertiary-color);
-    } */
 
     #month-filter-container {
         color: var(--accent-color);
@@ -388,14 +412,16 @@
     #month-filter-container {
         color: var(--accent-color);
     }
-  
-  
-    /* input, select, textarea,
-    .custom-select-button, .custom-select {
-      color: var(--secondary-color);
-      background-color: var(--tertiary-color);
+
+    .faq-item summary {
+      color: #ffffff;
     }
-   */
+
+    .open-subpage-btn {
+      background: var(--accent-color);
+      color: var(--secondary-color);
+    }
+
     main {
       background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
       url('assets/Cocacola-pattern.png');
@@ -641,4 +667,3 @@
       
     }
   }
-  

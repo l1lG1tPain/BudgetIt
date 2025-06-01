@@ -113,3 +113,270 @@ export const getBudgetEmoji = (value) => {
     return '♾️💼💎🚀';                                     // Бесконечный запас
   };
   
+//   /* ---------- КАТЕГОРИИ ЭМОДЗИ ДЛЯ userId ---------- */
+// export const marine = [
+//   '🦈','🐬','🐙','🐢','🐠','🐳','🦭','🪸','🐡','🦞','🦀',
+//   '🦐','🐟','🐋','🪼','🛥️','🌊'
+// ];
+
+// export const financial = [
+//   '💼','💸','📊','🧾','🪙','🔐','💰','🏦','🧮','💳','💵',
+//   '💶','💷','💴','🏧','📈','📉','🪙'
+// ];
+
+// export const tech = [
+//   '🤖','📱','🔋','💾','🧊','🛰️','🧬','🖥️','📡','🖱️','🖨️',
+//   '🎧','💿','📀','🧑‍💻','🔌','🪫','🪛'
+// ];
+
+// export const calm = [
+//   '🕊️','🌿','🐧','🌙','🍃','☁️','🕯️','🧘‍♂️','🪷','🌅',
+//   '🌸','🌺','🌄','🌻','🪹','🌞','🛶','🫖'
+// ];
+
+// export const active = [
+//   '🔥','🎯','🚀','🎩','💣','🌪️','🏆','💪','🏃‍♂️','🥇',
+//   '💥','⛹️‍♂️','🤸‍♂️','⛷️','🏄‍♂️','🚴‍♂️','🏹','🥊'
+// ];
+
+// export const meme = [
+//   '🐸','🐷','🍩','🧃','🦄','🍕','🧌','🦑','🤡','🧟‍♂️',
+//   '😂','💩','😎','🫠','🤓','🙃','👀','🐶','🐱','🤯'
+// ];
+
+// export const legendary = [
+//   '🧙‍♂️','🐉','👑','🧛‍♂️','🦸‍♂️','🧝‍♂️','🧞‍♂️','🧜‍♂️','🦅','🧙‍♀️'
+// ];
+
+// /* ---------- УТИЛИТА ---------- */
+// export const getRandomUserIdEmoji = () => {
+//   const all = [
+//     ...marine, ...financial, ...tech,
+//     ...calm, ...active, ...meme, ...legendary
+//   ];
+//   return all[Math.floor(Math.random() * all.length)];
+// };
+
+
+/* ---------- КАТЕГОРИИ ---------- */
+// emojiMap.js
+
+export const marine     = ['🦈','🐬','🐙','🐢','🐠','🐳','🦭','🪸','🐡','🦞','🦀','🦐','🐟','🐋','🪼','🛥️','🌊'];
+export const financial  = ['💼','💸','📊','🧾','🪙','🔐','💰','🏦','🧮','💳','💵','💶','💷','💴','🏧','📈','📉'];
+export const tech       = ['🤖','📱','🔋','💾','🧊','🛰️','🧬','🖥️','📡','🖱️','🖨️','🎧','💿','📀','💻','🔌','🪫','🪛'];
+export const calm       = ['🕊️','🌿','🐧','🌙','🍃','☁️','🕯️','🧘‍♂️','🪷','🌅','🌸','🌺','🌄','🌻','🪹','🌞','🛶','🫖'];
+export const active     = ['🔥','🎯','🚀','🎩','💣','🌪️','🏆','💪','🏃‍♂️','🥇','💥','🤸‍♂️','⛷️','🏄‍♂️','🚴‍♂️','🏹','🥊'];
+export const meme       = ['🐸','🐷','🍩','🧃','🦄','🍕','🧌','🦑','🤡','🧟‍♂️','😂','💩','😎','🫠','🤓','🙃','👀','🐶','🐱','🤯'];
+export const legendary  = ['🧙‍♂️','🐉','👑','🧛‍♂️','🦹','🧝‍♂️','🧞‍♂️','🧜‍♂️','🦅','🧙‍♀️','👻'];
+
+export const allEmojis = [
+  ...marine,
+  ...financial,
+  ...tech,
+  ...calm,
+  ...active,
+  ...meme,
+  ...legendary
+];
+
+/* ---------- Утилиты для нормализации emoji ---------- */
+/**
+ * Убираем из строки:
+ *  - вариационные селекторы FE0E/FE0F,
+ *  - zero-width joiner (ZWJ, U+200D),
+ *  - модификаторы тона кожи (U+1F3FB–U+1F3FF).
+ */
+function normalizeEmoji(str) {
+  return str
+      .normalize('NFC')
+      .replace(/[\uFE0E\uFE0F\u200D]/g, '')         // удаляем VS16 и ZWJ
+      .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');      // удаляем skin-tone modifiers
+}
+
+/* ---------- карта «эмодзи → файл» (исходная, с оригинальными ключами) ---------- */
+const rawMap = {
+  '🦈': 'shark.png',      '🐬': 'dolphin1.png',  '🐙': 'octopus.png',     '🐢': 'turtle.png',
+  '🐠': 'tropical.png',   '🐳': 'blue-whale.png','🦭': 'seal.png',        '🪸': 'dolphin.png',
+  '🐡': 'dolphin.png',    '🦞': 'lobster.png',   '🦀': 'crab.png',         '🦐': 'shrimp.png',
+  '🐟': 'fish.png',       '🐋': 'blue-whale.png','🪼': 'jellyfish.png',    '🛥️': 'boat.png',
+  '🌊': 'wave.png',
+  '💼': 'financial.png',  '💸': 'dollar.png',    '📊': 'financial.png',    '🧾': 'financial.png',
+  '🪙': 'dollar.png',     '🔐': 'lock.png',      '💰': 'dollar.png',       '🏦': 'dollar.png',
+  '🧮': 'financial.png',  '💳': 'card.png',      '💵': 'dollar.png',       '💶': 'euro.png',
+  '💷': 'dollar.png',     '💴': 'dollar.png',    '🏧': 'financial.png',    '📈': 'financial.png',
+  '📉': 'financial.png',
+  '🤖': 'robot.png',      '📱': 'tech.png',      '🔋': 'tech.png',         '💾': 'tech.png',
+  '🧬': 'dna.png',        '🛰️': 'rocket.png',    '🖥️': 'coder.png',       '📡': 'coder.png',
+  '🖱️': 'tech.png',       '🖨️': 'coder.png',     '🎧': 'headphones.png',   '💿': 'coder.png',
+  '📀': 'coder.png',      '💻': 'coder.png',     '🔌': 'plug.png',         '🪫': 'low-battery.png',
+  '🪛': 'screwdriver.png',
+  '🕊️': 'dove.png',       '🌿': 'leaf.png',      '🐧': 'penguin.png',      '🌙': 'moon.png',
+  '🍃': 'breeze.png',     '☁️': 'cloud.png',     '🕯️': 'candle.png',      '🧘‍♂️': 'meditate.png',
+  '🪷': 'lotus.png',      '🌅': 'sunrise.png',   '🌸': 'sakura.png',      '🌺': 'hibiscus.png',
+  '🌄': 'mountains.png',  '🌻': 'sunflower.png', '🪹': 'nest.png',        '🌞': 'sun.png',
+  '🛶': 'canoe.png',      '🫖': 'teapot.png',
+  '🔥': 'active.png',     '🎯': 'target.png',    '🚀': 'rocket.png',       '🎩': 'hat.png',
+  '💣': 'explode.png',    '🌪️': 'tornado.png',  '🏆': 'trophy.png',       '💪': 'muscle.png',
+  '🏃‍♂️': 'run.png',     '🥇': 'trophy.png',    '💥': 'explode.png',      '⛹️‍♂️': 'basketball.png',
+  '🤸‍♂️': 'gymnast.png',  '⛷️': 'ski.png',      '🏄‍♂️': 'surf.png',       '🚴‍♂️': 'bike.png',
+  '🏹': 'target.png',     '🥊': 'boxing.png',    '🐸': 'meme.png',         '🐷': 'pig.png',
+  '🍩': 'meme.png',       '🧃': 'juice.png',     '🦄': 'unicorn.png',      '🍕': 'meme.png',
+  '🦑': 'squid.png',      '🤡': 'clown.png',     '🧟‍♂️': 'zombie.png',     '😂': 'lol.png',
+  '💩': 'poop.png',       '😎': 'cool.png',      '🫠': 'melting.png',      '🤓': 'meme.png',
+  '🙃': 'meme.png',       '👀': 'meme.png',      '🐶': 'dog.png',         '🐱': 'cat.png',
+  '🤯': 'explode.png',
+  '🧙‍♂️': 'legendary.png','🐉': 'dragon.png',   '🧛‍♂️': 'vampire.png',     '🦹': 'legendary.png',
+  '🧝‍♂️': 'elf.png',     '🧞‍♂️': 'genie.png',   '🧜‍♂️': 'legendary.png',  '🦅': 'eagle.png',
+  '🧙‍♀️': 'legendary.png','👻': 'ghost.png'
+};
+
+/* ---------- Нормализуем ключи rawMap и строим финальную «emoji→файл» map ---------- */
+const fallbackMap = Object.fromEntries(
+    Object.entries(rawMap).map(([emojiKey, fileName]) => [
+      normalizeEmoji(emojiKey),
+      fileName
+    ])
+);
+
+/* ---------- Базовый URL для папки с аватарками ---------- */
+export const AVATAR_BASE_URL = '/assets/avatar/';
+
+/* ---------- Построение массива профилей emoji ---------- */
+export const emojiProfiles = allEmojis.map((emoji) => {
+  const normalized = normalizeEmoji(emoji);
+  const file = fallbackMap[normalized] || 'default.png';
+
+  return {
+    emoji,
+    name: getEmojiName(emoji),
+    img: `${AVATAR_BASE_URL}${file}`,
+    fallbackImg: `${AVATAR_BASE_URL}default.png`
+  };
+});
+
+function getEmojiName(emoji) {
+  return ({
+    '🦈': 'Shark',
+    '🐬': 'Dolphin',
+    '🐙': 'Octopus',
+    '🐢': 'Turtle',
+    '🐠': 'Tropical Fish',
+    '🐳': 'Blue Whale',
+    '🦭': 'Seal',
+    '🪸': 'Coral',
+    '🐡': 'Pufferfish',
+    '🦞': 'Lobster',
+    '🦀': 'Crab',
+    '🦐': 'Shrimp',
+    '🐟': 'Fish',
+    '🐋': 'Humpback Whale',
+    '🪼': 'Jellyfish',
+    '🛥️': 'Boat',
+    '🌊': 'Wave',
+    '💼': 'Briefcase',
+    '💸': 'Money with Wings',
+    '📊': 'Bar Chart',
+    '🧾': 'Receipt',
+    '🪙': 'Coin',
+    '🔐': 'Lock',
+    '💰': 'Money Bag',
+    '🏦': 'Bank',
+    '🧮': 'Abacus',
+    '💳': 'Credit Card',
+    '💵': 'Dollar Banknote',
+    '💶': 'Euro Banknote',
+    '💷': 'Pound Banknote',
+    '💴': 'Yen Banknote',
+    '🏧': 'ATM Sign',
+    '📈': 'Chart Increasing',
+    '📉': 'Chart Decreasing',
+    '🤖': 'Robot',
+    '📱': 'Mobile Phone',
+    '🔋': 'Battery',
+    '💾': 'Floppy Disk',
+    '🧬': 'DNA',
+    '🛰️': 'Satellite',
+    '🖥️': 'Desktop Computer',
+    '📡': 'Satellite Antenna',
+    '🖱️': 'Computer Mouse',
+    '🖨️': 'Printer',
+    '🎧': 'Headphones',
+    '💿': 'Optical Disc',
+    '📀': 'DVD',
+    '💻': 'Laptop',
+    '🔌': 'Electric Plug',
+    '🪫': 'Low Battery',
+    '🪛': 'Screwdriver',
+    '🕊️': 'Dove',
+    '🌿': 'Leaf',
+    '🐧': 'Penguin',
+    '🌙': 'Crescent Moon',
+    '🍃': 'Leaf Fluttering in Wind',
+    '☁️': 'Cloud',
+    '🕯️': 'Candle',
+    '🧘‍♂️': 'Person in Lotus Position',
+    '🪷': 'Lotus',
+    '🌅': 'Sunrise',
+    '🌸': 'Cherry Blossom',
+    '🌺': 'Hibiscus',
+    '🌄': 'Sunrise Over Mountains',
+    '🌻': 'Sunflower',
+    '🪹': 'Bird’s Nest',
+    '🌞': 'Sun With Face',
+    '🛶': 'Canoe',
+    '🫖': 'Teapot',
+    '🔥': 'Fire',
+    '🎯': 'Direct Hit',
+    '🚀': 'Rocket',
+    '🎩': 'Top Hat',
+    '💣': 'Bomb',
+    '🌪️': 'Tornado',
+    '🏆': 'Trophy',
+    '💪': 'Flexed Biceps',
+    '🏃‍♂️': 'Person Running',
+    '🥇': '1st Place Medal',
+    '💥': 'Collision',
+    '⛹️‍♂️': 'Person Bouncing Ball',
+    '🤸‍♂️': 'Person Cartwheeling',
+    '⛷️': 'Skier',
+    '🏄‍♂️': 'Person Surfing',
+    '🚴‍♂️': 'Person Biking',
+    '🏹': 'Bow and Arrow',
+    '🥊': 'Boxing Glove',
+    '🐸': 'Frog',
+    '🐷': 'Pig Face',
+    '🍩': 'Doughnut',
+    '🧃': 'Beverage Box',
+    '🦄': 'Unicorn',
+    '🍕': 'Pizza',
+    '🧌': 'Troll',
+    '🦑': 'Squid',
+    '🤡': 'Clown Face',
+    '🧟‍♂️': 'Zombie',
+    '😂': 'Face With Tears of Joy',
+    '💩': 'Pile of Poo',
+    '😎': 'Smiling Face With Sunglasses',
+    '🫠': 'Melting Face',
+    '🤓': 'Nerd Face',
+    '🙃': 'Upside-Down Face',
+    '👀': 'Eyes',
+    '🐶': 'Dog Face',
+    '🐱': 'Cat Face',
+    '🤯': 'Exploding Head',
+    '🧙‍♂️': 'Mage',
+    '🐉': 'Dragon',
+    '👑': 'Crown',
+    '🧛‍♂️': 'Vampire',
+    '🦹': 'Supervillain',
+    '🧝‍♂️': 'Elf',
+    '🧞‍♂️': 'Genie',
+    '🧜‍♂️': 'Merman',
+    '🦅': 'Eagle',
+    '🧙‍♀️': 'Sorceress',
+    '👻': 'Ghost'
+  }[emoji] || 'Unknown Emoji');
+}
+
+/* ---------- Случайный эмодзи для userId ---------- */
+export const getRandomUserIdEmoji = () =>
+    allEmojis[Math.floor(Math.random() * allEmojis.length)];
