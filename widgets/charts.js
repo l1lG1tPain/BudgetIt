@@ -497,7 +497,7 @@ function renderCategoriesByDescendingChart() {
         y: {
           ticks: {
             color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
-            font: { size: Math.max(6, 10 - labels.length / 10) },
+            font: { size: Math.max(6, 9 - labels.length / 10) },
             padding: 10
           }
         },
