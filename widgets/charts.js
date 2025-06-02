@@ -469,7 +469,7 @@ function renderCategoryHistoryChart() {
 function renderCategoriesByDescendingChart() {
   const canvas = document.getElementById('categoriesByDescendingChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.7);
+  setCanvasHeight(canvas, 0.6);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
