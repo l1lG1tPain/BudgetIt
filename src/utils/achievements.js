@@ -53,35 +53,63 @@ export function renderProfileSummary(unlocked, total) {
     document.getElementById('level-progress-bar').style.width = `${Math.min(levelProgress, 100)}%`;
 }
 
-
 export function renderAchievementsList(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const unlockedIds = JSON.parse(localStorage.getItem('unlockedAchievements') || '[]');
+    let unlockedIds = [];
+    try {
+        unlockedIds = JSON.parse(localStorage.getItem('unlockedAchievements')) || [];
+    } catch (e) {
+        console.warn('unlockAchievements JSON parse error', e);
+    }
 
-    container.innerHTML = ALL_ACHIEVEMENTS.map(ach => {
-        const unlocked = unlockedIds.includes(ach.id);
-        const isHidden = ach.hidden && !unlocked;
+    const unlocked = ALL_ACHIEVEMENTS.filter(a => unlockedIds.includes(a.id));
+    const locked = ALL_ACHIEVEMENTS.filter(a => !unlockedIds.includes(a.id));
+    const BATCH_SIZE = 10;
+    let renderedCount = 0;
 
-        const labelText = unlocked
-            ? ach.label
-            : isHidden
-                ? '🔒 Секретное достижение'
-                : '🔒 ???';
-
-        const tooltip = unlocked
-            ? ach.label
-            : isHidden
-                ? 'Это секретное достижение. Откроется при выполнении условий.'
-                : 'Достижение будет открыто позже';
-
-        return `
-          <div class="achievement ${unlocked ? 'unlocked' : 'locked'}" data-tooltip="${tooltip}">
-            <span>${labelText}</span>
-          </div>
-        `;
+    container.innerHTML = unlocked.map(ach => {
+        return `<div class="achievement unlocked" data-tooltip="${ach.label}"><span>${ach.label}</span></div>`;
     }).join('');
 
-    renderProfileSummary(unlockedIds.length, ALL_ACHIEVEMENTS.length);
+    // Кнопка "Показать ещё"
+    const loadMoreBtn = document.createElement('button');
+    loadMoreBtn.className = 'load-more-achievements';
+    loadMoreBtn.textContent = 'Показать ещё';
+    container.appendChild(loadMoreBtn);
+
+    function renderNextBatch() {
+        const toRender = locked.slice(renderedCount, renderedCount + BATCH_SIZE);
+        renderedCount += toRender.length;
+
+        const fragment = document.createDocumentFragment();
+
+        toRender.forEach(ach => {
+            const isHidden = ach.hidden && !unlockedIds.includes(ach.id);
+            const labelText = isHidden ? '🔒 Секретное достижение' : '🔒 ???';
+            const tooltip = isHidden ? 'Это секретное достижение. Откроется при выполнении условий.' : 'Достижение будет открыто позже';
+
+            const div = document.createElement('div');
+            div.className = 'achievement locked';
+            div.setAttribute('data-tooltip', tooltip);
+            div.innerHTML = `<span>${labelText}</span>`;
+
+            fragment.appendChild(div);
+        });
+
+        // Вставляем ПЕРЕД кнопкой
+        container.insertBefore(fragment, loadMoreBtn);
+
+        if (renderedCount >= locked.length) {
+            loadMoreBtn.remove();
+        }
+    }
+
+    renderNextBatch(); // первая порция
+
+    loadMoreBtn.onclick = renderNextBatch;
+
+    renderProfileSummary(unlocked.length, ALL_ACHIEVEMENTS.length);
 }
+

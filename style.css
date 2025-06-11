@@ -2528,3 +2528,20 @@ main::-webkit-scrollbar-thumb {
   opacity: 0;
 }
 
+.load-more-achievements {
+  margin-top: 0;
+  display: block;
+  padding: 16px;
+  font-size: 15px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: var(--spacing-md);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.load-more-achievements:hover {
+  background-color: #555;
+}
+
+
