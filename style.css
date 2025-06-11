@@ -96,6 +96,10 @@ h2 {
   font-size: 1.2rem;
 }
 
+h3 {
+  padding-bottom: 10px;
+}
+
 /* Общие стили */
 * {
   margin: 0;
@@ -343,7 +347,6 @@ main {
 }
 
 
-
 /* Стили для списка товаров */
 #products-list .product-item {
   display: flex;
@@ -455,7 +458,7 @@ main {
 
 
 
-#pay-debt, #delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache, #cancel-clear-data, #cancel-clear-cache, #cancel-delete-budget, #pay-debt-detail{
+#pay-debt, #delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache, #cancel-clear-data, #cancel-clear-cache, #cancel-delete-budget, #pay-debt-detail, #confirm-delete-transaction, #cancel-delete-transaction{
   width: 49%;
 }
 
@@ -474,7 +477,7 @@ main {
   width: 100%;
 }
 
-#delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache {
+#delete-transaction, #confirm-delete-budget, #confirm-clear-data, #confirm-clear-cache, #confirm-delete-transaction {
   background-color: var(--expense-color);
 }
 #close-detail, #close-budget-sheet {
@@ -1941,11 +1944,52 @@ main::-webkit-scrollbar-thumb {
   border: 1px solid #444;
 }
 
-.tx-counter {
+.user-profile-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.user-emoji {
+  font-size: 2.5rem;
+}
+
+.user-meta {
+  font-size: 0.95rem;
+}
+
+.progress-container {
+  margin: 6px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  /*background: #444;*/
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--linear-progress-bar, linear-gradient(to right, #0ff, #0f0));
+  width: 0%;
+  transition: width 0.4s ease;
+  border-radius: 12px;
+}
+
+.tx-counter, .tx-counter span {
   font-size: 0.9em;
   color: var(--an-tertiary-color, #ccc);
   margin-top: 4px;
 }
+
+.bonus-explanation {
+  color: #999;
+  font-size: 0.85em;
+  margin-bottom: 10px;
+}
+
 
 .user-id-display {
   font-size: 0.9em;
@@ -1967,7 +2011,6 @@ main::-webkit-scrollbar-thumb {
 #detail-type {
   margin-top: 10px;
 }
-
 
 .about-container {
   padding: 15px;
@@ -2037,14 +2080,14 @@ main::-webkit-scrollbar-thumb {
 /* analytics.css */
 #analytics-page canvas {
   flex: 0 0 60vh;   /* ← фиксируем и flex-basis, и максимальную высоту */
-  height: 60vh !important;
+  height: auto !important;
   max-height: 60vh;
   /*margin: 0 0 28px;*/
 }
 
 #categoriesByDescendingChart {
-  flex: 0 0 70vh;   /* ← фиксируем и flex-basis, и максимальную высоту */
-  height: 70vh !important;
+  flex: 0 0 auto;   /* ← фиксируем и flex-basis, и максимальную высоту */
+  height: auto !important;
   max-height: 70vh;
 }
 
@@ -2057,7 +2100,7 @@ main::-webkit-scrollbar-thumb {
 }
 
 .analytics-scroll {
-  max-height: 75vh;
+  max-height: 80vh;
   overflow-y: auto;
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
@@ -2150,7 +2193,7 @@ main::-webkit-scrollbar-thumb {
 /* ===== FAQ section ============================================== */
 #faq-container {
   flex: 1 1 auto;
-  max-height: 75vh;
+  max-height: 80vh;
   overflow-y: auto;
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
@@ -2182,6 +2225,7 @@ main::-webkit-scrollbar-thumb {
   cursor: pointer;
   user-select: none;
   font-size: 1rem;
+  color: #fff;
 }
 
 .faq-item summary::marker { content: ''; }     /* Safari fallback */
@@ -2230,12 +2274,11 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* =========================== */
-/* 1) Стили для контейнера:    */
+/* 1) Контейнер                */
 /* =========================== */
 .tweak-container {
   position: fixed;
-  /* вместо bottom: 24px; */
-  top: 24px;            /* теперь отступ от верхнего края */
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -2246,9 +2289,6 @@ main::-webkit-scrollbar-thumb {
   pointer-events: none;
 }
 
-/* =========================== */
-/* 2) Скрытие контейнера       */
-/* =========================== */
 .tweak-container.hidden {
   visibility: hidden;
   opacity: 0;
@@ -2256,50 +2296,52 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* =========================== */
-/* 3) Стили для твикса:        */
+/* 2) Твик                     */
 /* =========================== */
 .tweak {
-  /* Пусть твикс занимает всю ширину с отступами 20px слева и справа */
-  width: calc(100% - 40px);
-  max-width: none;
-  margin: 0 20px;
+  width: 90vw;                   /* теперь 90% ширины окна */
+  max-width: 600px;              /* но не шире 600px */
+  margin: 0 auto;
 
-  /* Запрещаем перенос слов */
-  white-space: nowrap;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #1f1f1f, #2c2c2c);
+  color: #f8f8f8;
 
-  /* Если текст слишком длинный, обрезаем его с тремя точками */
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-family: "Monsterat", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
 
-  padding: 12px 16px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  font-size: 14px;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  white-space: normal;
+  word-break: break-word;
+
   opacity: 0;
   transform: translateY(-20px);
-  animation: tweak-slide-in 0.3s forwards;
+  animation: tweak-slide-in 0.3s ease-out forwards;
+
   pointer-events: auto;
   position: relative;
+  align-items: center;
 }
 
 
-
 /* =========================== */
-/* 4) Цвета твиксов:           */
+/* 3) Цветовые вариации        */
 /* =========================== */
 .tweak.success {
-  background-color: #28a745;
+  background: linear-gradient(135deg, #198754, #28a745);
 }
+
 .tweak.error {
-  background-color: #dc3545;
+  background: linear-gradient(135deg, #b02a37, #dc3545);
 }
 
 /* =========================== */
-/* 5) Анимации:                */
+/* 4) Анимации                 */
 /* =========================== */
-/* Появление «сверху → вниз» */
 @keyframes tweak-slide-in {
   from {
     opacity: 0;
@@ -2310,7 +2352,7 @@ main::-webkit-scrollbar-thumb {
     transform: translateY(0);
   }
 }
-/* Исчезновение: «двигаемся вниз и таем» */
+
 @keyframes tweak-slide-out {
   from {
     opacity: 1;
@@ -2323,22 +2365,166 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* =========================== */
-/* 6) Кнопка закрытия (крестик) */
+/* 5) Кнопка закрытия          */
 /* =========================== */
 .tweak-close {
   position: absolute;
   top: 8px;
-  right: 8px;
-  width: 16px;
-  height: 16px;
+  right: 12px;
+  width: 18px;
+  height: 18px;
   background: transparent;
   border: none;
   color: #fff;
-  font-size: 16px;
-  line-height: 1;
+  font-size: 18px;
+  font-weight: bold;
   cursor: pointer;
-  opacity: 0.7;
+  opacity: 0.6;
+  transition: opacity 0.2s;
 }
+
 .tweak-close:hover {
   opacity: 1;
 }
+
+
+.chip-time-note {
+  font-size: 0.8rem;
+}
+
+.category-select-button:focus{
+  outline:2px solid var(--primary-color);
+}
+
+/* Контейнер с ачивками */
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  max-height: 75vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+.achievements-summary {
+  padding: 10px 16px 3px;
+}
+
+/* Карточка ачивки */
+.achievement {
+  background: #1e1e1e;
+  color: #888;
+  border: 2px solid #444;
+  border-radius: var(--spacing-md);
+  padding: 16px 5px;
+  text-align: center;
+  font-size: 1em;
+  font-family: 'Monsterat', sans-serif;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+}
+
+/* Разблокированная */
+.achievement.unlocked {
+  background: linear-gradient(145deg, var(--primary-color) 0%, var(--income-color) 100%);
+  color: #fff;
+  font-weight: bold;
+  /*border-color: #26cc1d;*/
+  border: none;
+  box-shadow: 0 0 5px var(--primary-color);
+  transform: scale(1.02);
+}
+
+/* Заблокированная */
+.achievement.locked {
+  filter: grayscale(100%) blur(0.3px);
+  opacity: 0.6;
+}
+
+/* Hover эффект */
+.achievement:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 10px #ffffff22;
+}
+
+/* Эмоджи-иконка (если добавишь отдельно) */
+.achievement span.emoji {
+  display: block;
+  font-size: 2em;
+  margin-bottom: 6px;
+}
+
+/* Название ачивки */
+.achievement span {
+  display: block;
+  font-size: 0.95em;
+  line-height: 1.3;
+}
+
+.achievement {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.achievement::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: normal;
+  word-wrap: break-word;
+  text-align: center;
+  max-width: 240px;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999; /* поверх всего */
+}
+
+/* Показываем при наведении или тапе */
+.achievement:hover::after,
+.achievement:active::after {
+  opacity: 1;
+}
+
+.progress-container .progress-bar {
+  background: #2e2e2e;
+}
+
+#sw-update-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #222;
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  font-size: 16px;
+  z-index: 1000;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+#sw-update-banner.show {
+  transform: translateY(0%);
+  opacity: 1;
+}
+
+#sw-update-banner.hidden {
+  opacity: 0;
+}
+

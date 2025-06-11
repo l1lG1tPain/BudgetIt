@@ -1,54 +1,14 @@
 // settings.js  —  ESM-модуль без глобальных window-утечек
 // -----------------------------------------------------------------
 import { initThemeSelector }   from './ThemeManager.js';
-import { initializeAnalytics } from '../widgets/charts.js';
+import { initializeAnalytics } from './widgets/charts.js';
 import { FAQ_ITEMS }           from '../constants/faq-constants.js';
+import { renderAchievementsList, getUnlockedAchievements } from './utils/achievements.js';
+import { showTweak } from './utils/tweakSystem.js';
+import { calculateAchievementContext } from './utils/achievementUtils.js';
+import { refreshUserProfile } from './profileAnalytics.js';
 
 
-function showTweak(text, type = 'success', duration = 3000) {
-    const container = document.getElementById('tweak-container');
-    if (!container) return;
-
-    // Убираем скрытие, если оно было
-    container.classList.remove('hidden');
-
-    // Создаём элемент твикса
-    const tweakEl = document.createElement('div');
-    tweakEl.classList.add('tweak', type);
-    tweakEl.textContent = text;
-
-    // Кнопка «×» для ручного закрытия
-    const closeBtn = document.createElement('button');
-    closeBtn.classList.add('tweak-close');
-    closeBtn.innerHTML = '&times;'; // символ крестика
-    closeBtn.addEventListener('click', () => {
-        // Сразу прячем твикс
-        hideTweak(tweakEl);
-    });
-    tweakEl.appendChild(closeBtn);
-
-    // Вставляем в контейнер
-    container.appendChild(tweakEl);
-
-    // Через duration мс анимируем исчезновение
-    setTimeout(() => {
-        hideTweak(tweakEl);
-    }, duration);
-}
-
-function hideTweak(tweakEl) {
-    // Запускаем анимацию скрытия
-    tweakEl.style.animation = 'tweak-slide-out 0.3s forwards';
-    // После окончания анимации удаляем элемент
-    tweakEl.addEventListener('animationend', () => {
-        tweakEl.remove();
-        // Если контейнер пуст, скрываем его
-        const container = document.getElementById('tweak-container');
-        if (container && container.children.length === 0) {
-            container.classList.add('hidden');
-        }
-    }, { once: true });
-}
 
 /* =================================================================
    Локальные переменные
@@ -89,6 +49,7 @@ function openSubPage(pageId) {
     if (pageId === 'faq-page')           renderFAQ();
     if (pageId === 'analytics-page')     initializeAnalytics(localBudgetManager);
     if (pageId === 'export-import-page') refreshExportAnalytics(localBudgetManager);
+    if (pageId === 'achievements-page')  renderAchievementsList('achievements-container');
 }
 
 function goBackFromSubPage() {
@@ -98,12 +59,36 @@ function goBackFromSubPage() {
 }
 
 /* =================================================================
+   Проверка достижений после импорта
+   ================================================================= */
+function checkAchievements(budgetManager) {
+    const currentBudget = budgetManager.budgets[budgetManager.currentBudgetIndex];
+    const transactions = currentBudget?.transactions || [];
+    const context = calculateAchievementContext(transactions, currentBudget);
+    const budgetCount = budgetManager.budgets.length;
+
+    const unlocked = getUnlockedAchievements({
+        txCount: transactions.length,
+        totals : context,
+        budgetCount
+    });
+
+    if (unlocked.length) {
+        showTweak(`🏅 Достижения обновлены`, 'success', 2500);
+    }
+}
+
+/* =================================================================
    Инициализация настроек
    ================================================================= */
 export function initSettings(budgetManager, ui) {
     localBudgetManager = budgetManager;
 
-    /* ---------- EXPORT ---------- */
+    document.querySelector('#user-profile-block .user-profile-card')
+        ?.addEventListener('click', () => {
+            openSubPage('achievements-page');
+        });
+
     document.getElementById('export-btn')
         ?.addEventListener('click', () => {
             trackSafe?.('export-from-settings');
@@ -122,7 +107,6 @@ export function initSettings(budgetManager, ui) {
             showTweak('📁 Бюджеты экспортированы', 'success', 2000);
         });
 
-    /* ---------- IMPORT (с «твиксами» вместо модалок) ---------- */
     document.getElementById('import-file')
         ?.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -134,120 +118,68 @@ export function initSettings(budgetManager, ui) {
                     budgetManager.budgets = JSON.parse(reader.result);
                     budgetManager.currentBudgetIndex = 0;
                     budgetManager.saveToStorage();
+
                     ui.updateHeader();
                     ui.updateUI();
                     refreshExportAnalytics(budgetManager);
 
-                    // Показываем «твикс» об успехе
-                    showTweak('✅ Данные успешно импортированы', 'success', 2500);
+                    // 👇 ДОБАВЛЕНО: пересчёт ачивок
+                    checkAchievements(budgetManager);
+                    refreshUserProfile(budgetManager);
 
+                    showTweak('✅ Данные успешно импортированы', 'success', 2500);
                 } catch {
-                    // Показываем «твикс» при ошибке
                     showTweak('❌ Ошибка при чтении файла', 'error', 4000);
                 }
             };
             reader.readAsText(file);
         });
 
-    /* ============================= */
-    /* 1) ОЧИСТКА КЭША ЧЕРЕЗ МОДАЛКУ  */
-    /* ============================= */
     document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
-        // Показываем модалку «clear-cache-modal»
         document.getElementById('clear-cache-modal')?.classList.remove('hidden');
         document.getElementById('bottom-sheet-backdrop')?.classList.remove('hidden');
     });
 
-// Отмена очистки кэша
     document.getElementById('cancel-clear-cache')?.addEventListener('click', () => {
         document.getElementById('clear-cache-modal')?.classList.add('hidden');
         document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
     });
 
-// Подтверждение очистки кэша
     document.getElementById('confirm-clear-cache')?.addEventListener('click', () => {
-        console.log('confirm-clear-cache handler вызван');
-
-        // 1) Скрываем модалку немедленно
         document.getElementById('clear-cache-modal')?.classList.add('hidden');
         document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
 
-        // 2) Показываем твикс об успешной очистке (за 1500 мс)
         showTweak('🧹 Кэш очищен, сейчас перезагружаемся', 'success', 1500);
 
-        // 3) Удаляем ключи из localStorage сразу же (без ожидания)
-        [
-            'appTheme',
-            'current-budget-index',
-            'last-category',
-            'product-names',
-            'analytics-consent',
-            'chart-mode'
-        ].forEach(key => {
-            localStorage.removeItem(key);
-            console.log(`Удалён ключ localStorage: ${key}`);
-        });
+        ['appTheme','currentBudgetIndex','productNames','theme','umami-disabled']
+            .forEach(key => localStorage.removeItem(key));
 
-        // 4) Через 1500 мс удаляем весь кеш и вызываем reload:
         setTimeout(() => {
-            console.log('Запускаем удаление всех кэшей через caches.keys()');
-
             if (!('caches' in window)) {
-                console.warn('API caches не доступен в этом браузере. Выполняем только location.reload()');
                 location.reload();
                 return;
             }
 
             caches.keys()
-                .then(keys => {
-                    console.log('Найдены кэши:', keys);
-                    return Promise.all(keys.map(key => {
-                        console.log(`Удаляем кэш: ${key}`);
-                        return caches.delete(key);
-                    }));
-                })
-                .then(results => {
-                    console.log('Статусы удаления кэшей:', results);
-                    console.log('Вызов location.reload()');
-                    location.reload();
-                })
-                .catch(err => {
-                    console.error('Ошибка при удалении кэшей:', err);
-                    // В любом случае перезагрузим страницу
-                    location.reload();
-                });
+                .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+                .then(() => location.reload())
+                .catch(() => location.reload());
         }, 1500);
     });
-    /* ============================================== */
-    /* 2) ОЧИСТКА ВСЕХ ДАННЫХ ЧЕРЕЗ МОДАЛКУ (С БЭКАПОМ) */
-    /* ============================================== */
+
     document.getElementById('clear-data-btn')?.addEventListener('click', () => {
-        // Показываем модалку «clear-data-modal»
         document.getElementById('clear-data-modal')?.classList.remove('hidden');
         document.getElementById('bottom-sheet-backdrop')?.classList.remove('hidden');
     });
 
-    // Отмена удаления всех данных
     document.getElementById('cancel-clear-data')?.addEventListener('click', () => {
         document.getElementById('clear-data-modal')?.classList.add('hidden');
         document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
     });
 
-    // Подтверждение очистки всех данных
     document.getElementById('confirm-clear-data')?.addEventListener('click', () => {
-        // …скрыли модалку, сделали бэкап
         showTweak('🗑️ Все данные бэкапированы и удаляются...', 'success', 1500);
-        setTimeout(() => {
-            localStorage.clear();
-            indexedDB.databases?.().then(dbs => {
-                dbs.forEach(db => indexedDB.deleteDatabase(db.name));
-                location.reload();
-            });
-        }, 70000);
-        document.getElementById('clear-data-modal')?.classList.add('hidden');
-        document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
 
-        // Создаём бэкап текущих бюджетов
         const backup = new Blob([JSON.stringify(localBudgetManager.budgets)], {
             type: 'application/json'
         });
@@ -258,33 +190,29 @@ export function initSettings(budgetManager, ui) {
         }).click();
         URL.revokeObjectURL(url);
 
-        // Ждём секунду, чтобы файл успел скачаться
         setTimeout(() => {
-            // Полная очистка LocalStorage и IndexedDB
             localStorage.clear();
             indexedDB.databases?.().then(dbs => {
                 dbs.forEach(db => indexedDB.deleteDatabase(db.name));
                 location.reload();
             });
         }, 10000);
+
+        document.getElementById('clear-data-modal')?.classList.add('hidden');
+        document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
     });
 
-    /* ---------- «Назад» со всех подстраниц ---------- */
     document.querySelectorAll('.bottom-sheet .close-settings-btn')
         ?.forEach(btn => btn.addEventListener('click', goBackFromSubPage));
 
-    /* ---------- Закрыть профиль ---------- */
     document.getElementById('close-settings-btn')
         ?.addEventListener('click', () => {
             document.getElementById('settings-page')?.classList.add('hidden');
             document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
         });
 
-    /* ---------- Темы ---------- */
     initThemeSelector();
 
-    /* ---------- Навигационные кнопки ---------- */
-    // Кнопки с data-page переключают подстраницы
     document.querySelectorAll('.open-subpage-btn[data-page]')
         .forEach(btn => btn.addEventListener('click', () => openSubPage(btn.dataset.page)));
 }
@@ -299,7 +227,6 @@ export function refreshExportAnalytics(budgetManager) {
 
     exportChartInstance?.destroy();
 
-    /* ----------------- prepare data ----------------- */
     const ctx           = chartCanvas.getContext('2d');
     const budgets       = budgetManager.budgets || [];
     const totalCounts   = { income: 0, expense: 0, deposit: 0, debt: 0 };
@@ -319,7 +246,6 @@ export function refreshExportAnalytics(budgetManager) {
     ];
     const totalTx = chartData.reduce((s, v) => s + v, 0);
 
-    /* ----------------- render chart ----------------- */
     exportChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -342,14 +268,12 @@ export function refreshExportAnalytics(budgetManager) {
         }
     });
 
-    /* ----------------- summary blocks ----------------- */
     const txEl    = document.getElementById('tx-total');
     const countEl = document.getElementById('budget-count');
 
     if (txEl)    txEl.textContent    = String(totalTx);
     if (countEl) countEl.textContent = String(budgets.length);
 
-    /* список бюджетов */
     document.querySelector('.budget-list-grid')?.remove();
 
     const list = document.createElement('div');
@@ -380,8 +304,4 @@ export function refreshExportAnalytics(budgetManager) {
         : exportPage.appendChild(list);
 }
 
-/* =================================================================
-   Экспортируем навигационные функции —
-   вдруг понадобятся из других модулей
-   ================================================================= */
 export { openSubPage, goBackFromSubPage };

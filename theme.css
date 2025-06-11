@@ -47,6 +47,9 @@
     --z-index-bottom-sheet:1100;
     --z-index-modal:       1200;
     --z-index-loading:     9999;
+
+    --linear-progress-bar: linear-gradient(135deg, var(--primary-color), var(--income-color));
+
   }
   
   :root[data-theme="dark"] {
@@ -58,7 +61,7 @@
   
     --secondary-color:  #dcddde;
     --bg-secondary-color: #000000;
-    --tertiary-color:   #2f3136;
+    --tertiary-color:   #000000;
     --accent-color:     #292b2f;
     --main-ground:      #111116;
   
@@ -78,7 +81,7 @@
       color: #FFFFFF;
     }
 
-    #add-budget-btn {
+    #add-budget-btn, .add-btn, #add-product {
       color: #000000;
     }
 

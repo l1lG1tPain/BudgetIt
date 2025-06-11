@@ -18,6 +18,7 @@ import {
 import { monthNames } from '../constants/constants.js';
 import { refreshExportAnalytics } from './settings.js';
 import { refreshUserProfile, normalizeEmoji, getFirstGraphemeCluster } from './profileAnalytics.js';
+import { initBannerCarousel } from './widgets/bannerCarousel.js';
 
 const categoryMap = {
   'income-category': incomeCategories,
@@ -105,7 +106,7 @@ export class UIManager {
     this.updateUI();
     this.attachEventListeners();
     this.bindNumericFormats();
-    this.initializeBannerCarousel();
+    this.bannerCleanup = initBannerCarousel('.banner-carousel .slides-container');
     refreshUserProfile(this.budgetManager);
 
   }
@@ -189,19 +190,23 @@ export class UIManager {
     console.log('updateTransactionList called, count =', transactions.length);
     const list = document.getElementById('transaction-list');
     list.innerHTML = '';
-  
-    transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+    transactions.sort((a, b) => {
+      const dateDiff = new Date(b.date) - new Date(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      return b.id - a.id; // новые транзакции выше старых в одной дате
+    })
       .forEach(t => {
         const li = document.createElement('li');
         li.style.borderLeftColor = this.getTypeColor(t.type);
-  
+
         let debtTag = '';
         if (t.type === 'debt') {
           debtTag = t.direction === 'owe'
-            ? ' <span style="color:#e82a2a;font-size:.9em">#Должен</span>'
+            ? ' <span style="color:#e82a2a;font-size:.9em">#Я Должен</span>'
             : ' <span style="color:#2be82a;font-size:.9em">#Мне должны</span>';
         }
-  
+
         let amountSign = '';
         if (t.type === 'deposit') {
           const status = t.status?.trim();
@@ -217,13 +222,13 @@ export class UIManager {
         } else if (t.type === 'income') {
           amountSign = '+';
         }
-  
+
         const displayAmount = t.type === 'debt'
           ? (t.direction === 'owe' ? '-' : '+') + this.formatNumber(t.remainingAmount || t.initialAmount)
           : amountSign + this.formatNumber(t.amount);
-  
+
         const displayDate = this.formatDate(t.date);
-  
+
         li.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:nowrap;">
             <div style="max-width:75%;overflow:hidden;word-break:break-word;">
@@ -242,11 +247,11 @@ export class UIManager {
               : `<button class="pay-debt" data-id="${t.id}">Оплатить</button>`
             : ''}
         `;
-  
+
         li.addEventListener('click', () => this.openTransactionDetail(t));
         list.appendChild(li);
       });
-  
+
     list.querySelectorAll('.pay-debt').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
@@ -257,7 +262,7 @@ export class UIManager {
       });
     });
   }
-  
+
   openModal(id) {
     const m = document.getElementById(id);
     if (!m) return;
@@ -297,51 +302,6 @@ export class UIManager {
     if (next && next.classList.contains('inline-error-message')) {
       next.remove();
     }
-  }
-
-  initializeBannerCarousel() {
-    const container = document.querySelector('.banner-carousel .slides-container');
-    if (!container) return;
-    const slides = Array.from(container.querySelectorAll('.banner-slide'));
-    container.style.display = 'flex';
-    container.style.transition = 'transform 0.5s ease';
-    container.style.touchAction = 'pan-y';
-    slides.forEach(slide => slide.style.minWidth = '100%');
-    let current = 0, startX = 0, isDragging = false, translateX = 0;
-    container.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-      isDragging = true;
-      container.style.transition = 'none';
-      translateX = current * -100;
-    });
-    container.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const diff = e.touches[0].clientX - startX;
-      container.style.transform = `translateX(${translateX + diff / container.offsetWidth * 100}%)`;
-    });
-    container.addEventListener('touchend', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      container.style.transition = 'transform 0.5s ease';
-      const diff = e.changedTouches[0].clientX - startX;
-      if (diff > 50) current = Math.max(current - 1, 0);
-      else if (diff < -50) current = Math.min(current + 1, slides.length - 1);
-      container.style.transform = `translateX(-${current * 100}%)`;
-    });
-    const autoScroll = setInterval(() => {
-      if (!isDragging) {
-        current = (current + 1) % slides.length;
-        container.style.transform = `translateX(-${current * 100}%)`;
-      }
-    }, 5000);
-    slides.forEach(slide => {
-      const url = slide.dataset.link;
-      if (url) {
-        slide.style.cursor = 'pointer';
-        slide.addEventListener('click', () => window.open(url, '_blank'));
-      }
-    });
-    container.dataset.intervalId = autoScroll;
   }
 
   animateValue(el, end, duration) {
@@ -486,20 +446,41 @@ export class UIManager {
     }
 
     document.getElementById('delete-transaction').onclick = () => {
-      if (typeof window.trackSafe === 'function') {
-        trackSafe('delete-transaction', {
-          id: transaction.id,
-          type: transaction.type,
-          amount: transaction.amount || transaction.initialAmount || 0
-        });
-      }
-
-      this.budgetManager.deleteTransaction(transaction.id);
       this.closeModal('transaction-detail-sheet');
-      this.updateUI();
-      refreshExportAnalytics(this.budgetManager);
-      refreshUserProfile(this.budgetManager);
+      const modal = document.getElementById('delete-transaction-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      document.getElementById('bottom-sheet-backdrop')?.classList.remove('hidden');
+
+      const confirmBtn = document.getElementById('confirm-delete-transaction');
+      const cancelBtn = document.getElementById('cancel-delete-transaction');
+
+      // Убираем предыдущие обработчики
+      confirmBtn.onclick = cancelBtn.onclick = null;
+
+      confirmBtn.onclick = () => {
+        if (typeof window.trackSafe === 'function') {
+          trackSafe('delete-transaction', {
+            id: transaction.id,
+            type: transaction.type,
+            amount: transaction.amount || transaction.initialAmount || 0
+          });
+        }
+
+        this.budgetManager.deleteTransaction(transaction.id);
+        modal.classList.add('hidden');
+        document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
+        this.updateUI();
+        refreshExportAnalytics(this.budgetManager);
+        refreshUserProfile(this.budgetManager);
+      };
+
+      cancelBtn.onclick = () => {
+        modal.classList.add('hidden');
+        document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
+      };
     };
+
 
 
     this.openModal('transaction-detail-sheet');
@@ -797,7 +778,7 @@ export class UIManager {
     this.closeModal('transaction-sheet');
     this.updateUI();
     refreshExportAnalytics(this.budgetManager);
-    refreshUserProfile(this.budgetManager);
+    refreshUserProfile(this.budgetManager, true);
   }
 
   submitExpense(e) {
@@ -870,7 +851,7 @@ export class UIManager {
     this.closeModal('transaction-sheet');
     this.updateUI();
     refreshExportAnalytics(this.budgetManager);
-    refreshUserProfile(this.budgetManager);
+    refreshUserProfile(this.budgetManager, true);
   }
   
   submitDebt(e) {
@@ -925,7 +906,7 @@ export class UIManager {
     this.closeModal('transaction-sheet');
     this.updateUI();
     refreshExportAnalytics(this.budgetManager);
-    refreshUserProfile(this.budgetManager);
+    refreshUserProfile(this.budgetManager, true);
   }
 
   submitDeposit(e) {
@@ -978,7 +959,7 @@ export class UIManager {
     this.closeModal('transaction-sheet');
     this.updateUI();
     refreshExportAnalytics(this.budgetManager);
-    refreshUserProfile(this.budgetManager);
+    refreshUserProfile(this.budgetManager, true);
   }
 
   addProduct() {
@@ -1065,8 +1046,13 @@ export class UIManager {
       } else {
         categories.forEach(opt => {
           const option = document.createElement('option');
-          option.value = opt;
-          option.textContent = opt;
+          if (typeof opt === 'object') {
+            option.value = opt.value;          // canonical: 'owe' | 'owed'
+            option.textContent = opt.label;    // красивый текст с эмодзи
+          } else {
+            option.value = opt;
+            option.textContent = opt;
+          }
           select.appendChild(option);
         });
       }

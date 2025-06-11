@@ -1,43 +1,68 @@
 // ===============================
-// Chart.js: аналитика BudgetIt
+// Chart.js: аналитика BudgetIt — исправленная версия
 // ===============================
 
 // --- глобальные настройки Chart.js ------------------------------
-Chart.defaults.maintainAspectRatio = false; // управляем высотой сами
-Chart.defaults.aspectRatio        = 2;     //  ширина : высота ≈ 2 : 1
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.aspectRatio        = 2;   // ширина : высота ≈ 2 : 1
 
-const CHART_DEFAULT_HEIGHT = 260;          // базовая высота всех графиков
+const CHART_DEFAULT_HEIGHT = 260;        // базовая высота графиков
 
 function setCanvasHeight(canvas, pct = 0.6) {
   if (!canvas) return;
-
-  const cssPx = Math.round(window.innerHeight * pct);      // 50 % окна
-  canvas.style.height = cssPx + 'px';                      // CSS-высота
-  canvas.height       = cssPx * window.devicePixelRatio;   // внутренний буфер
+  const cssPx = Math.round(window.innerHeight * pct);
+  canvas.style.height = cssPx + 'px';
+  canvas.height       = cssPx * window.devicePixelRatio;
 }
 
-// ----------------------------------------------------------------
+// ------------------------------------------------------------------
+// 0)  Кэш транзакций и карта высот
+// ------------------------------------------------------------------
+let cachedTransactions = null;           // сбрасывается перед renderCharts()
 
-// 1) Хранилище экземпляров графиков
-let charts = {};
+const HEIGHT_MAP = {
+  expensesByCategoryChart    : 0.6,
+  monthlyExpensesChart       : 0.6,
+  incomeVsExpensesChart      : 0.6,
+  topExpensesChart           : 0.7,
+  balanceDynamicsChart       : 0.6,
+  categoriesByDescendingChart: 0.6,
+  categoryHistoryChart       : 0.6,
+  spendingByWeekdayChart     : 0.6,
+  spendingByAmountRangeChart : 0.6,
+  annualSummaryChart         : 0.8
+};
 
-// 2) Переменные
-let currentSlideIndex = 0;
-let analyticsSwipeInited = false;
-let swipeLocked = false;
-let budgetManagerInstance = null;
+function setAdaptiveCanvasHeight(canvas) {
+  setCanvasHeight(canvas, HEIGHT_MAP[canvas?.id] ?? 0.6);
+}
+
+// ------------------------------------------------------------------
+// 1) Хранилище графиков и вспомогательные карты
+// ------------------------------------------------------------------
+let charts           = {};               // id → instance
+const canvasHandlers = new Map();        // canvas → clickListener
+
+// ------------------------------------------------------------------
+// 2) Переменные состояния
+// ------------------------------------------------------------------
+let currentSlideIndex           = 0;
+let analyticsSwipeInited        = false;
+let swipeLocked                 = false;
+let budgetManagerInstance       = null;
 let currentAnalyticsMonthFilter = 'all';
 
+// ------------------------------------------------------------------
 // 3) Инициализация аналитики
+// ------------------------------------------------------------------
 function initializeAnalytics(budgetManager) {
   budgetManagerInstance = budgetManager;
 
   if (typeof getSavedTheme === 'function' && typeof setTheme === 'function') {
     setTheme(getSavedTheme());
   }
-
   const settingsPage = document.getElementById('settings-page');
-  const wasHidden = settingsPage.classList.contains('hidden');
+  const wasHidden    = settingsPage?.classList.contains('hidden');
   if (wasHidden) settingsPage.classList.remove('hidden');
 
   setupAnalyticsFilter();
@@ -46,10 +71,12 @@ function initializeAnalytics(budgetManager) {
   if (wasHidden) settingsPage.classList.add('hidden');
 }
 
-// 5) Переключение слайда (оставлено на будущее)
+// ------------------------------------------------------------------
+// 4) Слайды (оставлены на будущее – новые графики не входят в слайдер)
+// ------------------------------------------------------------------
 function showAnalyticsSlide(index) {
   const container = document.querySelector('.analytics-slides-container');
-  const dots = document.querySelectorAll('.analytics-dots .dot');
+  const dots      = document.querySelectorAll('.analytics-dots .dot');
   if (!container || dots.length === 0) return;
 
   container.style.transform = `translateX(-${index * 100}%)`;
@@ -74,7 +101,6 @@ function showAnalyticsSlide(index) {
   }, 50);
 }
 
-// Проверка, построен ли график
 function isChartRendered(index) {
   const chartKeys = [
     'expensesByCategory',
@@ -90,14 +116,17 @@ function isChartRendered(index) {
   return charts[chartKeys[index]];
 }
 
-// 6) Рендер всех графиков
+// ------------------------------------------------------------------
+// 5) Рендер всех графиков
+// ------------------------------------------------------------------
 function renderCharts() {
   if (!budgetManagerInstance) {
     console.warn('[Charts] budgetManagerInstance is null');
     return;
   }
 
-  destroyAllCharts();
+  cachedTransactions = null;   // сброс кэша
+  destroyAllCharts();          // убрать старые графики и хендлеры
 
   [
     renderExpensesByCategoryChart,
@@ -113,26 +142,32 @@ function renderCharts() {
   ].forEach(fn => fn());
 }
 
-// Уничтожение всех графиков
 function destroyAllCharts() {
   Object.keys(charts).forEach(key => {
     if (charts[key]) {
       charts[key].destroy();
-      charts[key] = null;
+      delete charts[key];
     }
   });
+  // снимаем клики
+  canvasHandlers.forEach((handler, canvas) => {
+    canvas.removeEventListener('click', handler);
+  });
+  canvasHandlers.clear();
 }
 
-// Навесим обработку выбора месяца
+// ------------------------------------------------------------------
+// 6) Кастом-селект месяца (сброс кэша при изменении фильтра)
+// ------------------------------------------------------------------
 function setupAnalyticsFilter() {
   const customSelect = document.getElementById('analytics-custom-select');
   if (!customSelect) return;
 
   const selected = customSelect.querySelector('.custom-select-button');
-  const options   = customSelect.querySelector('.custom-select-options');
+  const options  = customSelect.querySelector('.custom-select-options');
 
-  selected.textContent = 'Все месяцы ▼';
-  currentAnalyticsMonthFilter = 'all';
+  selected.textContent          = 'Все месяцы ▼';
+  currentAnalyticsMonthFilter   = 'all';
 
   options.classList.remove('hidden');
   options.classList.add('hidden');
@@ -145,10 +180,9 @@ function setupAnalyticsFilter() {
   options.querySelectorAll('div').forEach(option => {
     option.addEventListener('click', e => {
       e.stopPropagation();
-      selected.textContent = option.textContent + ' ▼';
+      selected.textContent        = option.textContent + ' ▼';
       currentAnalyticsMonthFilter = option.getAttribute('data-value');
       options.classList.add('hidden');
-      destroyAllCharts();
       renderCharts();
     });
   });
@@ -158,26 +192,38 @@ function setupAnalyticsFilter() {
   });
 }
 
-// 7) Получение транзакций с исключением категорий
+// ------------------------------------------------------------------
+// 7) Получение транзакций (с кешированием)
+// ------------------------------------------------------------------
 function getCurrentBudgetTransactions(filterByMonth = true) {
+  if (cachedTransactions) return cachedTransactions;
+
   const tx = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
   if (!tx.length) return [];
 
-  const excluded = ['Не знаю на что потратил (без учёта)', 'Другая категория (без учёта)'];
+  const excluded = [
+    'Не знаю на что потратил (без учёта)',
+    'Другая категория (без учёта)'
+  ];
   const filtered = tx.filter(t => !excluded.includes(t.category));
 
-  if (currentAnalyticsMonthFilter === 'all' || !filterByMonth) return filtered;
+  cachedTransactions =
+      (currentAnalyticsMonthFilter === 'all' || !filterByMonth)
+          ? filtered
+          : filtered.filter(
+              t =>
+                  t.date.slice(5, 7) === currentAnalyticsMonthFilter // MM сравнение
+          );
 
-  return filtered.filter(t =>
-      new Date(t.date).toISOString().slice(5, 7) === currentAnalyticsMonthFilter
-  );
+  return cachedTransactions;
 }
 
-// 8) Форматирование чисел
+// ------------------------------------------------------------------
+// 8) Утилиты
+// ------------------------------------------------------------------
 const formatNumber = n =>
     n.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-// 9) Для пустых графиков
 function ensureNonEmptyData(labels, data) {
   if (!data.length) {
     labels.push('');
@@ -185,13 +231,20 @@ function ensureNonEmptyData(labels, data) {
   }
 }
 
+function bindClickOnce(canvas, handler) {
+  if (!canvas || canvas.dataset.bound) return;
+  canvas.addEventListener('click', handler);
+  canvas.dataset.bound = '1';
+  canvasHandlers.set(canvas, handler);
+}
+
 // -----------------------------------------------------------------
-// 1. Расходы по категориям (doughnut)
+// 1. Расходы по категориям
 // -----------------------------------------------------------------
 function renderExpensesByCategoryChart() {
   const canvas = document.getElementById('expensesByCategoryChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
@@ -199,42 +252,47 @@ function renderExpensesByCategoryChart() {
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
     const cat = t.category || 'Без категории';
-    map[cat] = (map[cat] || 0) + t.amount;
+    map[cat]  = (map[cat] || 0) + t.amount;
   });
 
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const sorted = Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
   const labels = sorted.map(([c]) => c);
   const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-  const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`);
+  const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length},70%,60%)`);
 
   charts.expensesByCategory = new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+    type   : 'doughnut',
+    data   : { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
     options: {
-      cutout: '65%',
+      cutout : '65%',
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') }
+          labels  : { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') }
         }
       }
     }
   });
 
   const center = document.getElementById('expensesByCategoryCenterText');
-  if (center)
-    center.innerHTML = `<div class="center-total">${formatNumber(data.reduce((s, v) => s + v, 0))}</div><div class="center-label">сум</div>`;
+  if (center) {
+    center.innerHTML =
+        `<div class="center-total">${formatNumber(data.reduce((s, v) => s + v, 0))}</div>` +
+        `<div class="center-label">сум</div>`;
+  }
 }
 
 // -----------------------------------------------------------------
-// 2. Ежемесячные расходы/доходы (bar)
+// 2. Ежемесячные расходы/доходы
 // -----------------------------------------------------------------
 function renderMonthlyExpensesChart() {
   const canvas = document.getElementById('monthlyExpensesChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions(false);
@@ -250,7 +308,7 @@ function renderMonthlyExpensesChart() {
     monthlyData[key][t.type] += t.amount;
   });
 
-  const keys    = Object.keys(monthlyData).sort((a, b) => {
+  const keys = Object.keys(monthlyData).sort((a, b) => {
     const [mA, yA] = a.split(' '), [mB, yB] = b.split(' ');
     return (+yA - +yB) || (months.indexOf(mA) - months.indexOf(mB));
   });
@@ -265,7 +323,7 @@ function renderMonthlyExpensesChart() {
     data: {
       labels: keys,
       datasets: [
-        { label: 'Доходы', data: income,  backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') },
+        { label: 'Доходы',  data: income,  backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') },
         { label: 'Расходы', data: expense, backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--expense-color') }
       ]
     },
@@ -283,12 +341,12 @@ function renderMonthlyExpensesChart() {
 }
 
 // -----------------------------------------------------------------
-// 3. Доходы vs Расходы (pie)
+// 3. Доходы vs Расходы
 // -----------------------------------------------------------------
 function renderIncomeVsExpensesChart() {
   const canvas = document.getElementById('incomeVsExpensesChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
@@ -330,12 +388,12 @@ function renderIncomeVsExpensesChart() {
 }
 
 // -----------------------------------------------------------------
-// 4. Топ расходов (horizontal bar)
+// 4. Топ расходов
 // -----------------------------------------------------------------
 function renderTopExpensesChart() {
   const canvas = document.getElementById('topExpensesChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
@@ -351,19 +409,19 @@ function renderTopExpensesChart() {
   const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-  const colors = labels.map((_, i) => `hsl(${360 - i * 36}, 70%, 60%)`);
+  const colors = labels.map((_, i) => `hsl(${360 - i * 36},70%,60%)`);
 
   charts.topExpenses = new Chart(ctx, {
     type: 'bar',
     data: { labels, datasets: [{ data, backgroundColor: colors }] },
     options: {
       indexAxis: 'y',
-      layout: { padding: { bottom: 30 } },
-      scales: {
+      layout   : { padding: { bottom: 30 } },
+      scales   : {
         y: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
-      plugins: { legend: { display: false } },
+      plugins : { legend: { display: false } },
       elements: { bar: { borderRadius: 30, barThickness: 30, maxBarThickness: 30, minBarLength: 10 } }
     }
   });
@@ -371,7 +429,7 @@ function renderTopExpensesChart() {
   // кликабельные бары
   const chart  = charts.topExpenses;
   const yScale = chart.scales.y;
-  chart.canvas.addEventListener('click', evt => {
+  const clickH = evt => {
     const { offsetY } = evt;
     const step = (yScale.bottom - yScale.top) / yScale.ticks.length;
     const idx  = Math.floor((offsetY - yScale.top) / step);
@@ -380,36 +438,37 @@ function renderTopExpensesChart() {
       chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 });
       chart.update();
     }
-  });
+  };
+  bindClickOnce(canvas, clickH);
 }
 
 // -----------------------------------------------------------------
-// 5. Динамика баланса (line)
+// 5. Динамика баланса
 // -----------------------------------------------------------------
 function renderBalanceDynamicsChart() {
   const canvas = document.getElementById('balanceDynamicsChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
 
   const dayMap = {};
   tx.forEach(t => {
-    const d = new Date(t.date).getDate();
-    dayMap[d] = (dayMap[d] || 0) +
+    const key = t.date.slice(0, 10);                // YYYY-MM-DD 🎯
+    dayMap[key] = (dayMap[key] || 0) +
         (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0);
   });
 
-  const days   = Object.keys(dayMap).map(Number).sort((a, b) => a - b);
-  let balance  = 0;
-  const data   = days.map(d => balance += dayMap[d]);
+  const sortedDays = Object.keys(dayMap).sort();   // по ISO-датам уже хронологично
+  let balance = 0;
+  const data  = sortedDays.map(d => balance += dayMap[d]);
 
-  ensureNonEmptyData(days, data);
+  ensureNonEmptyData(sortedDays, data);
 
   charts.balanceDynamics = new Chart(ctx, {
-    type: 'line',
-    data: { labels: days, datasets: [{ data, tension: 0.3, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
+    type   : 'line',
+    data   : { labels: sortedDays, datasets: [{ data, tension: 0.3, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
       layout: { padding: { bottom: 30 } },
       scales: {
@@ -422,12 +481,12 @@ function renderBalanceDynamicsChart() {
 }
 
 // -----------------------------------------------------------------
-// 6. История категории (line)
+// 6. История категории
 // -----------------------------------------------------------------
 function renderCategoryHistoryChart() {
   const canvas = document.getElementById('categoryHistoryChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
@@ -437,7 +496,7 @@ function renderCategoryHistoryChart() {
   const monthMap = {};
   tx.filter(t => t.category === cat && t.type === 'expense').forEach(t => {
     const d   = new Date(t.date);
-    const key = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const key = `${String(d.getMonth() + 1).padStart(2,'0')}/${d.getFullYear()}`;
     monthMap[key] = (monthMap[key] || 0) + t.amount;
   });
 
@@ -450,8 +509,8 @@ function renderCategoryHistoryChart() {
   ensureNonEmptyData(labels, data);
 
   charts.categoryHistory = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{ data, tension: 0.4, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
+    type   : 'line',
+    data   : { labels, datasets: [{ data, tension: 0.4, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color') }] },
     options: {
       layout: { padding: { bottom: 30 } },
       scales: {
@@ -464,20 +523,20 @@ function renderCategoryHistoryChart() {
 }
 
 // -----------------------------------------------------------------
-// 7. Категории по убыванию (horizontal bar)
+// 7. Категории по убыванию
 // -----------------------------------------------------------------
 function renderCategoriesByDescendingChart() {
   const canvas = document.getElementById('categoriesByDescendingChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
 
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
-    const cat  = t.category || 'Без категории';
-    map[cat]    = (map[cat] || 0) + t.amount;
+    const cat = t.category || 'Без категории';
+    map[cat]  = (map[cat] || 0) + t.amount;
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
@@ -485,25 +544,25 @@ function renderCategoriesByDescendingChart() {
   const data   = sorted.map(([, a]) => a);
 
   ensureNonEmptyData(labels, data);
-  const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`);
+  const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length},70%,60%)`);
 
   charts.categoriesByDescending = new Chart(ctx, {
     type: 'bar',
     data: { labels, datasets: [{ data, backgroundColor: colors }] },
     options: {
       indexAxis: 'y',
-      layout: { padding: { bottom: 30 } },
-      scales: {
+      layout   : { padding: { bottom: 30 } },
+      scales   : {
         y: {
           ticks: {
             color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'),
-            font: { size: Math.max(6, 9 - labels.length / 10) },
+            font : { size: Math.max(5, 9 - labels.length / 10) },
             padding: 10
           }
         },
         x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'), callback: formatNumber } }
       },
-      plugins: { legend: { display: false } },
+      plugins : { legend: { display: false } },
       elements: { bar: { borderRadius: 10, barThickness: 100, maxBarThickness: 30, minBarLength: 40 } }
     }
   });
@@ -511,7 +570,7 @@ function renderCategoriesByDescendingChart() {
   // кликабельные бары
   const chart  = charts.categoriesByDescending;
   const yScale = chart.scales.y;
-  chart.canvas.addEventListener('click', evt => {
+  const clickH = evt => {
     const { offsetY } = evt;
     const step = (yScale.bottom - yScale.top) / yScale.ticks.length;
     const idx  = Math.floor((offsetY - yScale.top) / step);
@@ -520,16 +579,17 @@ function renderCategoriesByDescendingChart() {
       chart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 });
       chart.update();
     }
-  });
+  };
+  bindClickOnce(canvas, clickH);
 }
 
 // -----------------------------------------------------------------
-// 8. Траты по дням недели (bar)
+// 8. Траты по дням недели
 // -----------------------------------------------------------------
 function renderSpendingByWeekdayChart() {
   const canvas = document.getElementById('spendingByWeekdayChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
@@ -542,7 +602,7 @@ function renderSpendingByWeekdayChart() {
   });
 
   ensureNonEmptyData(days, sums);
-  const colors = days.map((_, i) => `hsl(${i * 50}, 70%, 60%)`);
+  const colors = days.map((_, i) => `hsl(${i * 50},70%,60%)`);
 
   charts.spendingByWeekday = new Chart(ctx, {
     type: 'bar',
@@ -559,19 +619,23 @@ function renderSpendingByWeekdayChart() {
 }
 
 // -----------------------------------------------------------------
-// 9. Траты по размеру чека (pie)
+// 9. Траты по размеру чека
 // -----------------------------------------------------------------
 function renderSpendingByAmountRangeChart() {
   const canvas = document.getElementById('spendingByAmountRangeChart');
   if (!canvas) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
 
   const ranges = {
-    '<100 000': 0, '100 000–500 000': 0, '500 000–1 000 000': 0,
-    '1 000 000–5 000 000': 0, '5 000 000–10 000 000': 0, '>10 000 000': 0
+    '<100 000'             : 0,
+    '100 000–500 000'      : 0,
+    '500 000–1 000 000'    : 0,
+    '1 000 000–5 000 000'  : 0,
+    '5 000 000–10 000 000' : 0,
+    '>10 000 000'          : 0
   };
 
   tx.filter(t => t.type === 'expense').forEach(t => {
@@ -580,7 +644,7 @@ function renderSpendingByAmountRangeChart() {
     else if (a < 500_000)    ranges['100 000–500 000']++;
     else if (a < 1_000_000)  ranges['500 000–1 000 000']++;
     else if (a < 5_000_000)  ranges['1 000 000–5 000 000']++;
-    else if (a <10_000_000)  ranges['5 000 000–10 000 000']++;
+    else if (a < 10_000_000) ranges['5 000 000–10 000 000']++;
     else                     ranges['>10 000 000']++;
   });
 
@@ -597,9 +661,9 @@ function renderSpendingByAmountRangeChart() {
     type: 'pie',
     data: { labels, datasets: [{ data, backgroundColor: baseColors }] },
     options: {
-      layout: { padding: { top: 10, bottom: 50, left: 10, right: 10 } },
+      layout : { padding: { top: 10, bottom: 50, left: 10, right: 10 } },
       plugins: {
-        legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
+        legend : { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color') } },
         tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} чеков` } }
       }
     }
@@ -607,12 +671,12 @@ function renderSpendingByAmountRangeChart() {
 }
 
 // -----------------------------------------------------------------
-// 10. Годовая сводка (bar)
+// 10. Годовая сводка
 // -----------------------------------------------------------------
 function renderAnnualSummaryChart() {
-  const canvas = document.getElementById('annualSummaryChart');
+  const	canvas = document.getElementById('annualSummaryChart');
   if (!canvas || !budgetManagerInstance?.calculateTotals) return;
-  setCanvasHeight(canvas, 0.6);
+  setAdaptiveCanvasHeight(canvas);
 
   const ctx = canvas.getContext('2d');
 
@@ -633,22 +697,22 @@ function renderAnnualSummaryChart() {
   charts.annualSummary = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: months,
+      labels  : months,
       datasets: [
-        { label: 'Бюджет', data: dataBudget,  backgroundColor: 'hsl(130, 70%, 60%)' },
-        { label: 'Доходы', data: dataIncome,  backgroundColor: 'hsl(210, 70%, 60%)' },
-        { label: 'Расходы', data: dataExpense, backgroundColor: 'hsl(0,   70%, 60%)' },
-        { label: 'Вклад',   data: dataDeposit, backgroundColor: 'hsl(270, 70%, 60%)' },
-        { label: 'Долг',    data: dataDebt,    backgroundColor: 'hsl(45,  70%, 60%)' }
+        { label: 'Бюджет', data: dataBudget,  backgroundColor: 'hsl(130,70%,60%)' },
+        { label: 'Доходы', data: dataIncome,  backgroundColor: 'hsl(210,70%,60%)' },
+        { label: 'Расходы',data: dataExpense, backgroundColor: 'hsl(0,70%,60%)'   },
+        { label: 'Вклад',  data: dataDeposit, backgroundColor: 'hsl(270,70%,60%)' },
+        { label: 'Долг',   data: dataDebt,    backgroundColor: 'hsl(45,70%,60%)'  }
       ]
     },
     options: {
-      layout: { padding: { top: 10, bottom: 30 } },
+      layout : { padding: { top: 10, bottom: 30 } },
       plugins: {
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${formatNumber(ctx.raw)} сум` } },
-        legend: {
+        legend : {
           position: 'bottom',
-          labels: {
+          labels  : {
             boxWidth: 14, boxHeight: 14, padding: 12, font: { size: 12 },
             color: getComputedStyle(document.documentElement).getPropertyValue('--secondary-color')
           }
@@ -662,9 +726,9 @@ function renderAnnualSummaryChart() {
   });
 }
 
-// ---------------------------------------------------------------
-// Экспорт
-// ---------------------------------------------------------------
+// -----------------------------------------------------------------
+// 11. Экспорт
+// -----------------------------------------------------------------
 export {
   destroyAllCharts,
   renderCharts,
@@ -672,3 +736,9 @@ export {
   renderExpensesByCategoryChart,
   renderTopExpensesChart
 };
+
+// если тема меняется — перерисовать все графики
+window.addEventListener('themechange', () => {
+  destroyAllCharts();
+  renderCharts();
+});
