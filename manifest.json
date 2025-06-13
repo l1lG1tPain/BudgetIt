@@ -1,17 +1,17 @@
 {
   "name": "BudgetIt — учёт бюджета",
   "short_name": "BudgetIt",
-  "id": "/",
   "scope": "/",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
-
   "description": "Учёт расходов, доходов, долгов и вкладов — офлайн и без рекламы.",
   "categories": ["finance", "productivity", "utilities"],
-
+  "lang": "ru",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/assets/icon-192x192v2.9.png",

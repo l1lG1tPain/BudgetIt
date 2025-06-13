@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v2.9.9';
+const CACHE_VERSION = 'v2.9.10'; // ⬅️ обновлено
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -23,16 +23,14 @@ const STATIC_ASSETS = [
     '/src/profileAnalytics.js',
 
     // utils
-    '/src/utils/analytics.js',
     '/src/utils/emojiMap.js',
     '/src/utils/loader.js',
     '/src/utils/tweakSystem.js',
-    '/src/utils/umami-events.js',
     '/src/utils/utils.js',
     '/src/utils/achievements.js',
     '/src/utils/achievementUtils.js',
 
-    // constants (НОВОЕ)
+    // constants
     '/constants/achievementList.js',
     '/constants/constants.js',
     '/constants/debtCategories.js',
@@ -72,7 +70,6 @@ const STATIC_ASSETS = [
     '/assets/404.png',
     '/assets/500.png',
     '/assets/offline.png'
-
 ];
 
 /* === INSTALL ======================================================== */
@@ -87,7 +84,7 @@ self.addEventListener('install', event => {
                     .filter(r => r.status === 'rejected')
                     .forEach(r => console.warn('[SW] asset skip:', r.reason.url));
             })
-            .then(() => self.skipWaiting())          // мгновенно активируем
+            .then(() => self.skipWaiting())
     );
 });
 
@@ -102,7 +99,7 @@ self.addEventListener('activate', event => {
                         .map(k => caches.delete(k))
                 )
             )
-            .then(() => self.clients.claim())        // берём управление
+            .then(() => self.clients.claim())
             .then(() =>
                 self.clients.matchAll({ type: 'window' })
                     .then(clients =>
@@ -115,14 +112,14 @@ self.addEventListener('activate', event => {
 /* === FETCH ========================================================== */
 self.addEventListener('fetch', event => {
     const { request } = event;
-
-    /* 0) Игнорируем POST/PUT/DELETE и внешние домены/API */
     if (request.method !== 'GET') return;
-    const url = new URL(request.url);
-    if (url.origin !== self.location.origin) return;      // CDN / внешние
-    if (url.pathname.startsWith('/api/'))      return;    // online-only
 
-    /* 1) Навигация (HTML) — network-first с тайм-аутом 4 с */
+    const url = new URL(request.url);
+    const isUmami = url.href.includes('umami');
+
+    if (url.origin !== self.location.origin && !isUmami) return;
+    if (url.pathname.startsWith('/api/')) return;
+
     const isNavigate =
         request.mode === 'navigate' ||
         (request.headers.get('accept') || '').includes('text/html');
@@ -143,7 +140,12 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    /* 2) Остальные ассеты — cache-first + фоновый refresh */
+    // ⛔ Для umami.js всегда загружаем из сети
+    if (isUmami) {
+        event.respondWith(fetch(request));
+        return;
+    }
+
     event.respondWith(
         caches.match(request).then(cached => {
             const network = fetch(request)
@@ -165,7 +167,7 @@ function cacheIfAllowed(request, response) {
 
 function fromNetwork(request, timeout = 4000) {
     return new Promise((resolve, reject) => {
-        const timer = setTimeout(reject, timeout, 'timeout');
+        const timer = setTimeout(() => reject('timeout'), timeout);
         fetch(request).then(response => {
             clearTimeout(timer);
             resolve(response);
