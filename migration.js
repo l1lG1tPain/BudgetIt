@@ -1,9 +1,9 @@
-// BudgetIt — мягкая миграция: только Экспорт + Переход (без UIManager)
+// public/migration.js
 (function () {
   const CSS = `
   .migr-banner{position:fixed;left:0;right:0;bottom:-120px;
     background:linear-gradient(135deg,#1ED760,#19c37d);color:#fff;
-    font:15px/1.4 'Montserrat',sans-serif;z-index:99999;padding:14px 16px; font-weight:bold;
+    font:15px/1.4 'Poppins',sans-serif;z-index:99999;padding:14px 16px;
     display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
     box-shadow:0 -4px 12px rgba(0,0,0,.25);transition:bottom .6s ease}
   .migr-banner.show{bottom:0}
@@ -20,17 +20,30 @@
     }
   }
 
-  function exportBudgetsDirect(){
+  function exportFullBackup(){
     try{
-      // Берём то же, что сохраняет BudgetManager -> localStorage['budgets']
-      const raw = localStorage.getItem('budgets') || '[]';
-      const blob = new Blob([raw], { type: 'application/json' });
+      const budgetsRaw = localStorage.getItem('budgets') || '[]';
+      const budgets    = JSON.parse(budgetsRaw);
+      const userId     = localStorage.getItem('budgetit-user-id') || null;                 // ← твой ID :contentReference[oaicite:0]{index=0}
+      const currentIdx = localStorage.getItem('currentBudgetIndex');
+      const productNames = JSON.parse(localStorage.getItem('productNames') || '[]');       // ← тоже хранится в LS :contentReference[oaicite:1]{index=1}
+
+      const payload = {
+        meta: { app: 'BudgetIt', at: new Date().toISOString(), version: '2.9.x' },
+        budgets,
+        userId,
+        currentBudgetIndex: currentIdx ? parseInt(currentIdx, 10) : 0,
+        productNames
+      };
+
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       const url  = URL.createObjectURL(blob);
-      const a    = Object.assign(document.createElement('a'), { href:url, download:'budgets.json' });
+      const a    = Object.assign(document.createElement('a'), { href:url, download:'budgetit-backup.json' });
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
     } catch(e){
       alert('Не удалось экспортировать данные');
+      console.error(e);
     }
   }
 
@@ -51,13 +64,12 @@
 
     btnExp.addEventListener('click', () => {
       btnExp.disabled = true;
-      try { exportBudgetsDirect(); }
+      try { exportFullBackup(); }
       finally { setTimeout(()=>btnExp.disabled=false, 800); }
     });
     btnGo.addEventListener('click', () => location.href = `https://${newHost}`);
   }
 
-  // Публичный вызов
   window.setupMigration = ({ oldHost, newHost }) => {
     if (location.hostname === oldHost) renderBanner(newHost);
   };

@@ -107,33 +107,59 @@ export function initSettings(budgetManager, ui) {
             showTweak('📁 Бюджеты экспортированы', 'success', 2000);
         });
 
+    // settings.js — внутри initSettings(...)
     document.getElementById('import-file')
-        ?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    ?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    budgetManager.budgets = JSON.parse(reader.result);
-                    budgetManager.currentBudgetIndex = 0;
-                    budgetManager.saveToStorage();
+        const reader = new FileReader();
+        reader.onload = () => {
+        try {
+            const parsed = JSON.parse(reader.result);
 
-                    ui.updateHeader();
-                    ui.updateUI();
-                    refreshExportAnalytics(budgetManager);
+            let budgets, userId, currentBudgetIndex, productNames;
 
-                    // 👇 ДОБАВЛЕНО: пересчёт ачивок
-                    checkAchievements(budgetManager);
-                    refreshUserProfile(budgetManager);
+            if (Array.isArray(parsed)) {
+            // старый формат
+            budgets = parsed;
+            currentBudgetIndex = 0;
+            } else if (parsed && typeof parsed === 'object') {
+            // новый расширенный формат
+            budgets            = parsed.budgets || [];
+            userId             = parsed.userId || null;
+            currentBudgetIndex = Number.isInteger(parsed.currentBudgetIndex) ? parsed.currentBudgetIndex : 0;
+            productNames       = Array.isArray(parsed.productNames) ? parsed.productNames : [];
+            } else {
+            throw new Error('Invalid format');
+            }
 
-                    showTweak('✅ Данные успешно импортированы', 'success', 2500);
-                } catch {
-                    showTweak('❌ Ошибка при чтении файла', 'error', 4000);
-                }
-            };
-            reader.readAsText(file);
-        });
+            // применяем в менеджер
+            budgetManager.budgets = budgets;
+            budgetManager.currentBudgetIndex = Math.min(Math.max(0, currentBudgetIndex), Math.max(0, budgets.length - 1));
+            if (productNames) budgetManager.productNames = productNames;
+            budgetManager.saveToStorage();  // сохранит budgets/currentBudgetIndex/productNames в LS :contentReference[oaicite:4]{index=4}
+
+            // восстанавливаем userId
+            if (userId) {
+            localStorage.setItem('budgetit-user-id', userId); // ← критично для твоих спец.ID :contentReference[oaicite:5]{index=5}
+            }
+
+            ui.updateHeader();
+            ui.updateUI();
+            refreshExportAnalytics(budgetManager);
+            // ачивки/профиль как раньше
+            // checkAchievements(budgetManager); refreshUserProfile(budgetManager);
+            // (оставь твой текущий код если он уже есть)
+
+            showTweak('✅ Данные импортированы', 'success', 2500);
+        } catch {
+            showTweak('❌ Ошибка при чтении файла', 'error', 4000);
+        }
+        };
+        reader.readAsText(file);
+    });
+
 
     document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
         document.getElementById('clear-cache-modal')?.classList.remove('hidden');
