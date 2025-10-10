@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v2.9.10'; // ⬅️ обновлено
+const CACHE_VERSION = 'v2.9.11'; // ⬅️ обновлено
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     '/', '/index.html', '/onboarding.html',
     '/style.css', '/theme.css',
     '/404.html', '/500.html', '/offline.html',
-    '/app.js',
+    '/app.js', '/migration.js',
 
     // widgets
     '/widgets/bannerCarousel.js',

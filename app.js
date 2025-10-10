@@ -8,7 +8,6 @@ import { showLoader } from './src/utils/loader.js';
 
 const budgetManager = new BudgetManager();
 const uiManager     = new UIManager(budgetManager);
-window.uiManager = uiManager; 
 
 // console.log('[APP] BudgetIt bootstrapping…');
 
