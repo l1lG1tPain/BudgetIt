@@ -1,6 +1,7 @@
 // public/migration.js — красивый "мягкий" баннер (Montserrat, Акулка, крупные кнопки)
 (function () {
   const SHARK_SRC = '/assets/shark.png';         // ← положи картинку сюда (или поменяй путь)
+  const GOOGLE_FONT = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap';
 
   const CSS = `
   .migr-font{font-family:'Montserrat',sans-serif}

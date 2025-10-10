@@ -69,7 +69,8 @@ const STATIC_ASSETS = [
 
     '/assets/404.png',
     '/assets/500.png',
-    '/assets/offline.png'
+    '/assets/offline.png',
+    '/assets/shark.png'
 ];
 
 /* === INSTALL ======================================================== */
