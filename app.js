@@ -8,8 +8,9 @@ import { showLoader } from './src/utils/loader.js';
 
 const budgetManager = new BudgetManager();
 const uiManager     = new UIManager(budgetManager);
+window.uiManager = uiManager; 
 
-console.log('[APP] BudgetIt bootstrapping…');
+// console.log('[APP] BudgetIt bootstrapping…');
 
 // Быстрая проверка: есть ли бюджеты в localStorage (чтобы решить, нужен ли онбординг)
 function needOnboarding() {
