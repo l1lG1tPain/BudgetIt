@@ -3,43 +3,66 @@
   const SHARK_SRC = '/assets/shark.png';         // ← положи картинку сюда (или поменяй путь)
   const GOOGLE_FONT = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap';
 
+  // --- правим CSS в migration.js ---
   const CSS = `
-  .migr-font{font-family:'Montserrat',sans-serif}
-  .migr-banner{
-    position:fixed;left:0;right:0;bottom:-220px;z-index:99999;
-    background:linear-gradient(135deg,#18c06f 0%,#1ED760 40%,#19c37d 100%);
-    color:#fff; box-shadow:0 -10px 30px rgba(0,0,0,.35);
-    transition:bottom .6s ease;
-  }
-  .migr-banner.show{bottom:0}
-  .migr-wrap{
-    display:grid; grid-template-columns:72px 1fr; gap:14px; align-items:center;
-    padding:14px 16px; max-width:980px; margin:0 auto;
-  }
-  .migr-img{
-    width:72px; height:72px; border-radius:16px; object-fit:cover;
-    box-shadow:0 8px 18px rgba(0,0,0,.25); background:#0b1e13;
-  }
-  .migr-title{font-weight:800; font-size:18px; line-height:1.25; margin:0}
-  .migr-sub{font-weight:600; font-size:14px; opacity:.95; margin:6px 0 0 0}
-  .migr-link{color:#fff; font-weight:800; text-decoration:underline}
-  .migr-actions{display:flex; gap:12px; margin-top:12px}
-  .migr-btn{
-    flex:1 1 50%; min-width:0;
-    background:#fff; color:#0b1e13; border:none; border-radius:12px;
-    padding:12px 14px; font-weight:800; font-size:16px;
-    cursor:pointer; transition:transform .08s ease,opacity .2s ease;
-  }
-  .migr-btn:hover{transform:translateY(-1px)}
-  .migr-btn:active{transform:translateY(0)}
-  .migr-btn:disabled{opacity:.6; cursor:progress}
-  @media (min-width:760px){
-    .migr-wrap{grid-template-columns:88px 1fr}
-    .migr-img{width:88px;height:88px;border-radius:18px}
-    .migr-title{font-size:20px}
-    .migr-btn{font-size:17px; padding:14px 16px}
-  }
+    .migr-font{font-family:'Montserrat',sans-serif}
+    .migr-banner{
+      position:fixed;left:0;right:0;bottom:-220px;z-index:99999;
+      background:linear-gradient(135deg,#18c06f 0%,#1ED760 40%,#19c37d 100%);
+      color:#fff; box-shadow:0 -10px 30px rgba(0,0,0,.35);
+      transition:bottom .6s ease;
+    }
+    .migr-banner.show{bottom:0}
+
+    /* сетка: картинка + контент, на одном уровне по верху */
+    .migr-wrap{
+      display:grid; grid-template-columns:75px 1fr; gap:14px;
+      align-items:start;                      /* ← картинка на уровне заголовка */
+      padding:16px 16px 18px; max-width:980px; margin:0 auto;
+    }
+
+    /* +3px к размеру изображения, не мешает кнопкам */
+    .migr-img{
+      width:75px; height:75px;                /* ← было 72x72 */
+      border-radius:16px; object-fit:cover;
+      box-shadow:0 8px 18px rgba(0,0,0,.25); background:#0b1e13;
+      align-self:start;                       /* ← старт по вертикали */
+    }
+
+    .migr-title{
+      font-weight:800; font-size:18px; line-height:1.25;
+      margin:0 0 8px 0;                       /* ← отступ под заголовком */
+    }
+    .migr-sub{
+      font-weight:600; font-size:14px; opacity:.95;
+      margin:0 0 12px 0;                       /* ← больше воздуха до кнопок */
+    }
+    .migr-link{color:#fff; font-weight:800; text-decoration:underline}
+
+    /* кнопки: слева направо, по 50% */
+    .migr-actions{
+      display:flex; flex-wrap:wrap; gap:12px;
+      justify-content:flex-start;              /* ← старт слева */
+    }
+    .migr-btn{
+      flex:1 1 50%;                            /* ← каждая ~50% ширины */
+      min-width:calc(50% - 6px);               /* ← с учётом gap */
+      background:#fff; color:#0b1e13; border:none; border-radius:12px;
+      padding:14px 16px; font-weight:800; font-size:16px;
+      cursor:pointer; transition:transform .08s ease,opacity .2s ease;
+    }
+    .migr-btn:hover{transform:translateY(-1px)}
+    .migr-btn:active{transform:translateY(0)}
+    .migr-btn:disabled{opacity:.6; cursor:progress}
+
+    @media (min-width:760px){
+      .migr-wrap{grid-template-columns:91px 1fr}   /* ← +3px к десктопу */
+      .migr-img{width:91px;height:91px;border-radius:18px}
+      .migr-title{font-size:20px}
+      .migr-btn{font-size:17px}
+    }
   `;
+
 
   function injectAssets(){
     // стиль
