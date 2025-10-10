@@ -3,7 +3,7 @@
   .migr-banner {
     position:fixed;left:0;right:0;bottom:-120px;
     background:linear-gradient(135deg,#1ED760,#19c37d);
-    color:#fff;font:15px/1.4 'Poppins',sans-serif;
+    color:#fff;font:15px/1.4 'Montserrat',sans-serif;
     z-index:99999;padding:14px 16px;
     display:flex;gap:12px;align-items:center;
     justify-content:center;flex-wrap:wrap;
@@ -23,11 +23,12 @@
   `;
 
   function injectCss() {
-    if (document.getElementById('migr-style')) return;
-    const s = document.createElement('style');
-    s.id = 'migr-style';
-    s.textContent = CSS;
-    document.head.appendChild(s);
+    if (!document.getElementById('migr-style')) {
+      const s = document.createElement('style');
+      s.id = 'migr-style';
+      s.textContent = CSS;
+      document.head.appendChild(s);
+    }
   }
 
   function renderBanner(newHost) {
@@ -40,7 +41,6 @@
       <button class="migr-btn" id="migr-go">➡ Перейти</button>
     `;
     document.body.appendChild(el);
-
     setTimeout(() => el.classList.add('show'), 400);
 
     const btnExp = el.querySelector('#migr-export');
@@ -48,7 +48,7 @@
       btnExp.disabled = true;
       try {
         if (window.uiManager && typeof window.uiManager.exportData === 'function') {
-          window.uiManager.exportData();
+          window.uiManager.exportData(); // используем твой готовый метод
         } else {
           alert('Экспорт недоступен');
         }
