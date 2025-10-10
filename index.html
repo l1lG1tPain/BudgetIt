@@ -587,6 +587,14 @@
         .catch(err => console.warn('[SW] Failed', err));
     }
   </script>
+  <script src="/migration.js"></script>
+  <script>
+    setupMigration({
+      oldHost: 'budgetit-nine.vercel.app',
+      newHost: 'budgetit.app'
+    });
+  </script>
+
 
 </body>
 </html>
