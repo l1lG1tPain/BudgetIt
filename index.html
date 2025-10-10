@@ -71,7 +71,7 @@
 
     <div class="budget-add">
       <span>Бюджет:</span>
-      <input type="text" id="new-budget-name" placeholder="Название" maxlength="13">
+      <input type="text" id="new-budget-name" placeholder="Название, можно эмоджи" maxlength="13">
     </div>
 
     <button id="add-budget-btn">Добавить</button>
@@ -173,7 +173,7 @@
         <select id="income-category" name="income-category">
         </select>    
         <label for="income-amount">Сумма:</label>
-        <input type="tel" id="income-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="income-amount" class="numeric-format" required maxlength="15" inputmode="numeric" placeholder="1 000 денег">
         <button type="submit" class="add-btn">Сохранить</button>
         <button type="button" class="close-form">Закрыть</button>
       </form>
@@ -203,9 +203,9 @@
         <label for="debt-date">Дата:</label>
         <input type="date" id="debt-date" name="debt-date" required>
         <label for="debt-name">Имя:</label>
-        <input type="text" id="debt-name" name="debt-name" required maxlength="16">
+        <input type="text" id="debt-name" name="debt-name" required maxlength="16" placeholder="Долг#1, можно эмоджи/имя">
         <label for="debt-amount">Сумма:</label>
-        <input type="tel" id="debt-amount" name="debt-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="debt-amount" name="debt-amount" class="numeric-format" required maxlength="15" inputmode="numeric" placeholder="1 000 денег">
         <label for="debt-direction">Тип долга:</label>
         <select id="debt-direction" name="debt-direction" required>
         </select>
@@ -217,9 +217,9 @@
         <label for="deposit-date">Дата:</label>
         <input type="date" id="deposit-date" required>
         <label for="deposit-name">Имя:</label>
-        <input type="text" id="deposit-name" name="deposit-name" required maxlength="16">
+        <input type="text" id="deposit-name" name="deposit-name" required maxlength="16" placeholder="Вклад#1, можно эмоджи/имя банка">
         <label for="deposit-amount">Сумма:</label>
-        <input type="tel" id="deposit-amount" name="deposit-amount" class="numeric-format" required maxlength="15" inputmode="numeric">
+        <input type="tel" id="deposit-amount" name="deposit-amount" class="numeric-format" required maxlength="15" inputmode="numeric" placeholder="1 000 денег">
         <label for="deposit-status">Статус:</label>
         <select id="deposit-status" name="deposit-status" required>
         </select>     

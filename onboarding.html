@@ -3,15 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json?v=2.9.3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
   <script defer
         src="https://cloud.umami.is/script.js"
         data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
         data-auto-track="false"></script>
+
+  <meta name="theme-color" content="#000000">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-title" content="BudgetIt">
+  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">
+  
+  <meta name="description"
+        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн‑режимом, аналитикой и пуш‑напоминаниями. Акулка позаботится о ваших финансах!">
+  <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, расходы, доходы, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
+  <meta name="author" content="BudgetIt by l1lG1tPain">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://budgetit-nine.vercel.app/">
+
+  <!-- === OPEN GRAPH === -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://budgetit-nine.vercel.app/">
+  <meta property="og:site_name" content="BudgetIt">
+  <meta property="og:title"       content="BudgetIt — Track your money with Shark 🦈">
+  <meta property="og:description" content="Zero‑friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
+  <meta property="og:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
+  <meta property="og:locale"      content="ru_RU">
+  <meta property="og:locale:alternate" content="en_US">
+
+  <!-- === TWITTER === -->
+  <meta name="twitter:site" content="@CyberSnit4">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="BudgetIt — Акулка следит за твоим бюджетом">
+  <meta name="twitter:description" content="Бесплатная PWA для управления личными финансами. Установи и начни экономить уже сегодня.">
+  <meta name="twitter:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
 
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,7 +57,7 @@
 
     body {
       margin: 0;
-      font-family: 'Montserrat';
+      font-family: 'Montserrat', 'sans-serif';
       background-color: var(--dark-color);
       color: var(--accent-color);
       display: flex;
@@ -50,7 +82,7 @@
     }
     p {
       font-size: 1em;
-      color: #aaa;
+      /* color: #aaa; */
       margin-bottom: 30px;
     }
     input[type="text"] {
@@ -59,9 +91,9 @@
       border-radius: 8px;
       font-size: 1em;
       margin-bottom: 15px;
-      width: 90%;
-      font-family: 'Montserrat';
-      font-weight: 500;
+      /* width: 90%; */
+      font-family: 'Montserrat', 'sans-serif';
+      /* font-weight: 500; */
 
     }
     button, label[for="file-input"] {
@@ -120,9 +152,9 @@
       border: none;
       color: var(--accent);
       font-size: 1.5em;
-      position: absolute;
+      /* position: absolute;
       top: 20px;
-      right: 20px;
+      right: 20px; */
       cursor: pointer;
     }
     
@@ -133,7 +165,7 @@
   <h1>Добро пожаловать в BudgetIt 🦈</h1>
   <p>Создай новый бюджет или импортируй свой, чтобы начать отслеживать расходы, долги и накопления.</p>
 
-  <input type="text" id="budget-name" placeholder="Название бюджета" /> <br />
+  <input type="text" id="budget-name" placeholder="Введи название (можно эмоджи)" /> <br />
   <button onclick="createBudget()">Создать бюджет</button>
   <label for="file-input">📥 Импортировать бюджет (JSON)</label>
   <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)" />
@@ -144,7 +176,7 @@
 
   <div id="help-modal" class="modal hidden" style="display: none;">
     <div class="modal-content">
-      <button class="close-modal" onclick="closeHelpModal()">Закрыть</button>
+      <button class="close-modal" onclick="closeHelpModal()">Закрыть ✖️</button>
       <h2>Как пользоваться BudgetIt?</h2>
       <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p>
       <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p>
@@ -157,7 +189,7 @@
   <script>
   function createBudget() {
     const name = document.getElementById('budget-name').value.trim();
-    if (!name) return showModal("Бюджет не может быть пустым.");
+    if (!name) return showModal("Сначала введи название бюджета! Можно эмоджи");
 
     const budget = { name, transactions: [] };
     localStorage.setItem('budgets', JSON.stringify([budget]));
@@ -212,8 +244,8 @@
       modal.className = 'modal';
       modal.innerHTML = `
         <div class="modal-content">
-          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть</button>
-          <h2>Внимание</h2>
+          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть ✖️</button>
+          <h2>Ну куда ты?</h2>
           <p>${message}</p>
         </div>
       `;

@@ -1,4 +1,3 @@
 User-agent: *
-Disallow:
-
-Sitemap: https://budgetit-nine.vercel.app/sitemap.xml
+Allow: /
+Sitemap: https://budgetit.app/sitemap.xml

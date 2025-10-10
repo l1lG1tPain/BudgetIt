@@ -42,6 +42,8 @@ export function initThemeSelector() {
     { value: 'grape', label: '🍇 Грейп' },
     { value: 'blackberry', label: '🫐 Ежевика' },
     { value: 'hookah', label: '💨 Кальянчик' },
+    // { value: 'lavender', label: '💜 Лаванда' },
+    { value: 'trackit', label: '🃏 Trackit' },
   ];
 
   container.innerHTML = '';

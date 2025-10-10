@@ -89,7 +89,7 @@ button, input, select, textarea {
 input, select, textarea {
   background-color: var(--tertiary-color);
   font-family: 'Montserrat', 'sans-serif';
-  font-weight: 500;
+  font-weight: bold;
 }
 
 h2 {

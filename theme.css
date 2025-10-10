@@ -670,3 +670,70 @@
       
     }
   }
+
+  :root[data-theme="trackit"] {
+    /* Основные цвета из Trackit */
+    --primary-color: #7228F5; /* Фиолетовый для ключевых элементов (хедер, футер, карточки) */
+    --secondary-color: #A0FF00; /* Зеленый для акцентов и кнопок */
+    --text-color: #FFFFFF; /* Белый текст для темного фона */
+    --button-text-color: #000000; /* Черный текст для кнопок на зеленом фоне */
+    --background-color: #1c1c24; /* Темный фон из BudgetiT */
+    --header-footer-color: var(--primary-color); /* Фиолетовый для хедера и футера */
+    --button-color: var(--secondary-color); /* Зеленый для кнопок */
+    --card-color: #2a2a33; /* Чуть светлее фона для карточек, чтобы выделялись */
+    
+    /* Специфические цвета для категорий из BudgetiT */
+    --income-color: #a0ff00; /* Bright neon green, matching secondary for positive inflow */
+    --expense-color: #ff00ff; /* Neon magenta, a cool-toned negative that blends with purple */
+    --deposit-color: #7228f5; /* Kept as primary purple for savings */
+    --debt-color: #ffbb00; /* Neon yellow, for cautionary elements tying into green */
+    
+    /* Дополнительные цвета и стили из BudgetiT */
+    --tertiary-color: #0C0C0E; /* Темный для второстепенных элементов */
+    --main-ground: #1c1c24; /* Темный основной фон */
+    --accent-color: #1E1E20; /* Акцентный фон для панелей */
+    --sidebar-bg: #000000; /* Черный для боковой панели */
+    --text-muted: #aaafb9; /* Приглушенный текст для второстепенной информации */
+    --bg-secondary-color: #000000; /* Черный для второстепенных фонов */
+    --dark-color: #000000; /* Черный для общих целей */
+    
+    /* Тени из BudgetiT */
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
+    
+    /* Переменные для аналитики */
+    --an-primary-color: var(--primary-color);
+    --an-income-color: var(--income-color);
+    --an-expense-color: var(--expense-color);
+    --an-debt-color: var(--debt-color);
+    --an-secondary-color: var(--secondary-color);
+    --an-tertiary-color: #111111;
+    --an-accent-color: var(--accent-color);
+    --an-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+    --an-border-radius-md: 8px; /* Предполагаемый радиус, можно уточнить */
+    
+    /* Стили для элементов */
+    #add-btn {
+      color: var(--button-text-color); /* Черный текст */
+      background-color: var(--button-color); /* Зеленый фон */
+    }
+
+    .block-title {
+      color: var(--button-text-color); /* Белый для заголовков блоков */
+    }
+
+
+    .analytics-slide h4 {
+      color: var(--text-color); /* Белый для заголовков на темном фоне */
+    }
+
+    .theme-option:hover {
+      color: var(--text-color); /* Белый при наведении */
+    }
+
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+      color: var(--text-color); /* Белый для текста ввода */
+    }
+  }
