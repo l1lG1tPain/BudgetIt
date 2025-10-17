@@ -14,7 +14,6 @@ button:active,
 }
 
 div {
-  -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
 
@@ -79,7 +78,6 @@ button, input, select, textarea {
   /*font-weight: 700;*/
 
   user-select: none;              /* Отключает выделение текста */
-  -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   outline: none;                  /* Убирает обводку при фокусе */
@@ -1447,7 +1445,6 @@ main::-webkit-scrollbar-thumb {
   -moz-appearance: none;
   pointer-events: auto;
   user-select: none;
-  -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
