@@ -76,6 +76,11 @@
     --an-secondary-color:  #f0f0f0;
     --an-tertiary-color:   #1e1e1e;
     --an-accent-color:     var(--accent-color);
+
+    .currency-chip{
+      background-color: var(--bg-secondary-color);
+      color: var(--secondary-color);
+    }
   
     #add-btn {
       color: #FFFFFF;
@@ -134,6 +139,11 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
   
     #add-btn {
       color: #000000;
@@ -194,6 +204,10 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+    }
   
     #add-btn {
       background-color: var(--text-primary);
@@ -220,10 +234,6 @@
 
     #detail-debt-progress {
         background-color: var(--card-color-1);
-    }
-
-    .currency-chip {
-        background: #778899;
     }
   }
   
@@ -259,6 +269,11 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(0,255,102,0.3);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
   
     #add-btn, #add-budget-btn {
       background-color: var(--primary-color);
@@ -532,6 +547,11 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(255,255,255,0.08);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
   
     #add-btn {
       background-color: var(--accent-color);
@@ -584,6 +604,11 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(255, 255, 255, 0.06);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
   
     #add-btn {
       background-color: var(--primary-color);
@@ -644,6 +669,11 @@
     --an-accent-color:     var(--accent-color);
     --an-shadow-md:        0 4px 12px rgba(0, 255, 136, 0.2);
     --an-border-radius-md: var(--border-radius-md);
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
   
     #add-btn, #add-budget-btn {
       background-color: var(--accent-color);
@@ -712,6 +742,11 @@
     --an-accent-color: var(--accent-color);
     --an-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
     --an-border-radius-md: 8px; /* Предполагаемый радиус, можно уточнить */
+
+    .currency-chip{
+      background-color: var(--sidebar-bg);
+      color: var(--secondary-color);
+    }
     
     /* Стили для элементов */
     #add-btn {

@@ -163,25 +163,31 @@ export class UIManager {
 
     const totals = this.budgetManager.calculateTotals(this.monthFilter);
     ['budget', 'income', 'expense', 'deposit', 'debt'].forEach(type => {
-        const value = totals[{
-            budget: 'overallBudget', income: 'monthlyIncome', expense: 'monthlyExpense',
-            deposit: 'depositBalance', debt: 'totalDebt'
-        }[type]];
-        const el = document.querySelector(`#block-${type} .block-value`);
-        this.animateValue(el, value, 800);
-        document.querySelector(`#block-${type} .emoji`).textContent = {
-            budget: getBudgetEmoji, income: getIncomeEmoji, expense: getExpenseEmoji,
-            deposit: getDepositEmoji, debt: getDebtEmoji
-        }[type](value);
+      const value = totals[{
+        budget: 'overallBudget', income: 'monthlyIncome', expense: 'monthlyExpense',
+        deposit: 'depositBalance', debt: 'totalDebt'
+      }[type]];
+      const el = document.querySelector(`#block-${type} .block-value`);
+      this.animateValue(el, value, 800);
+      document.querySelector(`#block-${type} .emoji`).textContent = {
+        budget: getBudgetEmoji, income: getIncomeEmoji, expense: getExpenseEmoji,
+        deposit: getDepositEmoji, debt: getDebtEmoji
+      }[type](value);
     });
 
     const allTx = this.budgetManager.getCurrentBudget().transactions || [];
     const filtered = allTx.filter(tx =>
-        (this.transactionFilter === 'all' || tx.type === this.transactionFilter)
-        && (this.monthFilter === 'all' || tx.date.slice(5, 7) === this.monthFilter)
+      (this.transactionFilter === 'all' || tx.type === this.transactionFilter) &&
+      (this.monthFilter === 'all' || tx.date.slice(5, 7) === this.monthFilter)
     );
+
+    if (filtered.length === 0) {
+      this.renderEmptyState(this.transactionFilter === 'all' ? 'all' : this.transactionFilter);
+      return;
+    }
     this.updateTransactionList(filtered);
   }
+
 
 
 
@@ -262,6 +268,28 @@ export class UIManager {
       });
     });
   }
+
+  renderEmptyState(type) {
+  const list = document.getElementById('transaction-list');
+  if (!list) return;
+  const msgByType = {
+    all    : 'У вас пока нет операций. <br />Добавьте первую транзакцию — и она появится в списке.',
+    income : 'У вас пока ещё нет добавленных доходов. Добавьте доход — и он появится здесь. <br />Чтобы увидеть все операции, нажмите «Бюджет».',
+    expense: 'У вас пока ещё нет добавленных расходов. Добавьте расход — и он появится здесь. <br />Чтобы увидеть все операции, нажмите «Бюджет».',
+    deposit: 'Вклады пока пустуют. Пополните копилку — и мы отобразим операции тут. <br />Вернуться к полному списку можно нажатием на «Бюджет».',
+    debt   : 'У вас нет добавленных долгов в этом месяце — и это отлично! <br />Чтобы увидеть все операции, нажмите «Бюджет».'
+  };
+  list.innerHTML = `
+    <li style="
+      list-style:none; padding:14px 12px; border-radius:12px;
+      background:var(--main-ground); color:var(--secondary-color);
+      border:1px dashed var(--border-color); text-align:center">
+      <div style="font-size:32px; line-height:1; margin-bottom:6px">🦈</div>
+      <div style="font-size:14px">${msgByType[type] || msgByType.all}</div>
+    </li>
+  `;
+}
+
 
   openModal(id) {
     const m = document.getElementById(id);

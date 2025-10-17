@@ -1,0 +1,7 @@
+{
+  "functions": { "api/*.js": { "memory": 128, "maxDuration": 10 } },
+  "routes": [
+    { "src": "/api/nbk",  "dest": "/api/nbk.js"  },
+    { "src": "/api/nbkr", "dest": "/api/nbkr.js" }
+  ]
+}
