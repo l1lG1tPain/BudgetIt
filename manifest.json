@@ -14,13 +14,13 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/assets/icon-192x192v2.9.png",
+      "src": "/assets/icon-192x192v2.10.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/icon-512x512v2.9.png",
+      "src": "/assets/icon-512x512v2.10.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

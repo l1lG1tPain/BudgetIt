@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v2.9.12'; // ⬅️ обновлено
+const CACHE_VERSION = 'v2.10.1'; // ⬅️ обновлено
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -58,14 +58,14 @@ const STATIC_ASSETS = [
     '/assets/shark-pattern.png',
 
     '/assets/Budgetit ava.png',
-    '/assets/Budgetit ava-v2.9-min.jpg',
+    '/assets/BudgetIt ava v2.10-min.png',
     '/assets/switch-budget-img.png',
     '/assets/onbording-img.jpg',
     '/assets/og-cover.png',
     '/assets/favicon.ico',
 
-    '/assets/icon-192x192v2.9.png',
-    '/assets/icon-512x512v2.9.png',
+    '/assets/icon-192x192v2.10.png',
+    '/assets/icon-512x512v2.10.png',
 
     '/assets/404.png',
     '/assets/500.png',
