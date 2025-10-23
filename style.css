@@ -1300,7 +1300,8 @@ main::-webkit-scrollbar-thumb {
   background: var(--tertiary-color);
   border-radius: 16px 16px 0 0;
   padding: 20px;
-  height: 70vh;
+  min-height: 60vh;
+  max-height: 85vh;
   /* max-height: 60vh; */
   /* overflow-y: auto; */
   z-index: 1200;
@@ -1395,7 +1396,7 @@ main::-webkit-scrollbar-thumb {
   display: flex;
   flex-direction: column;
   /* gap: 10px; */
-  max-height: calc(70vh - 50px - 40px);
+  max-height: calc(85vh - 50px - 40px);
   overflow-y: auto;
   flex-grow: 1;
   flex-shrink: 1;

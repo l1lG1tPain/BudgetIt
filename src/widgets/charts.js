@@ -18,7 +18,12 @@ function setCanvasHeight(canvas, pct = 0.6) {
 // ------------------------------------------------------------------
 // 0)  Кэш транзакций и карта высот
 // ------------------------------------------------------------------
-let cachedTransactions = null;
+/**
+ * transactionsCache: Map с ключом:
+ *  - если filterByMonth === true => `month:<MM>` (MM два символа) или 'month:all'
+ *  - если filterByMonth === false => 'allmonths'
+ */
+const transactionsCache = new Map();
 
 const HEIGHT_MAP = {
   expensesByCategoryChart    : 0.6,
@@ -66,6 +71,17 @@ let analyticsSwipeInited        = false;
 let swipeLocked                 = false;
 let budgetManagerInstance       = null;
 let currentAnalyticsMonthFilter = 'all';
+
+// Новые: выбранная категория и безопасный парсер суммы
+let selectedAnalyticsCategory = '';
+
+function amtOf(t) {
+  // принимает либо транзакцию, либо число/строку
+  if (typeof t === 'number') return t;
+  const maybe = t?.amount ?? t;
+  const v = Number(maybe);
+  return Number.isFinite(v) ? v : 0;
+}
 
 // ------------------------------------------------------------------
 // 3) Инициализация аналитики
@@ -139,7 +155,8 @@ function renderCharts() {
     console.warn('[Charts] budgetManagerInstance is null');
     return;
   }
-  cachedTransactions = null;
+  // При полном рендере — очищаем кэш, чтобы новые настройки (фильтры) корректно применялись.
+  transactionsCache.clear();
   destroyAllCharts();
 
   [
@@ -159,12 +176,12 @@ function renderCharts() {
 function destroyAllCharts() {
   Object.keys(charts).forEach(key => {
     if (charts[key]) {
-      charts[key].destroy();
+      try { charts[key].destroy(); } catch (e) {}
       delete charts[key];
     }
   });
   canvasHandlers.forEach((handler, canvas) => {
-    canvas.removeEventListener('click', handler);
+    try { canvas.removeEventListener('click', handler); } catch (e) {}
   });
   canvasHandlers.clear();
 }
@@ -179,8 +196,10 @@ function setupAnalyticsFilter() {
   const selected = customSelect.querySelector('.custom-select-button');
   const options  = customSelect.querySelector('.custom-select-options');
 
-  selected.textContent          = 'Все месяцы ▼';
-  currentAnalyticsMonthFilter   = 'all';
+  // Поддержка восстановления выбора (опционально)
+  const saved = localStorage.getItem('budgetit:analytics:month');
+  currentAnalyticsMonthFilter = saved || 'all';
+  selected.textContent = (currentAnalyticsMonthFilter === 'all' ? 'Все месяцы' : currentAnalyticsMonthFilter) + ' ▼';
 
   options.classList.remove('hidden');
   options.classList.add('hidden');
@@ -195,7 +214,11 @@ function setupAnalyticsFilter() {
       e.stopPropagation();
       selected.textContent        = option.textContent + ' ▼';
       currentAnalyticsMonthFilter = option.getAttribute('data-value');
+      // сохраняем выбор, очищаем кэш и перерисовываем
+      localStorage.setItem('budgetit:analytics:month', currentAnalyticsMonthFilter);
       options.classList.add('hidden');
+      transactionsCache.clear();
+      // можно не сбрасывать selectedAnalyticsCategory — пользователь может оставлять выбор
       renderCharts();
     });
   });
@@ -209,10 +232,15 @@ function setupAnalyticsFilter() {
 // 7) Получение транзакций
 // ------------------------------------------------------------------
 function getCurrentBudgetTransactions(filterByMonth = true) {
-  if (cachedTransactions) return cachedTransactions;
+  // ключ кэша: 'allmonths' или 'month:MM'
+  const key = filterByMonth ? `month:${currentAnalyticsMonthFilter}` : 'allmonths';
+  if (transactionsCache.has(key)) return transactionsCache.get(key);
 
   const tx = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
-  if (!tx.length) return [];
+  if (!tx.length) {
+    transactionsCache.set(key, []);
+    return [];
+  }
 
   const excluded = [
     'Не знаю на что потратил (без учёта)',
@@ -220,12 +248,13 @@ function getCurrentBudgetTransactions(filterByMonth = true) {
   ];
   const filtered = tx.filter(t => !excluded.includes(t.category));
 
-  cachedTransactions =
+  const result =
     (currentAnalyticsMonthFilter === 'all' || !filterByMonth)
       ? filtered
       : filtered.filter(t => t.date.slice(5, 7) === currentAnalyticsMonthFilter);
 
-  return cachedTransactions;
+  transactionsCache.set(key, result);
+  return result;
 }
 
 // ------------------------------------------------------------------
@@ -275,15 +304,36 @@ function renderExpensesByCategoryChart() {
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
     const cat = t.category || 'Без категории';
-    map[cat]  = (map[cat] || 0) + t.amount;
+    map[cat]  = (map[cat] || 0) + amtOf(t);
   });
 
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const labels = sorted.map(([c]) => c);
-  const data   = sorted.map(([, a]) => a);
+  // Полная сортировка по всем категориям
+  const allEntries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  const totalAll = allEntries.reduce((s, [, v]) => s + v, 0);
+
+  // топ N + агрегируем "Другие"
+  const TOP_N = 15;
+  const top = allEntries.slice(0, TOP_N);
+  const others = allEntries.slice(TOP_N);
+  const otherSum = others.reduce((s, [, v]) => s + v, 0);
+
+  // Формируем итоговые массивы для рендера
+  const labels = top.map(([c]) => c);
+  const data   = top.map(([, a]) => a);
+
+  if (otherSum > 0) {
+    labels.push('Другие');
+    data.push(otherSum);
+  }
 
   ensureNonEmptyData(labels, data);
   const colors = labels.map((_, i) => `hsl(${i * 360 / labels.length},70%,60%)`);
+
+  // уничтожаем старую диаграмму, если есть
+  if (charts.expensesByCategory) {
+    try { charts.expensesByCategory.destroy(); } catch (e) {}
+    delete charts.expensesByCategory;
+  }
 
   charts.expensesByCategory = new Chart(ctx, {
     type   : 'doughnut',
@@ -300,13 +350,40 @@ function renderExpensesByCategoryChart() {
     }
   });
 
+  // Центр: показываем сумму по всем категориям (не только topN)
   const center = document.getElementById('expensesByCategoryCenterText');
   if (center) {
-    const total = data.reduce((s, v) => s + v, 0);
     center.innerHTML =
-      `<div class="center-total">${formatNumber(total)}</div>` +
+      `<div class="center-total">${formatNumber(totalAll)}</div>` +
       `<div class="center-label">${getCurrencyLabel()}</div>`;
   }
+
+  // Если пользователь ещё не выбирал категорию – поставим по умолчанию первый label (если он не пуст)
+  if (!selectedAnalyticsCategory) {
+    const firstLabel = charts.expensesByCategory?.data?.labels?.[0];
+    selectedAnalyticsCategory = firstLabel || '';
+  }
+
+  // Добавим клик по donut — выбираем секцию и перерендериваем историю категории
+  const chart = charts.expensesByCategory;
+  const clickHandler = (evt) => {
+    const elems = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+    if (elems && elems.length) {
+      const idx = elems[0].index;
+      const label = chart.data.labels[idx];
+      if (label) {
+        selectedAnalyticsCategory = label;
+        try {
+          if (charts.categoryHistory) {
+            charts.categoryHistory.destroy();
+            delete charts.categoryHistory;
+          }
+        } catch (e) {}
+        renderCategoryHistoryChart();
+      }
+    }
+  };
+  bindClickOnce(canvas, clickHandler);
 }
 
 // -----------------------------------------------------------------
@@ -328,7 +405,7 @@ function renderMonthlyExpensesChart() {
     const d   = new Date(t.date);
     const key = `${months[d.getMonth()]} ${d.getFullYear()}`;
     monthlyData[key] = monthlyData[key] || { income: 0, expense: 0 };
-    monthlyData[key][t.type] += t.amount;
+    monthlyData[key][t.type] += amtOf(t);
   });
 
   const keys = Object.keys(monthlyData).sort((a, b) => {
@@ -374,8 +451,8 @@ function renderIncomeVsExpensesChart() {
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
 
-  const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + amtOf(t), 0);
+  const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + amtOf(t), 0);
 
   const labels = ['Доходы', 'Расходы'];
   const data   = [income, expense];
@@ -424,7 +501,7 @@ function renderTopExpensesChart() {
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
     const label = t.products?.[0]?.name || t.category || 'Без категории';
-    map[label]  = (map[label] || 0) + t.amount;
+    map[label]  = (map[label] || 0) + amtOf(t);
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 15);
@@ -499,7 +576,7 @@ function renderBalanceDynamicsChart() {
   tx.forEach(t => {
     const key = t.date.slice(0, 10);
     dayMap[key] = (dayMap[key] || 0) +
-      (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0);
+      (t.type === 'income' ? amtOf(t) : t.type === 'expense' ? -amtOf(t) : 0);
   });
 
   const sortedDays = Object.keys(dayMap).sort();
@@ -533,13 +610,31 @@ function renderCategoryHistoryChart() {
   const ctx = canvas.getContext('2d');
   const tx  = getCurrentBudgetTransactions();
 
-  const cat = charts.expensesByCategory?.data?.labels?.[0] || '';
+  // Берём категорию из выбранной глобальной переменной, иначе fall back на первый label
+  const catFromChart = charts.expensesByCategory?.data?.labels?.[0] || '';
+  const cat = selectedAnalyticsCategory || catFromChart || '';
+
+  // Если выбран 'Другие' — нужно собрать список категорий, которые попали в "Другие"
+  let filterFn;
+  if (cat === 'Другие') {
+    // Снова агрегируем ВСЕ категории и определяем, какие попали в others
+    const tmpMap = {};
+    tx.filter(t => t.type === 'expense').forEach(t => {
+      const c = t.category || 'Без категории';
+      tmpMap[c] = (tmpMap[c] || 0) + amtOf(t);
+    });
+    const entries = Object.entries(tmpMap).sort((a, b) => b[1] - a[1]);
+    const othersNames = entries.slice(10).map(([c]) => c); // те же TOP_N=10
+    filterFn = t => othersNames.includes(t.category) && t.type === 'expense';
+  } else {
+    filterFn = t => t.category === cat && t.type === 'expense';
+  }
 
   const monthMap = {};
-  tx.filter(t => t.category === cat && t.type === 'expense').forEach(t => {
+  tx.filter(filterFn).forEach(t => {
     const d   = new Date(t.date);
     const key = `${String(d.getMonth() + 1).padStart(2,'0')}/${d.getFullYear()}`;
-    monthMap[key] = (monthMap[key] || 0) + t.amount;
+    monthMap[key] = (monthMap[key] || 0) + amtOf(t);
   });
 
   const labels = Object.keys(monthMap).sort((a, b) => {
@@ -632,7 +727,7 @@ function renderCategoriesByDescendingChart() {
   const map = {};
   tx.filter(t => t.type === 'expense').forEach(t => {
     const cat = t.category || 'Без категории';
-    map[cat]  = (map[cat] || 0) + t.amount;
+    map[cat]  = (map[cat] || 0) + amtOf(t);
   });
 
   const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 30);
@@ -744,7 +839,7 @@ function renderSpendingByWeekdayChart() {
   const sums = Array(7).fill(0);
 
   tx.filter(t => t.type === 'expense').forEach(t => {
-    sums[new Date(t.date).getDay()] += t.amount;
+    sums[new Date(t.date).getDay()] += amtOf(t);
   });
 
   ensureNonEmptyData(days, sums);
@@ -785,7 +880,7 @@ function renderSpendingByAmountRangeChart() {
   };
 
   tx.filter(t => t.type === 'expense').forEach(t => {
-    const a = t.amount;
+    const a = amtOf(t);
     if      (a < 100_000)    ranges['<100 000']++;
     else if (a < 500_000)    ranges['100 000–500 000']++;
     else if (a < 1_000_000)  ranges['500 000–1 000 000']++;
@@ -884,5 +979,5 @@ export {
 };
 
 // перерисовка при смене темы/региона
-window.addEventListener('themechange', () => { destroyAllCharts(); renderCharts(); });
-window.addEventListener('budgetit:region-changed', () => { destroyAllCharts(); renderCharts(); });
+window.addEventListener('themechange', () => { transactionsCache.clear(); destroyAllCharts(); renderCharts(); });
+window.addEventListener('budgetit:region-changed', () => { transactionsCache.clear(); destroyAllCharts(); renderCharts(); });
