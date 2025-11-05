@@ -1127,9 +1127,15 @@ export class UIManager {
     const allOptions = Array.from(currentSelect.querySelectorAll('option'))
       .filter(opt => opt.value)
       .map(opt => ({ value: opt.value, text: opt.text }));
-    const isExpense = currentSelect.id === 'expense-category';
+
+    // ✨ Изменение: позволяем поиск для расходов и доходов.
+    // Если нужно — можно пометить <select data-searchable="true"> и тогда это будет работать автоматически.
+    const isSearchable = currentSelect.id === 'expense-category'
+                       || currentSelect.id === 'income-category'
+                       || currentSelect.dataset.searchable === 'true';
+
     let searchInput = null;
-    if (isExpense) {
+    if (isSearchable) {
       searchInput = categorySheet.querySelector('#category-search');
       if (!searchInput) {
         searchInput = document.createElement('input');
@@ -1144,6 +1150,7 @@ export class UIManager {
       const old = categorySheet.querySelector('#category-search');
       if (old) old.remove();
     }
+
     const buildGrouped = () => {
       categoryList.innerHTML = '';
       Array.from(currentSelect.children).forEach(child => {
@@ -1186,7 +1193,7 @@ export class UIManager {
       });
     };
     attachClickHandlers();
-    if (isExpense && searchInput) {
+    if (isSearchable && searchInput) {
       searchInput.oninput = () => {
         const filter = searchInput.value.trim().toLowerCase();
         categoryList.innerHTML = '';
@@ -1205,6 +1212,7 @@ export class UIManager {
         attachClickHandlers();
       };
     }
+
     const backdrop = document.getElementById('bottom-sheet-backdrop');
     if (backdrop) backdrop.classList.remove('hidden');
     else console.warn('Backdrop не найден');
@@ -1217,6 +1225,7 @@ export class UIManager {
       closeBtn.onclick = () => categorySheet.classList.add('hidden');
     } else console.warn('Кнопка закрытия (.close-category-sheet) не найдена');
   }
+
 
   openDebtPaymentModal(id, remainingAmount) {
     const modal = document.getElementById('debt-pay-modal');

@@ -1324,7 +1324,7 @@ main::-webkit-scrollbar-thumb {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 0 15px 0;
+  /* padding: 0 0 15px 0; */
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
   /* position: sticky; */
@@ -1359,15 +1359,6 @@ main::-webkit-scrollbar-thumb {
   background: var(--tertiary-color); /* тот же фон, что и у листа */
 }
 
-/* маленький отступ между шапкой и поиском */
-#category-search {
-  margin: var(--spacing-sm) 0;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--secondary-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-}
-
 
 #category-search {
   width: 100%;
@@ -1388,7 +1379,7 @@ main::-webkit-scrollbar-thumb {
 }
 
 #category-search::placeholder {
-  color: var(--accent-color);
+  color: var(--text-muted);
 }
 
 
