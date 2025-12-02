@@ -26,7 +26,7 @@
   <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
   
   <meta name="description"
-        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн‑режимом, аналитикой и пуш‑напоминаниями. Акулка позаботится о ваших финансах!">
+        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями. Акулка позаботится о ваших финансах!">
   <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, расходы, доходы, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
   <meta name="author" content="BudgetIt by l1lG1tPain">
   <meta name="robots" content="index, follow">
@@ -37,7 +37,7 @@
   <meta property="og:url"         content="https://budgetit-nine.vercel.app/">
   <meta property="og:site_name" content="BudgetIt">
   <meta property="og:title"       content="BudgetIt — Track your money with Shark 🦈">
-  <meta property="og:description" content="Zero‑friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
+  <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
   <meta property="og:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
   <meta property="og:locale"      content="ru_RU">
   <meta property="og:locale:alternate" content="en_US">
@@ -53,79 +53,214 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="BudgetIt">
-  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
   <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">      
   <title>Добро пожаловать в BudgetIt</title>
+
   <style>
+    :root {
+      --onboarding-radius: var(--border-radius-lg, 16px);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      margin: 0;
       font-family: 'Montserrat', 'sans-serif';
-      background-color: var(--dark-color);
-      color: var(--accent-color);
+      background-color: #000;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      box-sizing: border-box;
+      padding: 24px 16px;
+      text-align: left;
+      overflow-y: auto; /* ✅ теперь можно скроллить на маленьких экранах */
+      user-select: none;
+    }
+
+    .onboarding-root {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .onboarding-header {
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .onboarding-pill {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #fff;
+      backdrop-filter: blur(12px);
+      align-items: center;
+      display: flex;
+    }
+
+    .onboarding-main {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      flex-direction: column;
-      text-align: center;
-      padding: 20px;
-      height: auto;
+      background-color: #000;
+    }
+
+    .onboarding-card {
+      position: relative;
+      width: 100%;
+      padding: 20px 18px 22px;
+      border-radius: var(--onboarding-radius);
+      background: radial-gradient(circle at top left, rgb(5 69 32), transparent 55%), radial-gradient(circle at bottom right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.95));
+      /* border: 1px solid rgba(255,255,255,0.06); */
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65);
       overflow: hidden;
-      user-select: none;   
     }
-    .logo {
-      max-width: 250px;
+
+    .onboarding-card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at 10% 0%, rgba(255,255,255,0.12), transparent 55%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .onboarding-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .onboarding-logo {
+      max-width: 220px;
       border-radius: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
     }
+
     h1 {
-      font-size: 2em;
-      margin-bottom: 10px;
+      font-size: 1.5rem;
+      margin: 0;
     }
-    p {
-      font-size: 1em;
-      /* color: #aaa; */
-      margin-bottom: 30px;
+
+    p.onboarding-text {
+      font-size: 0.95rem;
+      margin: 4px 0 14px;
     }
+
+    .onboarding-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .field-label {
+      align-self: flex-start;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #fff;
+      margin-bottom: -4px;
+    }
+
     input[type="text"] {
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1em;
-      margin-bottom: 15px;
-      /* width: 90%; */
-      font-family: 'Montserrat', 'sans-serif';
-      /* font-weight: 500; */
-
-    }
-    button, label[for="file-input"] {
-      background-color: var(--tertiary-color);
-      color: #000;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 1em;
-      font-weight: 600;
-      margin: 8px;
-      width: 95%;
-
-      display: inline-block;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgb(24, 23, 23);
+      color: #fff;
+      /* font-size: 1rem; */
+      width: 100%;
       box-sizing: border-box;
+      font-family: 'Montserrat', 'sans-serif';
     }
-    button:hover, label[for="file-input"]:hover {
-      background-color: var(--accent-color);
+
+    input[type="text"]::placeholder {
+      color: var(--text-muted);
+      opacity: 0.9;
     }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+    }
+
+    .onboarding-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .onboarding-btn-primary {
+      background: linear-gradient(135deg, var(--primary-color), var(--income-color));
+      color: #000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    .onboarding-btn-secondary {
+      background: #000;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .onboarding-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.7);
+    }
+
+    .onboarding-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
     #file-input {
       display: none;
     }
-    .link {
-      margin-top: 20px;
-      font-size: 0.9em;
-      color: var(--accent-color);
+
+    .onboarding-help-link {
+      margin-top: 5px;
+      font-size: 0.9rem;
+      color: var(--primary-color);
+      background: none;
+      border: none;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0 0;
     }
+
+    .onboarding-help-link span {
+      text-decoration: underline dotted;
+    }
+
+    /* ----- Модалки ----- */
     .modal {
       position: fixed;
       top: 0;
@@ -137,14 +272,19 @@
       justify-content: center;
       align-items: center;
       z-index: 1000;
+      padding: 16px;
+      box-sizing: border-box;
     }
     .modal-content {
-      background-color: var(--dark-color);
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 90%;
-      color: var(--text);
+      background-color: #000;
+      padding: 20px 18px 22px;
+      border-radius: var(--onboarding-radius);
+      max-width: 480px;
+      width: 100%;
+      color: #fff;
       text-align: left;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.8);
     }
     .modal-content h2 {
       margin-top: 0;
@@ -153,112 +293,228 @@
     .close-modal {
       background: none;
       border: none;
-      color: var(--accent);
-      font-size: 1.5em;
-      /* position: absolute;
-      top: 20px;
-      right: 20px; */
+      color: var(--accent-color);
+      font-size: 1.2em;
       cursor: pointer;
+      padding: 0;
+      margin-bottom: 8px;
     }
-    
+
+    @media (max-height: 640px) {
+      body {
+        justify-content: flex-start;
+      }
+      .onboarding-main {
+        align-items: flex-start;
+      }
+      .onboarding-card {
+        margin-top: 8px;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <img src="assets/onbording-img.jpg" alt="BudgetIt Shark" class="logo" />
-  <h1>Добро пожаловать в BudgetIt 🦈</h1>
-  <p>Создай новый бюджет или импортируй свой, чтобы начать отслеживать расходы, долги и накопления.</p>
+  <div class="onboarding-root">
+    <header class="onboarding-header">
+      <span class="onboarding-pill"><img src="/assets/favicon.ico" alt="💸" height="25px" width="25px"> BudgetIt · onboarding</span>
+    </header>
 
-  <input type="text" id="budget-name" placeholder="Введи название (можно эмоджи)" /> <br />
-  <button onclick="createBudget()">Создать бюджет</button>
-  <label for="file-input">📥 Импортировать бюджет (JSON)</label>
-  <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)" />
+    <main class="onboarding-main">
+      <section class="onboarding-card">
+        <div class="onboarding-inner">
+          <img src="assets/onbording-img.jpg" alt="BudgetIt Shark" class="onboarding-logo" />
+          <h1>Добро пожаловать в BudgetIt 🦈</h1>
+          <p class="onboarding-text">
+            Создай новый бюджет или импортируй свой, чтобы начать отслеживать расходы, долги и накопления.
+          </p>
 
-  <div class="link" onclick="openHelpModal()">
-    📖 Как это работает?
+          <div class="onboarding-form">
+            <span class="field-label">Название бюджета</span>
+            <input
+              type="text"
+              id="budget-name"
+              placeholder="Введи название (можно эмоджи)"
+              autocomplete="off"
+            />
+
+            <button class="onboarding-btn onboarding-btn-primary" onclick="createBudget()">
+              🚀 Создать бюджет
+            </button>
+
+            <label for="file-input" class="onboarding-btn onboarding-btn-secondary">
+              📥 Импортировать бюджет (JSON)
+            </label>
+            <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)" />
+          </div>
+
+          <button type="button" class="onboarding-help-link" onclick="openHelpModal()">
+            📖 <span>Как это работает?</span>
+          </button>
+        </div>
+      </section>
+    </main>
   </div>
 
   <div id="help-modal" class="modal hidden" style="display: none;">
     <div class="modal-content">
       <button class="close-modal" onclick="closeHelpModal()">Закрыть ✖️</button>
-      <h2>Как пользоваться BudgetIt?</h2>
-      <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p>
-      <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p>
-      <p><strong>3. Анализируй.</strong> Визуализации помогут понять, на что ты тратишь больше всего, каков баланс и сколько ты должен или накопил.</p>
-      <p><strong>4. Переключай бюджеты и сохраняй данные.</strong> Все данные хранятся локально. Можно экспортировать и импортировать бюджеты через JSON.</p>
-      <p>Добро пожаловать в акулий клуб учёта! 🦈</p>
+      <p>Добро пожаловать в акулий клуб учёта! 🦈</p><br>
+      <h2>Как пользоваться BudgetIt?</h2><br>
+      <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p><br>
+      <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p><br>
+      <p><strong>3. Анализируй.</strong> Визуализации помогут понять, на что ты тратишь больше всего, каков баланс и сколько ты должен или накопил.</p><br>
+      <p><strong>4. Переключай бюджеты и сохраняй данные.</strong> Все данные хранятся локально. Можно экспортировать и импортировать бюджеты через JSON.</p><br>
     </div>
   </div>
 
   <script>
-  function createBudget() {
-    const name = document.getElementById('budget-name').value.trim();
-    if (!name) return showModal("Сначала введи название бюджета! Можно эмоджи");
+      // 🔧 Помощник: сохраняем стейт в IndexedDB (AkulkaVault/DeepSeaState/mainShark)
+      function saveStateToIndexedDB(newState) {
+          if (!('indexedDB' in window)) return;
 
-    const budget = { name, transactions: [] };
-    localStorage.setItem('budgets', JSON.stringify([budget]));
-    localStorage.setItem('currentBudgetIndex', '0');
+          const request = indexedDB.open('AkulkaVault', 1);
 
-    try {
-      window.trackSafe?.('onboarding-create-budget', { name });
-    } catch (e) {
-      console.warn('[CreateBudget] trackSafe error:', e);
-    }
+          request.onupgradeneeded = (event) => {
+              const db = event.target.result;
+              if (!db.objectStoreNames.contains('DeepSeaState')) {
+                  const store = db.createObjectStore('DeepSeaState', { keyPath: 'id' });
+                  store.createIndex('id', 'id', { unique: true });
+              }
+          };
 
-    setTimeout(() => {
-      location.replace('index.html');
-    }, 200);
-  }
+          request.onsuccess = (event) => {
+              const db = event.target.result;
+              const tx = db.transaction('DeepSeaState', 'readwrite');
+              const store = tx.objectStore('DeepSeaState');
 
-    function importBudget(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const data = JSON.parse(reader.result);
-          localStorage.setItem('budgets', JSON.stringify(data));
-          localStorage.setItem('currentBudgetIndex', '0');
+              const getReq = store.get('mainShark');
+              getReq.onsuccess = () => {
+                  const existing = getReq.result || {};
+                  const merged = { ...existing, ...newState }; // сохраняем userId и прочее
+                  store.put({ id: 'mainShark', ...merged });
+              };
+              getReq.onerror = () => {
+                  store.put({ id: 'mainShark', ...newState });
+              };
+          };
 
-          if (typeof window.trackSafe === 'function') {
-            trackSafe('onboarding-import-budget', { name: file.name });
-            setTimeout(() => location.replace('index.html'), 200);
+          request.onerror = (event) => {
+              console.warn('[Onboarding] IndexedDB open error:', event.target.error);
+          };
+      }
+
+      // 🚀 Создание нового бюджета
+      function createBudget() {
+          const name = document.getElementById('budget-name').value.trim();
+          if (!name) return showModal("Сначала введи название бюджета! Можно эмоджи");
+
+          const budgets = [{ name, transactions: [] }];
+          const currentBudgetIndex = 0;
+          const productNames = [];
+
+          // Пишем в localStorage (как раньше)
+          localStorage.setItem('budgets', JSON.stringify(budgets));
+          localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
+          localStorage.setItem('productNames', JSON.stringify(productNames));
+
+          // Синхронизируем с новой IndexedDB (AkulkaVault)
+          saveStateToIndexedDB({ budgets, currentBudgetIndex, productNames });
+
+          try {
+              window.trackSafe?.('onboarding-create-budget', { name });
+          } catch (e) {}
+
+          setTimeout(() => {
+              location.replace('index.html');
+          }, 200);
+      }
+
+      // 🧠 Парсер для импорта
+      function parseImportedBudgetData(parsed) {
+          let budgets, currentBudgetIndex, productNames;
+
+          if (Array.isArray(parsed)) {
+              budgets = parsed;
+              currentBudgetIndex = 0;
+              productNames = [];
+          } else if (parsed && typeof parsed === 'object') {
+              budgets = Array.isArray(parsed.budgets) ? parsed.budgets : [];
+              currentBudgetIndex = Number.isInteger(parsed.currentBudgetIndex)
+                  ? parsed.currentBudgetIndex
+                  : 0;
+              productNames = Array.isArray(parsed.productNames) ? parsed.productNames : [];
           } else {
-            location.replace('index.html');
+              throw new Error('Invalid import format');
           }
 
-        } catch (e) {
-          showModal('Ошибка чтения JSON файла');
-        }
-      };
-      reader.readAsText(file);
-    }
+          currentBudgetIndex = Math.min(
+              Math.max(0, currentBudgetIndex),
+              Math.max(0, budgets.length - 1)
+          );
 
+          return { budgets, currentBudgetIndex, productNames };
+      }
 
-    function openHelpModal() {
-      const help = document.getElementById('help-modal'); help.classList.remove('hidden'); help.style.display = 'flex';
-    }
+      // 📥 Импорт на онбординге
+      function importBudget(event) {
+          const file = event.target.files[0];
+          if (!file) return;
 
-    function closeHelpModal() {
-      const help = document.getElementById('help-modal'); help.classList.add('hidden'); help.style.display = 'none';
-    }
+          const reader = new FileReader();
+          reader.onload = () => {
+              try {
+                  const parsed = JSON.parse(reader.result);
+                  const { budgets, currentBudgetIndex, productNames } = parseImportedBudgetData(parsed);
 
-    function showModal(message) {
-      const modal = document.createElement('div');
-      modal.className = 'modal';
-      modal.innerHTML = `
-        <div class="modal-content">
-          <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть ✖️</button>
-          <h2>Ну куда ты?</h2>
-          <p>${message}</p>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
+                  // В localStorage
+                  localStorage.setItem('budgets', JSON.stringify(budgets));
+                  localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
+                  localStorage.setItem('productNames', JSON.stringify(productNames));
+
+                  // В новую IndexedDB
+                  saveStateToIndexedDB({ budgets, currentBudgetIndex, productNames });
+
+                  trackSafe?.('onboarding-import-budget', { name: file.name });
+
+                  setTimeout(() => location.replace('index.html'), 200);
+              } catch (e) {
+                  console.error('[Onboarding import error]', e);
+                  showModal('Ошибка чтения JSON файла');
+              }
+          };
+          reader.readAsText(file);
+      }
+
+      function openHelpModal() {
+          const help = document.getElementById('help-modal');
+          help.classList.remove('hidden');
+          help.style.display = 'flex';
+      }
+
+      function closeHelpModal() {
+          const help = document.getElementById('help-modal');
+          help.classList.add('hidden');
+          help.style.display = 'none';
+      }
+
+      function showModal(message) {
+          const modal = document.createElement('div');
+          modal.className = 'modal';
+          modal.innerHTML = `
+      <div class="modal-content">
+        <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть ✖️</button>
+        <h2>Ну куда ты?</h2><br>
+        <p>${message}</p>
+      </div>
+    `;
+          document.body.appendChild(modal);
+      }
   </script>
+
   <!-- Vercel Analytics -->
   <script defer src="/_vercel/insights/script.js"></script>
   <script type="module" src="./src/utils/analytics.js"></script>
-  
   <script src="./src/utils/umami-events.js" defer></script>
 
   <script>
@@ -268,7 +524,5 @@
         .catch(err => console.warn('[SW] Failed', err));
     }
   </script>
-
-
 </body>
 </html>

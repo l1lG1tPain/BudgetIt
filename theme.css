@@ -1,47 +1,48 @@
 :root {
-    --primary-color:  #2be82a;
-    --income-color:   #2aace8;
-    --expense-color:  #e82b2a;
-    --deposit-color:  #8a2be2;
-    --debt-color:     #e8a22a;
-  
-    --secondary-color: #000000;
-    --tertiary-color:  #ffffff;
+    --primary-color:  #2ECC71;      /* свежий сочный зелёный */
+    --income-color:   #27AE60;      /* чуть темнее для доходов */
+    --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
+    --deposit-color:  #9B59B6;      /* нежная сирень */
+    --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+
+    --secondary-color: #1A1A1A;     /* насыщенный тёмный текст */
+    --tertiary-color:  #FFFFFF;     /* чистый белый для карточек */
     --dark-color:      #000000;
-    --accent-color:    #dbe4db;
-    --main-ground:     #f8f9fa;
-    --bg-secondary-color: #000000;
-  
+
+    --accent-color:    #EAF4EE;     /* лёгкий мятно-молочный фон */
+    --main-ground:     #F5F7F9;     /* мягкий серо-молочный фон всей страницы */
+    --bg-secondary-color: #FFFFFF;  /* светлые блоки и карточки */
+
     /* Analytics (фикс: текст ≠ фон) */
-    --an-primary-color:    #2be82a;
-    --an-income-color:     #2aace8;
-    --an-expense-color:    #e82b2a;
-    --an-debt-color:       #e8a22a;
-    --an-secondary-color:  #111111;
-    --an-tertiary-color:   #ffffff;
-    --an-accent-color:     #555;
-    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.3);
+    --an-primary-color:    #2ECC71;
+    --an-income-color:     #27AE60;
+    --an-expense-color:    #E74C3C;
+    --an-debt-color:       #F1C40F;
+    --an-secondary-color:  #1A1A1A;
+    --an-tertiary-color:   #FFFFFF;
+    --an-accent-color:     #BDC3C7;   /* нейтральный серый */
+    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.25);
     --an-border-radius-md: 12px;
-  
+
     --spacing-xs: 4px;
     --spacing-sm: 8px;
-    --spacing-md: 14px;
+    --spacing-md: 12px;
     --spacing-lg: 20px;
     --spacing-xl: 32px;
-  
+
     --border-radius-sm: 4px;
     --border-radius-md: 10px;
-    --border-radius-lg: 16px;
+    --border-radius-lg: 12px;
     --border-radius-xl: 24px;
-  
+
     --shadow-sm: 0 2px 5px rgba(0,0,0,0.1);
     --shadow-md: 0 4px 8px rgba(0,0,0,0.2);
     --shadow-lg: 0 -2px 25px rgba(0,0,0,0.9);
-  
+
     --transition-fast:   0.2s ease;
     --transition-normal: 0.3s ease;
     --transition-slow:   0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  
+
     --z-index-header:       900;
     --z-index-backdrop:    1099;
     --z-index-bottom-sheet:1100;
@@ -50,25 +51,29 @@
 
     --linear-progress-bar: linear-gradient(135deg, var(--primary-color), var(--income-color));
 
+    .add-btn {
+        color: var(--secondary-color);
+    }
+
   }
-  
+
   :root[data-theme="dark"] {
-    --primary-color:  #2be82a;
-    --income-color:   #2aace8;
-    --expense-color:  #e82b2a;
-    --deposit-color:  #8a2be2;
-    --debt-color:     #e8a22a;
-  
+      --primary-color:  #2ECC71;      /* свежий сочный зелёный */
+      --income-color:   #27AE60;      /* чуть темнее для доходов */
+      --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
+      --deposit-color:  #9B59B6;      /* нежная сирень */
+      --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+
     --secondary-color:  #dcddde;
     --bg-secondary-color: #000000;
     --tertiary-color:   #000000;
     --accent-color:     #292b2f;
     --main-ground:      #111116;
-  
+
     --shadow-sm:        0 2px 5px rgba(0,0,0,0.4);
     --shadow-md:        0 4px 8px rgba(0,0,0,0.5);
     --shadow-lg:        0 -2px 25px rgba(0,0,0,0.8);
-  
+
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
@@ -81,13 +86,21 @@
       background-color: var(--bg-secondary-color);
       color: var(--secondary-color);
     }
-  
-    #add-btn {
-      color: #FFFFFF;
+
+      .chip-btn.active {
+          color: var(--tertiary-color);
+      }
+
+      .term-chip {
+          color: var(--secondary-color) !important;
+      }
+
+    #add-btn, #install-btn {
+      color: var(--tertiary-color);
     }
 
     #add-budget-btn, .add-btn, #add-product {
-      color: #000000;
+      color: var(--tertiary-color);
     }
 
     .analytics-slide h4 {
@@ -97,57 +110,75 @@
     .faq-item summary {
       color: #ffffff;
     }
-  
+
     input, select, textarea,
     .custom-select-button, .custom-select {
       color: var(--secondary-color);
     }
-  
+
     #summary-blocks {
       color: var(--bg-secondary-color);
     }
   }
-  
-  :root[data-theme="onyx"] {
-    --main-ground:    #1c1c24;
-    --tertiary-color: #0C0C0E;
-    --accent-color:   #1E1E20;
-    --sidebar-bg:     #000000;
-  
-    --secondary-color: #FFFFFF;
-    --text-muted:      #aaafb9;
-    --bg-secondary-color: #000000;
-  
-    --primary-color:  #5865F2;
+
+
+:root[data-theme="onyx"] {
+    /* 🖤 Базовый Onyx — глубокий тёмный камень */
+    --main-ground:        #050509;
+    --sidebar-bg:         #000000;
+    --bg-secondary-color: #0b0b10;
+    --tertiary-color:     #0c0c11;
+
+    --secondary-color:    #ffffff;
+    --text-muted:         #9a9fb3;
+
+    /* 🔷 Акценты: холодный синий/фиолетовый */
+    --primary-color:  #5865f2;  /* discord-фиолетовый, подходит под onyx */
     --income-color:   #2aace8;
     --expense-color:  #ed4245;
     --deposit-color:  #8a2be2;
     --debt-color:     #e8a22a;
-  
-    --dark-color:      #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
-    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
-  
+
+    --accent-color:   #181824;
+    --dark-color:     #000000;
+
+    /* 🌑 Тени с лёгким холодным свечением */
+    --shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.7);
+    --shadow-md:  0 4px 14px rgba(0, 0, 0, 0.9), 0 0 10px rgba(88, 101, 242, 0.32);
+    --shadow-lg:  0 10px 30px rgba(0, 0, 0, 0.95), 0 0 22px rgba(88, 101, 242, 0.38);
+
+    /* 📊 Аналитика под Onyx */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
     --an-debt-color:       var(--debt-color);
     --an-secondary-color:  var(--secondary-color);
-    --an-tertiary-color:   #111111;
+    --an-tertiary-color:   #050509;
     --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
+    --an-shadow-md:        0 4px 16px rgba(88, 101, 242, 0.35);
     --an-border-radius-md: var(--border-radius-md);
 
-    .currency-chip{
-      background-color: var(--sidebar-bg);
-      color: var(--secondary-color);
+    /* 💱 Валютные чипсы */
+    .currency-chip {
+        background-color: #050509;
+        color: var(--secondary-color);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
     }
-  
-    #add-btn {
-      color: #000000;
-      background-color: var(--secondary-color);
+
+
+    .term-chip {
+        color: var(--secondary-color) !important;
+    }
+
+    /* ➕ Кнопка Добавить — аккуратный onyx-glow */
+    #add-btn, .chip-btn.active, .add-btn, #add-budget-btn {
+        background: linear-gradient(135deg, var(--primary-color), #2a2f7a);
+        color: var(--secondary-color);
+        box-shadow: 0 0 18px rgba(88, 101, 242, 0.55);
+    }
+
+    .add-btn, #add-budget-btn {
+        box-shadow: none;
     }
 
     .analytics-slide h4 {
@@ -155,110 +186,139 @@
     }
 
     .theme-option:hover {
-      color: #fff;
+        color: #ffffff;
     }
-  
-    input, select, textarea,
-    .custom-select-button, .custom-select {
-      color: var(--secondary-color);
+
+    input,
+    select,
+    textarea,
+    .custom-select-button,
+    .custom-select {
+        color: var(--secondary-color);
+        background-color: #050509;
     }
-  }
-  
-  :root[data-theme="ramilka"] {
-    --main-ground:        #696969;
-    --sidebar-bg:         #000000;
-    --bg-secondary:       #696969;
-    --tertiary-color:     #BC8F8F;
-    --accent-color:       #AFEEEE;
-  
-    --text-primary:       #FFFFFF;
-    --text-muted:         #AAAFB9;
-  
-    --card-color-1:       #6B8E23;
-    --card-color-2:       #BDB76B;
-    --card-color-3:       #87CEEB;
-    --card-color-4:       #E6E6FA;
-    --card-color-5:       #DDA0DD;
-  
-    --teal-accent:        #AFEEEE;
-    --rosy-brown-accent:  #BC8F8F;
-  
-    --primary-color:      var(--card-color-1);
-    --income-color:       var(--card-color-2);
-    --expense-color:      var(--card-color-3);
-    --deposit-color:      var(--card-color-4);
-    --debt-color:         var(--card-color-5);
-  
+
+    /* 🌌 Фон приложения: оникс с холодными переливами */
+    main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top left,    rgba(88, 101, 242, 0.18), transparent 55%),
+                radial-gradient(circle at bottom right,rgba(42, 172, 232, 0.14), transparent 60%),
+                linear-gradient(135deg, #030307 0%, #050509 40%, #020208 100%);
+        background-size: cover;
+        background-attachment: fixed;
+    }
+}
+
+
+:root[data-theme="mint"] {
+    /* 🌿 Базовые мятные тона */
+    --main-ground:        #0f1917;   /* глубокая зелено-чёрная база */
+    --sidebar-bg:         #0f1917;
+    --bg-secondary-color: #162320;   /* карточки мятные тёмные */
+    --tertiary-color:     #1c2e29;   /* слои поверх */
+    --secondary-color:    #e9fff8;   /* бело-мятный текст */
+    --text-muted:         #9cb9b0;   /* приглушённые подписи */
+
+    /* 💚 Основные цвета — мягкая премиальная мята */
+    --primary-color:      #63e6be;   /* светлая мята */
+    --income-color:       #63e6be;
+    --expense-color:      #ff6e7f;   /* мягкий коралл, красиво контрастирует */
+    --deposit-color:      #9d7dff;   /* сиреневый как в premium-балансах */
+    --debt-color:         #ffd27f;   /* тёплый медовый */
+
+    --accent-color:       #113c34;   /* глубокая зелень */
     --dark-color:         #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
-    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
-  
+
+    /* 🌿 Тени — мягкие мятные светящиеся */
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 12px rgba(99, 230, 190, 0.18);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.75), 0 0 22px rgba(99, 230, 190, 0.22);
+
+    /* 📊 Аналитика под Mint */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
     --an-debt-color:       var(--debt-color);
-    --an-secondary-color:  #000000;
-    --an-tertiary-color:   #ffffff;
-    --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.5);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   #0f1917;
+    --an-accent-color:     #113c34;
+    --an-shadow-md:        0 4px 16px rgba(99, 230, 190, 0.28);
     --an-border-radius-md: var(--border-radius-md);
 
-    .currency-chip{
-      background-color: var(--sidebar-bg);
-    }
-  
+    /* ➕ Кнопка добавить — мягкий мятный свет */
     #add-btn {
-      background-color: var(--text-primary);
-      color:            var(--dark-color);
+        background: var(--primary-color);
+        color: #00382c;
+        box-shadow: 0 0 16px rgba(99, 230, 190, 0.55);
     }
 
-    .faq-item summary {
-      color: #ffffff;
+    .add-btn, .chip-btn.active {
+        background: var(--primary-color);
+        color: #00382c;
     }
 
+    .term-chip.active {
+        color: var(--secondary-color);
+    }
+
+    /* Тексты аналитики */
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
-  
-    input, select, textarea,
-    .custom-select-button, .custom-select {
-      color: var(--text-primary);
+
+    /* Месяцы */
+    #month-filter-container {
+        color: var(--primary-color);
     }
 
-    #month-filter-input {
-        background-color: var(--card-color-2);
-        color: #000;
+    /* FAQ */
+    .faq-item summary {
+        color: #d8fff3;
     }
 
-    #detail-debt-progress {
-        background-color: var(--card-color-1);
+    /* Открытие подстраниц */
+    .open-subpage-btn {
+        background: rgba(99, 230, 190, 0.14);
+        color: var(--secondary-color);
+        box-shadow: var(--shadow-sm);
     }
-  }
-  
-  :root[data-theme="shark"] {
+
+    /* 🌿 Основной фон Mint — паровые мятные градиенты */
+    main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top,    rgba(99, 230, 190, 0.18), transparent 55%),
+                radial-gradient(circle at bottom, rgba(99, 230, 190, 0.12), transparent 60%),
+                linear-gradient(135deg, #0d1614 0%, #0f1917 50%, #0d1614 100%);
+        background-size: cover;
+        background-attachment: fixed;
+    }
+}
+
+
+:root[data-theme="shark"] {
     --main-ground:    #0d0d0d;
     --tertiary-color: #1a1a1a;
     --accent-color:   #561b2f; /* Бордовая кофточка */
     --sidebar-bg:     #000000;
-  
+
     --secondary-color: #e0e0e0;
     --text-muted:      #888888;
     --bg-secondary-color: #0d0d0d;
-  
+
     --primary-color:  #00ff66;  /* Яркий зелёный акцент */
     --income-color:   #00c87f;
     --expense-color:  #ff4c4c;
     --deposit-color:  #8e44ad;
     --debt-color:     #e67e22;
-  
+
     --dark-color:      #000000;
-  
+
     --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
     --shadow-md: 0 4px 8px rgba(0,0,0,0.6);
     --shadow-lg: 0 -2px 25px rgba(0,255,102,0.3);
-  
+
     /* Аналитика */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
@@ -274,10 +334,36 @@
       background-color: var(--sidebar-bg);
       color: var(--secondary-color);
     }
-  
-    #add-btn, #add-budget-btn {
-      background-color: var(--primary-color);
-      color: #000000;
+
+      .achievement.unlocked {
+          background: linear-gradient(145deg, var(--accent-color) 0%, var(--deposit-color) 100%);
+          box-shadow: 0 0 5px var(--accent-color);
+      }
+
+      .user-profile-card::before {
+          background: radial-gradient(circle, var(--accent-color, rgba(102, 204, 255, 0.1)) );
+      }
+
+      .emoji-avatar {
+          background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) border-box;
+          box-shadow: 0 0 15px var(--deposit-color, rgba(102, 204, 255, 0.5));
+      }
+
+      .category-group-label {
+          background-color: var(--dark-color);
+      }
+
+      .chip-btn.active {
+          color: var(--tertiary-color);
+      }
+
+      .term-chip {
+          color: var(--secondary-color) !important;
+      }
+
+    #add-btn, #add-budget-btn, .add-btn {
+      background-color: var(--accent-color) !important;
+      color: var(--secondary-color);
     }
 
     .open-subpage-btn {
@@ -288,15 +374,15 @@
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
-  
+
     input, select, textarea,
-    .custom-select-button, .custom-select, .close-category-sheet {
+    .custom-select-button, .custom-select, .close-category-sheet, .close-settings-btn {
       color: var(--secondary-color);
       background-color: var(--tertiary-color);
     }
 
     #summary-blocks, button {
-        color: #000;
+        /*color: #000;*/
     }
 
     .category-select-button {
@@ -310,6 +396,27 @@
         color: #000;
     }
 
+      #install-btn {
+          color: var(--tertiary-color);
+      }
+
+      #transaction-list li.tx-item {
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+
+          background: rgba(0, 0, 0, 0.6);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      }
+
+    #month-picker-btn, .month-item {
+        background-color: var(--accent-color);
+        color: var(--secondary-color);
+    }
+
+    .close-form, .all-months-btn, .year-nav-btn {
+        color: var(--secondary-color);
+    }
+
 
     main {
         background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
@@ -318,30 +425,34 @@
         background-repeat: repeat;
       }
   }
-  
-  :root[data-theme="dolphin"] {
-    --main-ground:        #c2f0ff;      /* нежно-голубой фон */
-    --tertiary-color:     #ffffff;      /* карточки и блоки */
-    --accent-color:       #00c4cc;      /* яркий акцентный голубой */
-    --sidebar-bg:         #b2e9f3;
-  
-    --secondary-color:    #004d66;      /* текст на светлом фоне */
-    --text-muted:         #6b8a99;
-    --bg-secondary-color: #e0faff;
-  
-    --primary-color:      #00cc88;      /* зелёный (доходы/кнопки) */
-    --income-color:       #66e2af;
-    --expense-color:      #ff6666;
-    --deposit-color:      #a58fff;
-    --debt-color:         #ffaa55;
-  
+
+:root[data-theme="dolphin"] {
+    /* 🐬 Основные "водные" слои */
+    --main-ground:        #dff7ff;   /* лёгкий акварельный голубой */
+    --tertiary-color:     #ffffff;   /* чистые карточки */
+    --accent-color:       #8ae8ff;   /* яркий морской голубой с неоном */
+    --sidebar-bg:         #c8f0fa;   /* светло-водянистый */
+
+    /* 🌊 Текст */
+    --secondary-color:    #004c66;   /* глубокий морской */
+    --text-muted:         #6b8a99;   /* приглушённый серо-голубой */
+    --bg-secondary-color: #e9fbff;   /* очень светлый слой */
+
+    /* 💸 Типы операций (приятные пастельные морские контрасты) */
+    --primary-color:      #00cfa3;   /* морская мята */
+    --income-color:       #66efd0;   /* светлая бирюза */
+    --expense-color:      #ff6e7a;   /* коралл */
+    --deposit-color:      #a7a0ff;   /* мягкая сирень */
+    --debt-color:         #ffbb66;   /* мандариновый пастель */
+
     --dark-color:         #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(0, 77, 102, 0.1);
-    --shadow-md: 0 4px 8px rgba(0, 77, 102, 0.2);
-    --shadow-lg: 0 6px 20px rgba(0, 77, 102, 0.25);
-  
-    /* Аналитика */
+
+    /* 💠 Тени — мягкие голубые */
+    --shadow-sm:  0 2px 5px rgba(0, 76, 102, 0.12);
+    --shadow-md:  0 4px 8px rgba(0, 76, 102, 0.20);
+    --shadow-lg:  0 6px 20px rgba(0, 76, 102, 0.25);
+
+    /* 📊 Аналитика */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
@@ -349,78 +460,23 @@
     --an-secondary-color:  var(--secondary-color);
     --an-tertiary-color:   var(--tertiary-color);
     --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(0, 77, 102, 0.2);
+    --an-shadow-md:        0 4px 12px rgba(0, 76, 102, 0.20);
     --an-border-radius-md: var(--border-radius-md);
-  
-    /* Кнопки, поля, и фон */
-    #add-btn {
-      background-color: var(--primary-color);
-      color: #ffffff;
+
+    /* 🔘 Кнопка Добавить */
+    #add-btn, .add-btn, .chip-btn.active, #add-budget-btn {
+        background-color: var(--primary-color);
+        color: #ffffff;
     }
 
+    /* 🧭 Подстраницы */
     .open-subpage-btn {
-      background: var(--accent-color);
-      color: var(--secondary-color);
-    }
-
-    .faq-item summary {
-      color: #ffffff;
-    }
-
-    .analytics-slide h4 {
+        background: var(--accent-color);
         color: var(--secondary-color);
     }
 
-    #month-filter-container {
-        color: var(--accent-color);
-    }
-  
-    main {
-      background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
-      url('/assets/dolphin-pattern.png'); /* Путь к твоему паттерну */
-      background-size: 300px;
-      background-repeat: repeat;
-      background-color: var(--main-ground);
-    }
-  }
-
-  :root[data-theme="cola"] {
-    --main-ground:        #8c1116;   /* более тёмный красный */
-    --tertiary-color:     #fff6f6;   /* мягкий светлый фон */
-    --accent-color:       #ffd633;   /* тёплый жёлтый */
-    --sidebar-bg:         #731014;
-  
-    --secondary-color:    #2a2a2a;   /* тёмный текст */
-    --text-muted:         #914848;
-    --bg-secondary-color: #b61a1f;
-  
-    --primary-color:      #dfded0;
-    --income-color:       #ffe066;
-    --expense-color:      #ff6b6b;
-    --deposit-color:      #c69cff;
-    --debt-color:         #ffc48a;
-  
-    --dark-color:         #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.4);
-  
-    /* Аналитика */
-    --an-primary-color:    var(--primary-color);
-    --an-income-color:     var(--income-color);
-    --an-expense-color:    var(--expense-color);
-    --an-debt-color:       var(--debt-color);
-    --an-secondary-color:  var(--secondary-color);
-    --an-tertiary-color:   var(--tertiary-color);
-    --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(255, 214, 51, 0.2);
-    --an-border-radius-md: var(--border-radius-md);
-  
-    #add-btn {
-      background-color: var(--accent-color);
-      color: var(--secondary-color);
-      box-shadow: var(--shadow-md);
+    .faq-item summary {
+        color: #ffffff;
     }
 
     .analytics-slide h4 {
@@ -431,47 +487,122 @@
         color: var(--accent-color);
     }
 
+    /* 🐬 Паттерн фона */
+    main {
+        background-image:
+                linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.10)),
+                url('/assets/dolphin-pattern.png');
+        background-size: 300px;
+        background-repeat: repeat;
+        background-color: var(--main-ground);
+    }
+}
+
+
+:root[data-theme="monster"] {
+    /* Базовые цвета Monster */
+    --main-ground:        #050609;   /* почти чёрный фон приложения */
+    --sidebar-bg:         #050609;
+    --bg-secondary-color: #11151c;   /* карточки / блоки */
+    --tertiary-color:     #0b0f14;   /* глубокий тёмный фон */
+    --secondary-color:    #f4f7f4;   /* основной текст */
+    --text-muted:         #6f7a6f;   /* подписи */
+
+    /* Неоновый зелёный и остальные типы */
+    --primary-color:      #44d62c;   /* Monster green */
+    --income-color:       #44d62c;
+    --expense-color:      #ff4b5c;
+    --deposit-color:      #8a2be2;
+    --debt-color:         #e8a22a;
+
+    --accent-color:       #0f1a10;   /* тёмный зелёный для второстепенных поверхностей */
+    --dark-color:         #000000;
+
+    /* Тени с зелёным свечением */
+    --shadow-sm: 0 2px 6px  rgba(0, 0, 0, 0.7);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.85), 0 0 12px rgba(68, 214, 44, 0.25);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.95), 0 0 22px rgba(68, 214, 44, 0.35);
+
+    /* Аналитика под Monster */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   #050609;
+    --an-accent-color:     #0f1a10;
+    --an-shadow-md:        0 4px 16px rgba(68, 214, 44, 0.35);
+    --an-border-radius-md: var(--border-radius-md);
+
+    /* Кнопка добавить — светящийся Monster */
+    #add-btn {
+        background: var(--primary-color);
+        color: #000000;
+        box-shadow: 0 0 18px rgba(68, 214, 44, 0.7);
+    }
+
+    .add-btn, .chip-btn.active, #add-budget-btn, #install-btn {
+        color: #000000;
+    }
+    .term-chip.active {
+        color: var(--secondary-color);
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    #month-filter-container {
+        color: var(--primary-color);
+    }
+
     .faq-item summary {
-      color: #ffffff;
+        color: #e8ffe8;
     }
 
     .open-subpage-btn {
-      background: var(--accent-color);
-      color: var(--secondary-color);
+        background: rgba(68, 214, 44, 0.18);
+        color: var(--secondary-color);
+        box-shadow: var(--shadow-sm);
     }
 
     main {
-      background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
-      url('assets/Cocacola-pattern.png');
-      background-size: 300px;
-      background-repeat: repeat;
-      background-color: var(--main-ground);
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top,    rgba(68, 214, 44, 0.22), transparent 55%),
+                radial-gradient(circle at bottom, rgba(68, 214, 44, 0.12), transparent 60%),
+                linear-gradient(135deg, #020304 0%, #050609 50%, #020304 100%);
+        background-size: cover;
+        background-attachment: fixed;
     }
-  }
+}
 
-  :root[data-theme="amethyst"] {
-    --main-ground:        #f2e1ae;  /* светлая пастель для фона */
-    --tertiary-color:     #b4a3d9;  /* карточки/блоки */
-    --accent-color:       #341c8c;  /* глубокий фиолетовый */
-    --sidebar-bg:         #9475bf;
-  
-    --secondary-color:    #341c8c;  /* основной текст */
-    --text-muted:         #657ebe;
-    --bg-secondary-color: #d9ccf2;
-  
-    --primary-color:      #9475bf;  /* для доходов */
-    --income-color:       #b4a3d9;
-    --expense-color:      #ed6a6a;
-    --deposit-color:      #657ebe;
-    --debt-color:         #f0c78e;
-  
+
+:root[data-theme="yogurt"] {
+    /* 🍧 Базовые десертные тона */
+    --main-ground:        #fff7f1;  /* сливочно-ванильный фон */
+    --sidebar-bg:         #ffe9f2;  /* нежно-розовая боковая */
+    --bg-secondary-color: #ffeef7;  /* карточки как йогуртовые стаканчики */
+    --tertiary-color:     #fbe0ef;  /* слои поверх, чуть более насыщенные */
+    --secondary-color:    #5b3256;  /* ягодный текст (ежевика/смородина) */
+    --text-muted:         #9b7a93;  /* приглушённые подписи */
+
+    /* 🍓 Основные цвета — ягоды и фрукты в йогурте */
+    --primary-color:      #ff9bb8;  /* клубничный йогурт */
+    --income-color:       #ffb3c9;  /* мягкий розовый доход */
+    --expense-color:      #ff6b88;  /* чуть более насыщенная малина для расходов */
+    --deposit-color:      #b39dff;  /* чернично-лавандовый депозит */
+    --debt-color:         #ffd39b;  /* персиковый долг */
+
+    --accent-color:       #f9dbe8;  /* подсветки/выделения */
     --dark-color:         #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(52, 28, 140, 0.1);
-    --shadow-md: 0 4px 8px rgba(52, 28, 140, 0.2);
-    --shadow-lg: 0 6px 20px rgba(52, 28, 140, 0.3);
-  
-    /* Аналитика */
+
+    /* ☁️ Лёгкие «сладкие» тени */
+    --shadow-sm: 0 2px 5px rgba(124, 73, 110, 0.12);
+    --shadow-md: 0 4px 10px rgba(124, 73, 110, 0.18);
+    --shadow-lg: 0 8px 24px rgba(124, 73, 110, 0.25);
+
+    /* 📊 Аналитика под Yogurt */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
@@ -479,12 +610,18 @@
     --an-secondary-color:  var(--secondary-color);
     --an-tertiary-color:   var(--tertiary-color);
     --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(52, 28, 140, 0.2);
+    --an-shadow-md:        0 4px 12px rgba(124, 73, 110, 0.2);
     --an-border-radius-md: var(--border-radius-md);
-  
+
+    /* ➕ Кнопка добавить — как ложка в клубничный йогурт */
     #add-btn {
-      background-color: var(--accent-color);
-      color: #ffffff;
+        background-color: var(--primary-color);
+        color: #5b3256;
+        box-shadow: 0 0 16px rgba(255, 155, 184, 0.55);
+    }
+
+    .chip-info, .tx-date, .chip-value{
+        color: var(--secondary-color);
     }
 
     .analytics-slide h4 {
@@ -493,85 +630,126 @@
 
     .currency-chip {
         color: var(--bg-secondary-color);
+        background: rgba(91, 50, 86, 0.08);
     }
 
     #month-filter-input {
         background-color: var(--income-color);
+        color: #5b3256;
     }
 
-    .category-select-button, .category-item {
-        color: var(--bg-secondary-color);
+    .category-select-button,
+    .category-item {
+        color: var(--secondary-color);
     }
 
     .chip-btn {
-        color: var(--income-color);
+        color: var(--expense-color);
     }
+
     .chip-btn.active {
         color: var(--bg-secondary-color);
+        background: var(--secondary-color);
     }
-  
+
     body {
-      background-color: var(--main-ground);
-      color: #000;
+        background-color: var(--main-ground);
+        color: var(--secondary-color);
     }
-  }
-  
-  :root[data-theme="grape"] {
-    --main-ground:        #0c080d;   /* тёмный глубокий фон */
-    --tertiary-color:     #1f1823;   /* карточки/блоки */
-    --accent-color:       #7a6284;   /* мягкий сиренево-розовый */
-    --sidebar-bg:         #382b3f;
-  
-    --secondary-color:    #e0d7e6;   /* светлый текст */
-    --text-muted:         #a098a8;
-    --bg-secondary-color: #211524;
-  
-    --primary-color:      #52425c;   /* основной фиолетовый */
-    --income-color:       #7a6284;
-    --expense-color:      #d95678;
-    --deposit-color:      #9571b5;
-    --debt-color:         #f8c48d;
-  
+
+    main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top,    rgba(255, 155, 184, 0.20), transparent 55%),
+                radial-gradient(circle at bottom, rgba(179, 157, 255, 0.18), transparent 60%),
+                linear-gradient(135deg, #fff7f1 0%, #ffeef7 50%, #fff7f1 100%);
+        background-size: cover;
+        background-attachment: fixed;
+    }
+}
+
+
+:root[data-theme="grape"] {
+    /* 🍇 Основные виноградные тона */
+    --main-ground:        #0b070d;      /* более глубокий и чище */
+    --tertiary-color:     #1b141f;      /* карточки */
+    --accent-color:       #8a6b99;      /* более мягкий сиреневый */
+    --sidebar-bg:         #2d2233;
+
+    --secondary-color:    #e9e2ef;      /* светлый текст */
+    --text-muted:         #afa4ba;
+    --bg-secondary-color: #1a0f20;
+
+    /* 🎨 Типы */
+    --primary-color:      #6d557a;      /* основной виноград */
+    --income-color:       #a986c1;      /* более яркий сладкий сиреневый */
+    --expense-color:      #e96888;      /* клубнично-ягодный */
+    --deposit-color:      #b59ade;      /* мягкий лавандовый */
+    --debt-color:         #ffcfa2;      /* персиково-медовый */
+
     --dark-color:         #000000;
-  
-    --shadow-sm: 0 2px 5px rgba(255,255,255,0.05);
-    --shadow-md: 0 4px 8px rgba(255,255,255,0.1);
-    --shadow-lg: 0 6px 20px rgba(0,0,0,0.4);
-  
-    --an-primary-color:    var(--primary-color);
-    --an-income-color:     var(--income-color);
-    --an-expense-color:    var(--expense-color);
-    --an-debt-color:       var(--debt-color);
-    --an-secondary-color:  var(--secondary-color);
-    --an-tertiary-color:   var(--tertiary-color);
-    --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(255,255,255,0.08);
-    --an-border-radius-md: var(--border-radius-md);
 
-    .currency-chip{
-      background-color: var(--sidebar-bg);
-      color: var(--secondary-color);
+    /* ✨ Тени (премиальный фиолетовый софт-глоу) */
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.45);
+    --shadow-md: 0 4px 14px rgba(0,0,0,0.6), 0 0 14px rgba(138, 107, 153, 0.22);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.75), 0 0 32px rgba(138,107,153,0.28);
+
+    /* 📊 Аналитика */
+    --an-primary-color:     var(--primary-color);
+    --an-income-color:      var(--income-color);
+    --an-expense-color:     var(--expense-color);
+    --an-debt-color:        var(--debt-color);
+    --an-secondary-color:   var(--secondary-color);
+    --an-tertiary-color:    #160c1a;
+    --an-accent-color:      var(--accent-color);
+    --an-shadow-md:         0 4px 16px rgba(138,107,153,0.2);
+    --an-border-radius-md:  var(--border-radius-md);
+
+    /* 🍇 Чипы валют */
+    .currency-chip {
+        background-color: rgba(45, 34, 51, 0.8);
+        color: var(--secondary-color);
+        backdrop-filter: blur(6px);
     }
-  
+
+    /* 🍇 Кнопка добавить */
     #add-btn {
-      background-color: var(--accent-color);
-      color: var(--tertiary-color);
+        background: var(--accent-color);
+        color: #fff;
+        box-shadow: 0 0 16px rgba(138,107,153,0.4);
     }
 
+    /* Категории */
+    .category-select-button {
+        background: var(--deposit-color) !important;
+        color: var(--dark-color) !important;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Текст аналитики */
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
-  
+
+    /* Поля ввода */
     input, select, textarea,
     .custom-select-button, .custom-select {
-      color: var(--secondary-color);
-      background-color: var(--tertiary-color);
+        color: var(--secondary-color);
+        background-color: var(--tertiary-color);
     }
-  
-    body {
-      background-color: var(--main-ground);
+
+    /* Основной фон */
+    body, main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top,    rgba(138, 107, 153, 0.15), transparent 55%),
+                radial-gradient(circle at bottom, rgba(138, 107, 153, 0.10), transparent 60%),
+                linear-gradient(135deg, #0a060c 0%, #0d0911 50%, #0a060c 100%);
+        background-size: cover;
+        background-attachment: fixed;
     }
-  }
+}
+
 
   :root[data-theme="blackberry"] {
     --main-ground:        #040209;   /* глубокий ночной фон */
@@ -609,6 +787,14 @@
       background-color: var(--sidebar-bg);
       color: var(--secondary-color);
     }
+
+      #transaction-list li.tx-item {
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+
+        background: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
   
     #add-btn {
       background-color: var(--primary-color);
@@ -636,29 +822,29 @@
       }
       
   }
-  
+
   :root[data-theme="hookah"] {
     --main-ground:        #0d3a3a;      /* глубокий тёмно-бирюзовый */
     --tertiary-color:     #123c42;      /* карточки и элементы */
     --accent-color:       #8e24aa;      /* фиолетовый акцент (шланг кальяна) */
     --sidebar-bg:         #092d2d;
-  
+
     --secondary-color:    #f0f0f0;      /* светлый текст */
     --text-muted:         #a2bbc2;
     --bg-secondary-color: #0f4646;
-  
+
     --primary-color:      #00ff88;      /* зелёный $ акцент */
     --income-color:       #00e676;
     --expense-color:      #ff4d4d;
     --deposit-color:      #64b5f6;
     --debt-color:         #ffd54f;
-  
+
     --dark-color:         #000000;
-  
+
     --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.6);
-  
+
     /* Аналитика */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
@@ -674,7 +860,7 @@
       background-color: var(--sidebar-bg);
       color: var(--secondary-color);
     }
-  
+
     #add-btn, #add-budget-btn {
       background-color: var(--accent-color);
       color: var(--secondary-color);
@@ -684,20 +870,28 @@
     .analytics-slide h4 {
         color: var(--secondary-color);
     }
-  
+
+      #transaction-list li.tx-item {
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+
+          background: rgba(0, 0, 0, 0.6);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      }
+
     input, select, textarea,
     .custom-select-button, .custom-select {
       color: var(--secondary-color);
       background-color: var(--tertiary-color);
     }
-  
+
     main {
       background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
       url('assets/hookah-pattern.png');
       background-size: 420px;
       background-repeat: repeat;
       background-color: var(--main-ground);
-      
+
     }
   }
 
@@ -747,6 +941,10 @@
       background-color: var(--sidebar-bg);
       color: var(--secondary-color);
     }
+
+      .block-title {
+          color: var(--secondary-color);
+      }
     
     /* Стили для элементов */
     #add-btn {
@@ -754,12 +952,8 @@
       background-color: var(--button-color); /* Зеленый фон */
     }
 
-    .block-title {
-      color: var(--button-text-color); /* Белый для заголовков блоков */
-    }
 
-
-    .analytics-slide h4 {
+      .analytics-slide h4 {
       color: var(--text-color); /* Белый для заголовков на темном фоне */
     }
 
@@ -772,3 +966,62 @@
       color: var(--text-color); /* Белый для текста ввода */
     }
   }
+
+:root[data-theme="sage"] {
+    --main-ground:        #e8f0ea;  /* светлый шалфей */
+    --sidebar-bg:         #dfe9e3;
+    --bg-secondary-color: #ffffff;
+    --tertiary-color:     #d4e2da;  /* карточки */
+    --secondary-color:    #2e4237;  /* тёмный травяной текст */
+    --text-muted:         #7d9488;
+
+    /* Основные акценты шалфея */
+    --primary-color:      #7bbf97;   /* мягкий зелёный */
+    --income-color:       #9fd6b7;
+    --expense-color:      #e88f8f;   /* розовый контраст */
+    --deposit-color:      #8ea6d6;   /* пастельно-синий */
+    --debt-color:         #dab56f;   /* мягкий песочный */
+
+    --accent-color:       #cfe3d6;
+    --dark-color:         #000;
+
+    /* Тени — травяные, мягкие */
+    --shadow-sm: 0 2px 5px rgba(125,148,136,0.15);
+    --shadow-md: 0 4px 12px rgba(125,148,136,0.25);
+    --shadow-lg: 0 10px 28px rgba(125,148,136,0.28);
+
+    /* Аналитика */
+    --an-primary-color:   var(--primary-color);
+    --an-income-color:    var(--income-color);
+    --an-expense-color:   var(--expense-color);
+    --an-debt-color:      var(--debt-color);
+    --an-secondary-color: var(--secondary-color);
+    --an-tertiary-color:  var(--tertiary-color);
+    --an-accent-color:    #6aa783;
+    --an-shadow-md:       0 4px 16px rgba(125,148,136,0.22);
+    --an-border-radius-md: var(--border-radius-md);
+
+    #add-btn {
+        background-color: var(--primary-color);
+        color: #163022;
+        box-shadow: 0 0 14px rgba(123,191,151,0.4);
+    }
+
+    .tx-date {
+        color: var(--secondary-color);
+    }
+
+    main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top, rgba(123,191,151,0.1), transparent 55%),
+                radial-gradient(circle at bottom, rgba(123,191,151,0.08), transparent 60%);
+    }
+}
+
+
+
+
+
+
+

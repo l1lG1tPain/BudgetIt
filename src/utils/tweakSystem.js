@@ -31,7 +31,7 @@ function processQueue() {
     container.appendChild(div);
 
     setTimeout(() => {
-        div.style.animation = 'tweak-slide-out 0.3s forwards';
+        div.style.animation = 'tweak-slide-out 0.35s ease forwards';
         setTimeout(() => {
             div.remove();
             if (container.children.length === 0) {

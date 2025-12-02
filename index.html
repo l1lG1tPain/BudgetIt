@@ -6,7 +6,7 @@
   <title>BudgetIt — учёт бюджета и расходов</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./theme.css">
-  <link rel="manifest" href="manifest.json?v=2.10.1">
+  <link rel="manifest" href="manifest.json?v=3.0.0">
 
   <!-- <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"></script> -->
   <script defer
@@ -28,7 +28,7 @@
   <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
   
   <meta name="description"
-        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн‑режимом, аналитикой и пуш‑напоминаниями. Акулка позаботится о ваших финансах!">
+        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями. Акулка позаботится о ваших финансах!">
   <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, расходы, доходы, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
   <meta name="author" content="BudgetIt by l1lG1tPain">
   <meta name="robots" content="index, follow">
@@ -39,7 +39,7 @@
   <meta property="og:url"         content="https://budgetit-nine.vercel.app/">
   <meta property="og:site_name" content="BudgetIt">
   <meta property="og:title"       content="BudgetIt — Track your money with Shark 🦈">
-  <meta property="og:description" content="Zero‑friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
+  <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
   <meta property="og:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
   <meta property="og:locale"      content="ru_RU">
   <meta property="og:locale:alternate" content="en_US">
@@ -60,17 +60,14 @@
   <div id="budget-switch-sheet" class="bottom-sheet hidden">
     <h2><b>Мои бюджеты</b></h2>
     <img src="./assets/switch-budget-img.png" alt="switch-budget-img">
-    
-    <div class="budget-description">
-      <p>Создавай, удаляй и переключайся между своими бюджетами — легко и быстро.</p>
-      <ul>
-        <li>Например: «Работа», «Личное», (можно Emoji)</li>
-      </ul>
-      <p><span class="tip">💡 Акулка советует:</span> начни с одного, а там разберёмся!</p>
-    </div>
 
+      <p class="budget-desc">
+          Создавай, удаляй и легко переключайся между своими бюджетами.<br>
+          Например: <strong>«Работа»</strong>, <strong>«Личное»</strong>, (можно добавить 🦈 Emoji).<br>
+          💡 <em>Совет от Акулки:</em> начни с одного — потом разберёмся!
+      </p>
 
-    <div class="budget-list"></div>
+      <div class="budget-list"></div>
 
     <div class="budget-add">
       <span>Бюджет:</span>
@@ -96,9 +93,14 @@
   <!-- Хедер -->
   <header>
     <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
-    <button id="open-profile-btn" class="avatar-btn">
+    <div class="header-button">
+        <button id="month-picker-btn" class="month-picker-btn" type="button">
+            Октябрь ▾
+        </button>
+      <button id="open-profile-btn" class="avatar-btn"></button>
+    </div>
       <!-- сюда JS подставит <img> -->
-    </button>
+
 
   </header>
 
@@ -110,10 +112,10 @@
     <div id="summary-blocks" class="wrapper">
       <!-- Блок Бюджет – 100% ширины -->
       <div class="summary-block full" id="block-budget">
-        <div class="block-title">Бюджет <span class="emoji"></span></div>
+        <div class="block-title">Бюджет Акулки<span class="emoji"></span></div>
         <div class="block-value">0</div>
       </div>
-      
+
       <!-- Блоки по 50% ширины -->
       <div class="summary-block half" id="block-income">
         <div class="block-title">Доходы <span class="emoji"></span></div>
@@ -133,31 +135,78 @@
       </div>
     </div>
 
-    <div class="month-selector wrapper">
-      <div id="month-filter-container" class="custom-select">
-        <div class="custom-select-button">Все месяцы</div>
-        <div class="custom-select-options hidden">
-          <div data-value="all">Все месяцы</div>
-          <div data-value="01">Январь</div>
-          <div data-value="02">Февраль</div>
-          <div data-value="03">Март</div>
-          <div data-value="04">Апрель</div>
-          <div data-value="05">Май</div>
-          <div data-value="06">Июнь</div>
-          <div data-value="07">Июль</div>
-          <div data-value="08">Август</div>
-          <div data-value="09">Сентябрь</div>
-          <div data-value="10">Октябрь</div>
-          <div data-value="11">Ноябрь</div>
-          <div data-value="12">Декабрь</div>
-        </div>
-      </div> 
-    </div>
-   
-    
     <!-- Список транзакций -->
-    <ul id="transaction-list" class="wrapper"></ul>
+      <!-- Список транзакций -->
+      <div id="transactions-header" class="wrapper hidden">
+          <div class="transactions-header-title">Последние операции</div>
+      </div>
+
+      <ul id="transaction-list" class="wrapper"></ul>
   </main>
+
+  <!-- Bottom-sheet для редактирования транзакции -->
+  <div id="edit-transaction-sheet" class="bottom-sheet hidden">
+      <div class="sheet-header">
+          <div class="sheet-handle"></div>
+          <h2 id="edit-title">Редактирование</h2>
+      </div>
+
+      <div class="sheet-body">
+          <!-- Редактирование дохода -->
+          <form id="edit-income-form" class="tx-form hidden">
+              <label for="edit-income-date">Дата:</label>
+              <input type="date" id="edit-income-date" class="input">
+
+              <label for="edit-income-category">Категория:</label>
+              <select id="edit-income-category" class="category-select"></select>
+
+              <label for="edit-income-amount">Сумма:</label>
+              <input
+                      type="tel"
+                      id="edit-income-amount"
+                      class="input numeric-format"
+                      maxlength="15"
+                      inputmode="numeric"
+                      placeholder="1 000 денег"
+              >
+
+              <button type="submit" class="add-btn">Сохранить</button>
+          </form>
+
+          <!-- Редактирование расхода -->
+          <form id="edit-expense-form" class="tx-form hidden">
+              <label for="edit-expense-date">Дата:</label>
+              <input type="date" id="edit-expense-date" class="input">
+
+              <label for="edit-expense-category">Категория:</label>
+              <select id="edit-expense-category" class="category-select"></select>
+
+              <label>Товары:</label>
+              <div id="edit-products-list" class="products-list"></div>
+
+              <button type="button" id="edit-add-product">Добавить ещё товар</button>
+
+              <button type="submit" class="add-btn">Сохранить</button>
+          </form>
+      </div>
+
+      <!-- ОДНА общая нижняя кнопка "Закрыть" -->
+      <div class="sheet-footer">
+          <button
+                  type="button"
+                  class="close-form"
+                  id="edit-close-btn"
+          >
+              Закрыть
+          </button>
+      </div>
+  </div>
+
+
+
+
+
+
 
   <div id="transaction-sheet" class="bottom-sheet hidden">
     <!-- Bottom-sheet для добавления транзакции -->
@@ -167,7 +216,7 @@
       <button class="chip-btn" data-type="debt">📉 Долги</button>
       <button class="chip-btn" data-type="deposit">🏦 Вклады</button>
     </div>
-    
+
       <!-- Форма Доходов -->
       <form id="income-form" class="transaction-form hidden">
         <label for="income-date">Дата:</label>
@@ -190,9 +239,9 @@
         <!-- Список товаров с автодополнением -->
         <div id="products-list">
           <div class="product-item">
-            <input type="text" class="product-name" placeholder="Название" maxlength="16" list="product-names-list">
-            <input type="tel" class="product-quantity numeric-format" placeholder="Кол-во" required maxlength="4">
-            <input type="tel" class="product-price numeric-format" placeholder="Цена" required maxlength="11" inputmode="numeric">
+            <input type="text" class="product-name" placeholder="Название" maxlength="25" list="product-names-list">
+            <input type="tel" class="product-quantity numeric-format" placeholder="Кол-во" required maxlength="5">
+            <input type="tel" class="product-price numeric-format" placeholder="Цена" required maxlength="12" inputmode="numeric">
           </div>
         </div>
         <!-- datalist для автоподсказок -->
@@ -219,38 +268,120 @@
       <form id="deposit-form" class="transaction-form hidden">
         <label for="deposit-date">Дата:</label>
         <input type="date" id="deposit-date" required>
+
         <label for="deposit-name">Имя:</label>
-        <input type="text" id="deposit-name" name="deposit-name" required maxlength="16" placeholder="Вклад#1, можно эмоджи/имя банка">
+        <input
+          type="text"
+          id="deposit-name"
+          name="deposit-name"
+          required
+          maxlength="20"
+          placeholder="Вклад#1, можно эмоджи/имя банка"
+        >
+
         <label for="deposit-amount">Сумма:</label>
-        <input type="tel" id="deposit-amount" name="deposit-amount" class="numeric-format" required maxlength="15" inputmode="numeric" placeholder="1 000 денег">
-        <label for="deposit-status">Статус:</label>
-        <select id="deposit-status" name="deposit-status" required>
-        </select>     
+        <input
+          type="tel"
+          id="deposit-amount"
+          name="deposit-amount"
+          class="numeric-format"
+          required
+          maxlength="15"
+          inputmode="numeric"
+          placeholder="1 000 денег"
+        >
+
+        <label for="deposit-rate">Годовой процент %:</label>
+        <input
+          type="tel"
+          id="deposit-rate"
+          name="deposit-rate"
+          class="numeric-format"
+          required
+          maxlength="5"
+          inputmode="numeric"
+          placeholder="22"
+        >
+
+        <label>Срок вклада (мес.):</label>
+        <div id="deposit-term-chips" class="deposit-term-chips">
+          <button type="button" class="chip-btn term-chip active" data-term="0">Б/С</button>
+          <button type="button" class="chip-btn term-chip" data-term="12">12</button>
+          <button type="button" class="chip-btn term-chip" data-term="24">24</button>
+          <button type="button" class="chip-btn term-chip" data-term="36">36</button>
+          <button type="button" class="chip-btn term-chip" data-term="48">48</button>
+          <button type="button" class="chip-btn term-chip" data-term="60">60</button>
+        </div>
+        <input type="hidden" id="deposit-term" value="0">
+
         <button type="submit" class="add-btn">Сохранить</button>
         <button type="button" class="close-form">Закрыть</button>
       </form>
     </div>
 
-    <!-- Bottom-sheet для детальной информации о транзакции -->
-    <div id="transaction-detail-sheet" class="bottom-sheet hidden">
-      <h2>Информация о транзакции</h2>
-      <div id="detail-type"></div>
-      <div id="detail-name"></div>
-      <div id="detail-products" class="hidden"></div>
-      <div id="detail-amount"></div>
-      <div id="detail-debt-progress" class="hidden" style="margin-top: 4px;"></div>
-      <div id="detail-debt-remaining" class="hidden" style="margin-top: 6px; font-size: 0.9em; color: #555;"></div>
-      <div id="detail-debt-payments" class="hidden" style="margin-top: 12px; font-size: 0.9em; color: #666;"></div>
-      <div id="detail-date"></div>
-      <div id="detail-status" class="hidden"></div>
-      <div id="detail-buttons">
-        <button id="delete-transaction">🗑 Удалить</button>
-        <div id="debt-paid-label" class="hidden" style="color:green;font-weight:bold; margin-right: 12px;">✅ Оплачено</div>
-        <button id="pay-debt-detail" class="hidden">💸 Оплатить</button>
-        <button id="close-detail">Закрыть</button>
-      </div>      
-    </div>
-  </div>  
+  <!-- Bottom-sheet для детальной информации о транзакции -->
+  <div id="transaction-detail-sheet" class="bottom-sheet hidden">
+
+      <!-- Верх: название, тип, сумма, дата -->
+      <div class="tx-detail-header">
+          <!-- тип транзакции в самом верху -->
+          <div id="detail-type" class="tx-detail-type">Тип транзакции</div>
+
+          <!-- одна строка: название слева, дата справа -->
+          <div class="tx-detail-title-row">
+              <div id="detail-name" class="tx-detail-name">—</div>
+              <div id="detail-date" class="tx-detail-date">—</div>
+          </div>
+
+          <!-- сумма отдельной строкой ниже -->
+          <div id="detail-amount" class="tx-detail-amount">0</div>
+      </div>
+
+
+      <!-- Статус / теги -->
+      <div id="detail-status" class="tx-detail-status hidden"></div>
+
+      <!-- Товары по расходу -->
+      <div id="detail-products" class="tx-detail-card hidden"></div>
+
+      <!-- Блок для вкладов: текстовая инфа -->
+      <div id="detail-deposit-meta" class="tx-detail-card hidden deposit-meta-block"></div>
+
+      <!-- Блок для вкладов: скроллируемая таблица -->
+      <div id="detail-deposit-table" class="tx-detail-card hidden"></div>
+
+      <!-- Блоки долгов -->
+      <div id="detail-debt-progress" class="tx-detail-card hidden"></div>
+      <div id="detail-debt-remaining" class="tx-detail-note hidden"></div>
+      <div id="detail-debt-payments" class="tx-detail-note hidden"></div>
+
+      <!-- Кнопки работы со вкладом -->
+      <div id="detail-deposit-actions" class="detail-deposit-actions">
+          <button id="deposit-topup-btn" class="hidden"><svg fill="#000000" height="24px" width="24px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+	 viewBox="0 0 50 50" enable-background="new 0 0 50 50" xml:space="preserve">
+<path d="M9.077,25.99h14v14c0,0.553,0.448,1,1,1s1-0.447,1-1v-14h14c0.552,0,1-0.447,1-1s-0.448-1-1-1h-14v-14c0-0.553-0.448-1-1-1
+	s-1,0.447-1,1v14h-14c-0.552,0-1,0.447-1,1S8.525,25.99,9.077,25.99z"/>
+</svg> Пополнить</button>
+          <button id="deposit-withdraw-btn" class="hidden"><svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12L18 12" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg> Снять</button>
+      </div>
+
+      <!-- Общие кнопки -->
+      <div id="detail-buttons" class="tx-detail-buttons">
+          <div id="debt-paid-label" class="tx-detail-debt-paid hidden">✅ Оплачено</div>
+
+          <div class="tx-detail-buttons-row">
+              <button id="pay-debt-detail" class="hidden">💸 Оплатить</button>
+              <button id="edit-transaction">✏️ Редактировать</button>
+              <button id="delete-transaction">🗑 Удалить</button>
+          </div>
+
+          <button id="close-detail" class="tx-detail-close-btn">Закрыть</button>
+      </div>
+  </div>
+
+
 
   <!-- Профиль BudgetIt -->
   <div id="settings-page" class="bottom-sheet fullscreen-sheet hidden">
@@ -298,16 +429,39 @@
 
     <hr class="hr-spacing">
 
-    <div class="settings-nav-list">
-      <button class="open-subpage-btn" data-page="export-import-page">🗄️ Работа с данными</button>
-      <button class="open-subpage-btn" data-page="theme-page">🎨 Темы оформления</button>
-      <button class="open-subpage-btn" data-page="analytics-page">📊 Аналитика</button>
-      <button class="open-subpage-btn" data-page="faq-page">❓ Q&A</button>
-      <button class="open-subpage-btn" data-page="about-page">ℹ️ О приложении</button>
-    </div>
+      <div class="settings-nav-list">
+          <button class="open-subpage-btn" data-page="region-page">
+              <span class="settings-icon">🌍 </span>
+              <span class="settings-text">Регионы и валюты</span>
+          </button>
 
+          <button class="open-subpage-btn" data-page="export-import-page">
+              <span class="settings-icon">🗄️</span>
+              <span class="settings-text">Работа с данными</span>
+          </button>
 
-   <button id="close-settings-btn" class="close-settings-btn">Закрыть</button>
+          <button class="open-subpage-btn" data-page="analytics-page">
+              <span class="settings-icon">📊</span>
+              <span class="settings-text">Аналитика</span>
+          </button>
+
+          <button class="open-subpage-btn" data-page="theme-page">
+              <span class="settings-icon">🎨</span>
+              <span class="settings-text">Темы оформления</span>
+          </button>
+
+          <button class="open-subpage-btn" data-page="faq-page">
+              <span class="settings-icon">❓</span>
+              <span class="settings-text">Q&A</span>
+          </button>
+
+          <button class="open-subpage-btn" data-page="about-page">
+              <span class="settings-icon">ℹ️</span>
+              <span class="settings-text">О приложении</span>
+          </button>
+      </div>
+
+      <button id="close-settings-btn" class="close-settings-btn">Закрыть</button>
   </div>
 
   <div id="achievements-page" class="bottom-sheet fullscreen-sheet hidden">
@@ -330,10 +484,6 @@
     <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
   </div>
 
-
-
-
-
   <div id="export-import-page" class="bottom-sheet fullscreen-sheet hidden">
     <h2>🗄️ Данные профиля</h2>
     <canvas id="chartContainerId" style="max-width: 320px; margin: 0 auto 20px;"></canvas>
@@ -350,8 +500,6 @@
     <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
   </div>
 
-
-
   <div id="theme-page" class="bottom-sheet fullscreen-sheet hidden">
     <h2>Темы оформления</h2>
     <div id="theme-options-container"></div>
@@ -360,38 +508,32 @@
 
   <!-- analytics.html -->
   <div id="analytics-page" class="bottom-sheet fullscreen-sheet hidden">
-    <h2>📈 Аналитика бюджета</h2>
-
     <!-- фильтр месяцев -->
-    <div id="analytics-custom-select" class="custom-select sticky-top">
-      <div class="custom-select-button">Все месяцы ▼</div>
-      <div class="custom-select-options hidden">
-        <div data-value="all">Все месяцы</div>
-        <div data-value="01">Январь</div><div data-value="02">Февраль</div><div data-value="03">Март</div>
-        <div data-value="04">Апрель</div><div data-value="05">Май</div><div data-value="06">Июнь</div>
-        <div data-value="07">Июль</div><div data-value="08">Август</div><div data-value="09">Сентябрь</div>
-        <div data-value="10">Октябрь</div><div data-value="11">Ноябрь</div><div data-value="12">Декабрь</div>
+      <div class="analytics-header-row">
+          <h2>📈 Аналитика бюджета</h2>
+          <button id="analytics-month-btn" class="month-picker-btn" type="button">
+              <span id="analytics-month-label">Все месяцы</span> ▾
+          </button>
       </div>
-    </div>
+
 
     <!-- скроллируемый snap-контейнер -->
     <div class="analytics-scroll">
-
-      <section>
+        <section>
         <h4>🍩 Расходы по категориям</h4>
         <canvas id="expensesByCategoryChart"></canvas>
         <div id="expensesByCategoryCenterText"></div>
       </section>
 
       <section>
+        <h4>⚖️ Соотношение доходов и расходов</h4>
+        <canvas id="incomeVsExpensesChart"></canvas>
+      </section>
+      <section>
         <h4>📊 Доходы / Расходы — месяц за месяцем</h4>
         <canvas id="monthlyExpensesChart"></canvas>
       </section>
 
-      <section>
-        <h4>⚖️ Соотношение доходов и расходов</h4>
-        <canvas id="incomeVsExpensesChart"></canvas>
-      </section>
 
       <section>
         <h4>🏅 Топ расходов</h4>
@@ -440,8 +582,6 @@
     <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
   </div>
 
-
-
   <div id="about-page" class="bottom-sheet fullscreen-sheet hidden">
     <div class="about-container">
       <h2>🐙 О BudgetIt</h2>
@@ -452,7 +592,7 @@
       </p>
 
       <div class="about-info-block">
-        <p><strong>📦 Версия:</strong> 2.10.3</p>
+        <p><strong>📦 Версия:</strong> 3.0.0</p>
         <p><strong>👨‍💻 Автор:</strong> l1lG1tPain</p>
         <p><strong>📬 Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">@Cybersnitch</a></p>
         <p><strong>🐬 Стикерпак:</strong> <a href="https://t.me/addstickers/Shark_BudgetIt" target="_blank">Акулка BudgetIt</a></p>
@@ -461,9 +601,6 @@
       <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
     </div>
   </div>
-
-
-
 
   <div id="delete-budget-modal" class="modal hidden">
     <div class="modal-content">
@@ -487,6 +624,47 @@
         <button id="cancel-debt-pay">Отмена</button>
       </div>
     </div>
+  </div>
+
+  <div id="deposit-op-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="deposit-op-title">Операция по вкладу</h3>
+      <p>Дата операции:</p>
+      <input type="date" id="deposit-op-date">
+      <p>Сумма:</p>
+      <input
+        type="tel"
+        id="deposit-op-amount"
+        class="numeric-format"
+        placeholder="Сумма"
+        maxlength="15"
+        inputmode="numeric"
+      >
+      <div class="modal-buttons">
+        <button id="deposit-op-confirm">Ок</button>
+        <button id="deposit-op-cancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="month-picker-sheet" class="bottom-sheet hidden month-picker-sheet">
+      <div class="month-sheet-header">
+          <button id="prev-year-btn" class="year-nav-btn" type="button">‹</button>
+
+          <div id="year-display" class="year-display">2025</div>
+
+          <button id="next-year-btn" class="year-nav-btn" type="button">›</button>
+      </div>
+
+      
+      <div id="months-grid" class="months-grid">
+        <!-- JS сам вставит сюда 12 кнопок-месяцев -->
+      </div>
+      <div class="month-sheet-subheader">
+          <button id="all-months-btn" class="all-months-btn" type="button">
+              Все месяцы
+          </button>
+      </div>
   </div>
 
   <!-- ========================= -->
@@ -527,21 +705,23 @@
     <div class="modal-content">
       <h3>🗑️ Удалить транзакцию?</h3>
       <p>🚨 <strong>Это действие необратимо.</strong><br>
-        Подтвердите, если действительно хотите <span style="color:#e53935;font-weight:bold">удалить</span> эту транзакцию.</p>
+        Подтвердите, если действительно хотите <span class="del-span">удалить</span> эту транзакцию.</p>
       <div class="modal-buttons">
-        <button id="confirm-delete-transaction">✅ Удалить</button>
+        <button id="confirm-delete-transaction"> Удалить</button>
         <button id="cancel-delete-transaction">❌ Отмена</button>
       </div>
     </div>
   </div>
 
-
   <div id="tweak-container" class="tweak-container hidden"></div>
-
 
   <!-- Футер: кнопка добавления транзакции -->
   <footer>
-    <button id="add-btn">➕ Добавить</button>
+    <button id="add-btn">
+        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 3C13 2.44772 12.5523 2 12 2C11.4477 2 11 2.44772 11 3V11H3C2.44772 11 2 11.4477 2 12C2 12.5523 2.44772 13 3 13H11V21C11 21.5523 11.4477 22 12 22C12.5523 22 13 21.5523 13 21V13H21C21.5523 13 22 12.5523 22 12C22 11.4477 21.5523 11 21 11H13V3Z" fill="#0F0F0F"/>
+        </svg>
+        Добавить</button>
   </footer>
 
   <!-- PWA Install Button -->
@@ -557,12 +737,12 @@
     🚀 Новая версия будет загружена через 5 сек...
   </div>
 
-
   <!-- Подключаем внешний JavaScript -->
   <script type="module" src="./app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="src/widgets/charts.js"></script>
+  <script type="module" src="./src/EditManager.js"></script>
+  <!-- charts.js больше НЕ подключаем как обычный скрипт -->
   <script src="src/widgets/currencyChips.js" defer></script>
   <script>
     // Находим все баннеры
@@ -580,7 +760,6 @@
   <script defer src="/_vercel/insights/script.js"></script>
   <script type="module" src="./src/utils/analytics.js"></script>
 
-
   <script src="./src/utils/umami-events.js" defer></script>
 
   <script>
@@ -597,7 +776,6 @@
       newHost: 'budgetit.app'
     });
   </script>
-
 
 </body>
 </html>
