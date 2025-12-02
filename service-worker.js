@@ -1,19 +1,36 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v2.10.3'; // ⬅️ обновлено
+const CACHE_VERSION = 'v3.0.0'; // ⬅️ новая версия кэша под релиз 3.0.0
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
 const STATIC_ASSETS = [
-    '/', '/index.html', '/onboarding.html',
-    '/style.css', '/theme.css',
-    '/404.html', '/500.html', '/offline.html',
-    '/app.js', '/migration.js',
+    // базовые страницы
+    '/',
+    '/index.html',
+    '/onboarding.html',
 
-    // widgets
-    '/widgets/bannerCarousel.js',
-    '/widgets/charts.js',
-    '/widgets/currencyChips.js',
+    // стили
+    '/style.css',
+    '/theme.css',
+
+    // системные страницы
+    '/404.html',
+    '/500.html',
+    '/offline.html',
+
+    // точка входа и миграция
+    '/app.js',
+    '/migration.js',
+
+    // widgets (новая структура внутри src/)
+    '/src/widgets/bannerCarousel.js',
+    '/src/widgets/charts.js',
+    '/src/widgets/currencyChips.js',
+
+        // Chart.js локально
+    '/vendor/chart.umd.min.js',
+    '/vendor/chartjs-plugin-datalabels.min.js',
 
     // основной функционал
     '/src/BudgetManager.js',
@@ -21,6 +38,8 @@ const STATIC_ASSETS = [
     '/src/ThemeManager.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
+    '/src/StorageManager.js',
+    '/src/EditManager.js',
 
     // utils
     '/src/utils/emojiMap.js',
@@ -29,21 +48,23 @@ const STATIC_ASSETS = [
     '/src/utils/utils.js',
     '/src/utils/achievements.js',
     '/src/utils/achievementUtils.js',
-
+    '/src/utils/analytics.js',
+    '/src/utils/umami-events.js',
+    
     // constants
     '/constants/achievementList.js',
     '/constants/constants.js',
     '/constants/debtCategories.js',
-    '/constants/depositCategories.js',
     '/constants/expenseCategories.js',
     '/constants/faq-constants.js',
     '/constants/incomeCategories.js',
     '/constants/index.js',
     '/constants/loadingMessages.js',
 
-    // assets
+    // PWA / манифест
     '/manifest.json',
 
+    // assets
     '/assets/banner1.jpg',
     '/assets/banner2.jpg',
     '/assets/banner8.jpg',
@@ -83,7 +104,7 @@ self.addEventListener('install', event => {
                 );
                 results
                     .filter(r => r.status === 'rejected')
-                    .forEach(r => console.warn('[SW] asset skip:', r.reason.url));
+                    .forEach(r => console.warn('[SW] asset skip:', r.reason?.url || r.reason));
             })
             .then(() => self.skipWaiting())
     );
@@ -118,7 +139,10 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
     const isUmami = url.href.includes('umami');
 
+    // внешние домены пропускаем, кроме umami, который явно разрешён
     if (url.origin !== self.location.origin && !isUmami) return;
+
+    // /api/ не кэшируем
     if (url.pathname.startsWith('/api/')) return;
 
     const isNavigate =
@@ -141,16 +165,20 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // ⛔ Для umami.js всегда загружаем из сети
+    // ⛔ Для umami.js и прочей аналитики — всегда только сеть
     if (isUmami) {
         event.respondWith(fetch(request));
         return;
     }
 
+    // Остальное: cache-first + подкачка из сети
     event.respondWith(
         caches.match(request).then(cached => {
             const network = fetch(request)
-                .then(resp => { cacheIfAllowed(request, resp.clone()); return resp; })
+                .then(resp => {
+                    cacheIfAllowed(request, resp.clone());
+                    return resp;
+                })
                 .catch(() => cached);
             return cached || network;
         })
