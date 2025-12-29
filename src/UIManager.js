@@ -114,7 +114,19 @@ export class UIManager {
 
     updateHeader() {
         const headerEl = document.getElementById('current-budget');
-        headerEl.textContent = this.budgetManager.getCurrentBudget()?.name || 'BudgetIt';
+        let budgetName = this.budgetManager.getCurrentBudget()?.name || 'BudgetIt';
+
+        // Проверка на новогодний период (с 15 декабря по 20 января)
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+        const isNewYear = (month === 12 && day >= 15) || (month === 1 && day <= 20);
+
+        if (isNewYear) {
+            budgetName = `🎄 ${budgetName}`;
+        }
+
+        headerEl.textContent = budgetName;
         this.adjustHeaderTitleFont();
     }
 
