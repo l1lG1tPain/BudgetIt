@@ -102,3 +102,61 @@ if ('serviceWorker' in navigator) {
         }
     });
 }
+
+function isNewYearPeriod() {
+    const now = new Date();
+    const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+    const day = now.getDate();
+
+    // Декабрь (12), начиная с 15-го числа
+    const isDecember = (month === 12 && day >= 15);
+    // Январь (1), до 20-го числа включительно
+    const isJanuary = (month === 1 && day <= 20);
+
+    return isDecember || isJanuary;
+}
+
+function createSnow() {
+    // Проверка периода: если не праздники, просто выходим
+    if (!isNewYearPeriod()) return;
+
+    const container = document.getElementById('snow-overlay');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const snowflakesCount = 45;
+    const symbols = ['❄', '❅', '❆', '•'];
+
+    for (let i = 0; i < snowflakesCount; i++) {
+        const span = document.createElement('span');
+        const rand = Math.random();
+
+        let layer = 'far';
+        if (rand > 0.8) layer = 'near';
+        else if (rand > 0.4) layer = 'mid';
+
+        span.className = `snowflake ${layer}`;
+        span.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+
+        // Длительность падения (чем ближе, тем быстрее)
+        const fallDuration = layer === 'near' ? Math.random() * 5 + 5 : Math.random() * 10 + 15;
+        // Скорость раскачивания (независимо от падения)
+        const swayDuration = Math.random() * 2 + 3;
+        // На сколько пикселей отклоняется в сторону (от 20 до 70)
+        const swayAmount = Math.random() * 50 + 20;
+
+        Object.assign(span.style, {
+            left: Math.random() * 100 + '%',
+            fontSize: (layer === 'near' ? 20 : 12) + Math.random() * 10 + 'px',
+            // Задаем время для каждой анимации через запятую (согласно CSS)
+            animationDuration: `${fallDuration}s, ${swayDuration}s`,
+            animationDelay: `${Math.random() * -20}s, ${Math.random() * -5}s`
+        });
+
+        // Передаем силу раскачивания в CSS
+        span.style.setProperty('--sway-amount', swayAmount + 'px');
+
+        container.appendChild(span);
+    }
+}
+createSnow();
