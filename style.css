@@ -3946,7 +3946,8 @@ body.dark-mode #detail-deposit-table::-webkit-scrollbar-thumb {
     border-radius: 10px;
 }
 
-/* Контейнер */
+
+/* Контейнер остается похожим */
 .snow-overlay {
     position: fixed;
     top: 0;
@@ -3957,51 +3958,3 @@ body.dark-mode #detail-deposit-table::-webkit-scrollbar-thumb {
     overflow: hidden;
     z-index: 9999;
 }
-
-.snowflake {
-    position: absolute;
-    top: -50px;
-    color: white;
-    user-select: none;
-    /* Указываем две анимации через запятую */
-    /* fall — падение, sway — раскачивание */
-    animation: fall linear infinite, sway ease-in-out infinite;
-    will-change: top, transform;
-}
-
-/* Анимация падения строго вниз */
-@keyframes fall {
-    0% {
-        top: -50px;
-        opacity: 0;
-    }
-    15% {
-        opacity: var(--base-opacity, 0.8);
-    }
-    85% {
-        opacity: var(--base-opacity, 0.8);
-    }
-    100% {
-        top: 100vh;
-        opacity: 0;
-    }
-}
-
-/* Анимация раскачивания влево-вправо */
-@keyframes sway {
-    0% {
-        transform: translateX(0px) rotate(0deg);
-    }
-    50% {
-        /* Снежинка отклоняется в сторону на значение из JS */
-        transform: translateX(var(--sway-amount, 30px)) rotate(180deg);
-    }
-    100% {
-        transform: translateX(0px) rotate(360deg);
-    }
-}
-
-/* Настройки слоев (размытие и прозрачность) */
-.snowflake.near { filter: blur(0px); z-index: 3; --base-opacity: 1; }
-.snowflake.mid  { filter: blur(1px); z-index: 2; --base-opacity: 0.5; }
-.snowflake.far  { filter: blur(3px); z-index: 1; --base-opacity: 0.2; }

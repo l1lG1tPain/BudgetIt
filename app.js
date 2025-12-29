@@ -105,58 +105,91 @@ if ('serviceWorker' in navigator) {
 
 function isNewYearPeriod() {
     const now = new Date();
-    const month = now.getMonth() + 1; // getMonth() возвращает 0-11
+    const month = now.getMonth() + 1;
     const day = now.getDate();
-
-    // Декабрь (12), начиная с 15-го числа
-    const isDecember = (month === 12 && day >= 15);
-    // Январь (1), до 20-го числа включительно
-    const isJanuary = (month === 1 && day <= 20);
-
-    return isDecember || isJanuary;
+    return (month === 12 && day >= 15) || (month === 1 && day <= 20);
 }
 
 function createSnow() {
-    // Проверка периода: если не праздники, просто выходим
     if (!isNewYearPeriod()) return;
 
     const container = document.getElementById('snow-overlay');
     if (!container) return;
 
+    // Создаем canvas вместо множества span
     container.innerHTML = '';
-    const snowflakesCount = 45;
+    const canvas = document.createElement('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
     const symbols = ['❄', '❅', '❆', '•'];
+    const particles = [];
+    const particleCount = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 30 : 60; // Меньше частиц на iOS для оптимизации
 
-    for (let i = 0; i < snowflakesCount; i++) {
-        const span = document.createElement('span');
-        const rand = Math.random();
+    // Создание частиц
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height, // Стартуем выше экрана
+            symbol: symbols[Math.floor(Math.random() * symbols.length)],
+            size: Math.random() * 15 + 10, // Размер от 10 до 25px
+            speedY: Math.random() * 2 + 1, // Скорость падения 1-3 px/frame
+            amp: Math.random() * 30 + 10, // Амплитуда колебания 10-40px
+            freq: Math.random() * 0.02 + 0.01, // Частота колебания
+            phase: Math.random() * Math.PI * 2, // Случайная фаза
+            rotSpeed: Math.random() * 0.02 - 0.01, // Скорость вращения -0.01 to 0.01 rad/frame
+            angle: 0,
+            layer: Math.random(), // 0-1 для симуляции глубины (opacity и blur)
+        });
+    }
 
-        let layer = 'far';
-        if (rand > 0.8) layer = 'near';
-        else if (rand > 0.4) layer = 'mid';
+    // Функция анимации
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        span.className = `snowflake ${layer}`;
-        span.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+        particles.forEach(p => {
+            // Обновление позиции
+            p.y += p.speedY;
+            p.phase += p.freq;
+            p.x += Math.sin(p.phase) * (p.amp / 10); // Синусоидальное колебание
+            p.angle += p.rotSpeed;
 
-        // Длительность падения (чем ближе, тем быстрее)
-        const fallDuration = layer === 'near' ? Math.random() * 5 + 5 : Math.random() * 10 + 15;
-        // Скорость раскачивания (независимо от падения)
-        const swayDuration = Math.random() * 2 + 3;
-        // На сколько пикселей отклоняется в сторону (от 20 до 70)
-        const swayAmount = Math.random() * 50 + 20;
+            // Симуляция глубины: opacity и "blur" через размер/прозрачность
+            const opacity = 0.2 + (1 - p.layer) * 0.8; // Ближе - ярче
+            const blurSim = p.layer * 3; // Симулируем blur уменьшением размера или opacity
 
-        Object.assign(span.style, {
-            left: Math.random() * 100 + '%',
-            fontSize: (layer === 'near' ? 20 : 12) + Math.random() * 10 + 'px',
-            // Задаем время для каждой анимации через запятую (согласно CSS)
-            animationDuration: `${fallDuration}s, ${swayDuration}s`,
-            animationDelay: `${Math.random() * -20}s, ${Math.random() * -5}s`
+            // Если вышла за экран, респавн сверху
+            if (p.y > canvas.height + p.size) {
+                p.y = -p.size;
+                p.x = Math.random() * canvas.width;
+                p.phase = Math.random() * Math.PI * 2;
+            }
+
+            // Рисование
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.font = `${p.size * (1 - p.layer * 0.3)}px serif`; // Меньший размер для "дальних"
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.fillText(p.symbol, -p.size / 2, p.size / 2); // Центрируем
+            ctx.restore();
         });
 
-        // Передаем силу раскачивания в CSS
-        span.style.setProperty('--sway-amount', swayAmount + 'px');
-
-        container.appendChild(span);
+        requestAnimationFrame(animate);
     }
+
+    animate();
+
+    // Обработка ресайза
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
 }
+
 createSnow();
