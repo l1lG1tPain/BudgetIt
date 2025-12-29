@@ -4,4 +4,4 @@ export const monthNames = {
     "09": "Сентябрь", "10": "Октябрь", "11": "Ноябрь", "12": "Декабрь"
   };
 
-export const APP_VERSION = '3.0.1';
+export const APP_VERSION = '3.0.1b';
