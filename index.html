@@ -60,6 +60,41 @@
   <meta name="twitter:description" content="Бесплатная PWA для управления личными финансами. Установи и начни экономить уже сегодня.">
   <meta name="twitter:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
 
+  <style>
+    /* ── Budget name button in header ── */
+    #current-budget.budget-name-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      font: inherit;
+      font-size: 20px;
+      font-weight: 700;
+      color: inherit;
+      line-height: 1.2;
+      max-width: 100%;
+      text-align: left;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #current-budget-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .budget-name-chevron {
+      font-size: 0.75em;
+      opacity: 0.65;
+      flex-shrink: 0;
+      line-height: 1;
+      /* чуть ниже чтобы выровнять с текстом */
+      position: relative;
+      top: 1px;
+    }
+  </style>
 </head>
 <body>
   <!-- Backdrop for bottom-sheets -->
@@ -181,7 +216,10 @@
   <!-- Хедер -->
   <header>
       <div id="snow-overlay" class="snow-overlay"></div>
-    <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
+    <button id="current-budget" class="budget-name-btn" type="button" title="Нажмите для смены бюджета">
+      <span id="current-budget-name">BudgetIt</span>
+      <span class="budget-name-chevron">▾</span>
+    </button>
     <div class="header-button">
         <button id="search-open-btn" class="search-open-btn" type="button" aria-label="Поиск">🔍</button>
         <button id="month-picker-btn" class="month-picker-btn" type="button">

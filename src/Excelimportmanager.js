@@ -334,8 +334,8 @@ export class ExcelImportManager {
     _parsePDFText(text, tokens) {
         const formatters = [
             () => this._parseOzonBankPDF(text),
-            () => this._parseSberPDF(text, tokens),
-            () => this._parseTBankPDF(text, tokens),
+            () => this._parseSberPDF(text),
+            () => this._parseTBankPDF(text),
             () => this._parseGenericBankPDF(text),
         ];
 
@@ -348,30 +348,41 @@ export class ExcelImportManager {
     }
 
     _parseOzonBankPDF(text) {
-        if (!/ОЗОН\s*Банк|Ozon\s*Bank|Справка о движении|движении денежных средств/i.test(text)) return [];
+        if (!/ОЗОН\s*Банк|Ozon\s*Bank|Справка о движении средств.*Ozon|ООО.*ОЗОН|движении денежных средств/i.test(text)) return [];
 
         const result = [];
         const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-        const AMT_RE = /^([+\-])\s*([\d][\d\s]*[.,]\d{2})\s*₽?$/;
-        const DATE_RE = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+        const AMT_RE  = /^([+\-])\s*([\d][\d\s]*[.,]\d{2})\s*₽?$/;
+        const DATE_RE = /^(\d{2})\.(\d{2})\.(\d{4})(?:\s+\d{2}:\d{2}:\d{2})?$/;
+        const SKIP_   = /^(Дата операции|Документ|Назначение платежа|Сумма операции|Российские рубли|Валюта|Входящий остаток|Исходящий остаток|Итого зачислений|Итого списаний|Владелец:|Номер лицевого|Дата и время|Период выписки|Лицензия|ИНН\/КПП|ООО.*ОЗОН|Пресненская|вн\.тер|Руководитель|департамента|С уважением|Н\.Н\.|РОССИЙСКИЙ РУБЛЬ)/i;
 
         let currentDate = null;
         let currentDesc = [];
+        let lastAmtLine = null; // для дедупликации двух одинаковых сумм
 
         for (const line of lines) {
+            if (SKIP_.test(line)) continue;
+
             const dm = DATE_RE.exec(line);
             if (dm) {
                 currentDate = `${dm[3]}-${dm[2]}-${dm[1]}`;
                 currentDesc = [];
+                lastAmtLine = null;
                 continue;
             }
 
-            if (/^\d{2}:\d{2}:\d{2}$/.test(line) || /^\d{7,}$/.test(line)) continue;
+            // Пропускаем время отдельной строкой, номера документов
+            if (/^\d{2}:\d{2}:\d{2}$/.test(line)) continue;
+            if (/^\d{7,}$/.test(line)) continue; // номер документа
 
             const am = AMT_RE.exec(line);
             if (am && currentDate) {
-                const sign = am[1];
+                // Пропускаем дубль суммы (вторая колонка «Валюта» = та же сумма)
+                if (line === lastAmtLine) { lastAmtLine = null; continue; }
+                lastAmtLine = line;
+
+                const sign   = am[1];
                 const amount = parseFloat(am[2].replace(/\s/g, '').replace(',', '.'));
                 if (isNaN(amount) || amount === 0) continue;
 
@@ -380,7 +391,14 @@ export class ExcelImportManager {
                     .filter(l => !AMT_RE.test(l))
                     .join(' ')
                     .replace(/\s{2,}/g, ' ')
-                    .replace(/\.\s*Без\s*НДС\.?/i, '')
+                    // убираем технический мусор
+                    .replace(/\.\s*Без\s*НДС\.?/gi, '')
+                    .replace(/Без\s*НДС\.?/gi, '')
+                    .replace(/\b[A-Z0-9]{10,}\b/g, '') // длинные технические коды
+                    .replace(/через\s*СБП\./gi, 'через СБП')
+                    .replace(/Получатель:\s*/gi, '')
+                    .replace(/заказ\s*№\s*[\d-]+/gi, '')
+                    .replace(/\s{2,}/g, ' ')
                     .trim();
 
                 const category = isIncome
@@ -428,231 +446,161 @@ export class ExcelImportManager {
         return this._mapIncomeCategory(desc);
     }
 
-    _parseSberPDF(text, tokens) {
+    _parseSberPDF(text) {
         if (!/Сбербанк|СберБанк|sberbank|Выписка по платёжному счёту/i.test(text)) return [];
-        if (!tokens || !tokens.length) return [];
 
-        const result = [];
-
-        const Y_TOL = 5;
-        const groups = [];
-
-        for (const tok of tokens) {
-            if (!tok.str?.trim()) continue;
-
-            const group = groups.find(g => Math.abs(g.y - tok.y) <= Y_TOL);
-            if (group) group.tokens.push(tok);
-            else groups.push({ y: tok.y, tokens: [tok] });
-        }
-
-        groups.sort((a, b) => a.y - b.y);
-
-        const X_DATE_MAX = 150;
-        const X_DESC_MIN = 150;
-        const X_AMT_MIN = 380;
-        const X_AMT_MAX = 490;
-
-        const AMT_RE = /^(\+)?([\d][\d\s]*,\d{2})$/;
         const DATE4 = /^(\d{2})\.(\d{2})\.(\d{4})$/;
-        const AUTH_RE = /^\d{6,7}$/;
-        const TIME_RE = /^\d{2}:\d{2}$/;
+        const TIME_ = /^\d{2}:\d{2}$/;
+        const AUTH_ = /^\d{6,7}$/;
+        const AMT_  = /^([+\-])?(\d[\d\s]*,\d{2})$/;
+        const MASK_ = /^\*{4}\d{4}$/;
+        const SKIP_ = /^(Продолжение|Страница|Выписка|Заказано|ДАТА|КАТЕГОРИЯ|СУММА|ОСТАТОК|Описание|Расшифровка|ПАО|ул\.|Действителен|Для проверки|Зайдите|Нажмите|Получите|Предоставляя|Скачать|Проверить|Денежные|В выписке|Срок|По курсу|Согласно|900|www\.|Итого|Дата форм|Сертификат|Владелец|За период|Номер счёт|Номер счет|Валюта|Дата откр|Дата закр|ИТОГО|Остаток|Пополнение|Списание|и код|Сумма в|операции|В валюте|Дата обработ|Российский|40817|Генеральная|Денежные средства|отображаются|Срок обработки|Дата подп|Дата списан)/i;
 
-        const SKIP_TEXT = /^(Продолжение|Страница|Выписка|Заказано|ДАТА|КАТЕГОРИЯ|СУММА|ОСТАТОК|Описание|Расшифровка|ПАО |ул\.|Действителен|Для проверки|Зайдите|Нажмите|Получите|Предоставляя|Скачать|Проверить|Денежные|В выписке|Срок|По курсу|Согласно|900|www\.|Итого|Дата форм|Сертификат|Владелец|Действит)/i;
-
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
         const ops = [];
-        let current = null;
+        let state = 'seek';
+        let cur = null;
 
-        const flush = () => {
-            if (current) {
-                ops.push(current);
-                current = null;
-            }
-        };
+        function toISO(s) { const m = DATE4.exec(s); return `${m[3]}-${m[2]}-${m[1]}`; }
 
-        for (const group of groups) {
-            const toks = group.tokens.sort((a, b) => a.x - b.x);
-            const lineText = toks.map(t => t.str).join(' ').trim();
+        for (const line of lines) {
+            if (SKIP_.test(line) || MASK_.test(line)) continue;
 
-            if (!lineText || SKIP_TEXT.test(lineText)) continue;
+            const isDate = DATE4.test(line);
+            const isTime = TIME_.test(line);
+            const isAuth = AUTH_.test(line);
+            const amtM  = AMT_.exec(line);
 
-            const amtTok = toks.find(t =>
-                t.x >= X_AMT_MIN &&
-                t.x <= X_AMT_MAX &&
-                AMT_RE.test(t.str.trim())
-            );
-
-            const dateTok = toks.find(t =>
-                t.x < X_DATE_MAX &&
-                DATE4.test(t.str.trim())
-            );
-
-            const authTok = toks.find(t => AUTH_RE.test(t.str.trim()));
-
-            if (amtTok && authTok && dateTok) {
-                flush();
-
-                const dm = DATE4.exec(dateTok.str.trim());
-                const date = `${dm[3]}-${dm[2]}-${dm[1]}`;
-
-                const am = AMT_RE.exec(amtTok.str.trim());
-                const amount = parseFloat(am[2].replace(/\s/g, '').replace(',', '.'));
-
-                if (isNaN(amount) || amount === 0) {
-                    current = null;
-                    continue;
-                }
-
-                const catToks = toks.filter(t =>
-                    t.x >= X_DESC_MIN &&
-                    t.x < X_AMT_MIN &&
-                    !AUTH_RE.test(t.str.trim()) &&
-                    !TIME_RE.test(t.str.trim())
-                );
-
-                const categoryRaw = catToks.map(t => t.str).join(' ').trim();
-
-                current = {
-                    date,
-                    isIncome: !!am[1],
-                    amount,
-                    categoryRaw,
-                    desc: ''
-                };
-
+            if (state === 'seek') {
+                if (isDate) { cur = { date: toISO(line), catRaw: '', desc: '', amtLine: null }; state = 'got_date'; }
                 continue;
             }
-
-            if (current && !amtTok && !authTok) {
-                const descToks = toks.filter(t => t.x >= X_DESC_MIN);
-                const piece = descToks
-                    .map(t => t.str)
-                    .join(' ')
-                    .replace(/\.\s*Операция по (карте|счету) \*+\d+/gi, '')
-                    .trim();
-
-                if (piece && !SKIP_TEXT.test(piece)) {
-                    current.desc = (current.desc ? current.desc + ' ' : '') + piece;
-                }
+            if (state === 'got_date') {
+                if (isDate || isTime) continue; // skip processing date / time
+                if (isAuth) { state = 'got_auth'; continue; }
+                state = 'seek'; cur = null; continue;
+            }
+            if (state === 'got_auth') {
+                if (!amtM && !isDate && !isAuth && !isTime) { cur.catRaw = line; state = 'got_cat'; }
+                continue;
+            }
+            if (state === 'got_cat') {
+                if (amtM) { cur.amtLine = line; state = 'got_amt'; }
+                else if (!isDate && !isAuth && !isTime) cur.desc = (cur.desc ? cur.desc + ' ' : '') + line;
+                continue;
+            }
+            if (state === 'got_amt') {
+                if (amtM) continue; // balance line — skip
+                if (cur.amtLine) ops.push(cur);
+                cur = null; state = 'seek';
+                if (isDate) { cur = { date: toISO(line), catRaw: '', desc: '', amtLine: null }; state = 'got_date'; }
+                continue;
             }
         }
+        if (cur?.amtLine) ops.push(cur);
 
-        flush();
-
+        const result = [];
         for (const op of ops) {
-            const category = op.isIncome
-                ? this._mapSberIncomeCategory(op.categoryRaw, op.desc)
-                : this._mapSberExpenseCategory(op.categoryRaw, op.desc);
+            const amtM   = AMT_.exec(op.amtLine);
+            const isIncome = amtM[1] === '+';
+            const amount   = parseFloat(amtM[2].replace(/\s/g, '').replace(',', '.'));
+            if (isNaN(amount) || amount === 0) continue;
 
-            result.push({
-                date: op.date,
-                type: op.isIncome ? 'income' : 'expense',
-                amount: op.amount,
-                category,
-                description: op.desc
-            });
+            const desc = op.desc.replace(/\.\s*Операция по (карте|счету) \*+\d+/gi, '').trim();
+            const category = isIncome
+                ? this._mapSberIncomeCategory(op.catRaw, desc)
+                : this._mapSberExpenseCategory(op.catRaw, desc);
+
+            result.push({ date: op.date, type: isIncome ? 'income' : 'expense', amount, category, description: desc });
         }
-
         return result;
     }
 
-    _parseTBankPDF(text, tokens) {
-        if (!/Выписка по договору|T-Банк|Т-Банк|тинькофф|tinkoff/i.test(text)) return [];
-        if (!tokens || !tokens.length) return [];
+    _parseTBankPDF(text) {
+        if (!/T-Банк|Т-Банк|ТБАНК|тинькофф|tinkoff|АО.*ТБАНК|АКЦИОНЕРНОЕ ОБЩЕСТВО.*ТБАНК|TBANK\.RU/i.test(text)) return [];
 
-        const Y_TOL = 3;
-        const groups = [];
-        for (const tok of tokens) {
-            if (!tok.str.trim()) continue;
-            const g = groups.find(g => Math.abs(g.y - tok.y) <= Y_TOL);
-            if (g) g.tokens.push(tok);
-            else groups.push({ y: tok.y, tokens: [tok] });
-        }
-        groups.sort((a, b) => a.y - b.y);
+        // Т-Банк «Справка о движении средств» — layout формат:
+        // каждая строка операции: DATE(col0)  DATE2(col20)  AMT(col40)  AMT2(col66)  DESC(col88)  CARD(col128)
+        // continuation lines имеют пустые col0..87 и текст в col88+
 
-        const X_OP_MAX = 100;
-        const X_DESC_MIN = 200;
-        const X_AMT_MIN = 380;
-        const X_AMT_MAX = 480;
+        const DATE4   = /^(\d{2})\.(\d{2})\.(\d{4})/;
+        const AMT_TB  = /([+\-]?\s*[\d][\d ]*\.\d{2})\s*₽/g;
+        const SKIP_   = /^(Дата и время|^операции$|^Дата$|^списания$|Сумма в валюте|Сумма операции|в валюте карты|^Описание$|^Номер$|^карты$|АКЦИОНЕРНОЕ|РОССИЯ|^ТЕЛ\.|Справка о движении|^Исх\.|Цветикова|Адрес места|О продукте|Дата заключ|Номер дог|Номер лицев|Движение средств за|АО.*ТБанк|БИК \d|ИНН \d|КПП \d|Руководит|Управлен|Бэк-офис|С уважен|Пополнения:|Расходы:|^\d+$)/i;
 
-        const DATE2 = /^(\d{2})\.(\d{2})\.(\d{2})(?:\s+\d{2}:\d{2})?$/;
-        const AMT_RE = /^([+\-])?\s*([\d][\d\s]*\.\d{2})\s*₽\s*$/;
-        const SKIP = /^(Расходы:|Поступления|Баланс|Кэшбэк|Операции по карте|Дата и время|Дата обработки|Сумма|Описание в валюте|ЦВЕТИКОВА|Выписка по договору|—|•)/i;
+        const DESC_COL  = 88;  // char position where description column starts
+        const lines = text.split('\n');
+        const ops   = [];
 
-        const ops = [];
-        let cur = null;
-        const flush = () => { if (cur && cur.amount != null) ops.push(cur); cur = null; };
+        for (let i = 0; i < lines.length; i++) {
+            const raw = lines[i];
+            const trimmed = raw.trim();
+            if (!trimmed || SKIP_.test(trimmed)) continue;
 
-        for (const grp of groups) {
-            const toks = grp.tokens.sort((a, b) => a.x - b.x);
-            const lineText = toks.map(t => t.str).join(' ').trim();
-            if (SKIP.test(lineText)) continue;
+            const dateM = DATE4.exec(raw);
+            if (!dateM || dateM.index > 2) continue; // date must be at col 0
 
-            const amtTok = toks.find(t => t.x >= X_AMT_MIN && t.x <= X_AMT_MAX && AMT_RE.test(t.str.trim()));
-            const dateTok = toks.find(t => t.x < X_OP_MAX && DATE2.test(t.str.trim()));
-            const descToks = toks.filter(t => t.x >= X_DESC_MIN && t.x < X_AMT_MIN);
-            const descRaw = tbClean(descToks.map(t => t.str).join(' '));
-
-            if (dateTok && amtTok) {
-                flush();
-                const m = AMT_RE.exec(amtTok.str.trim());
-                const amount = parseFloat(m[2].replace(/\s/g, ''));
-                if (isNaN(amount) || amount === 0) continue;
-                cur = { date: tbDate(dateTok.str), amount, isIncome: (m[1] || '') === '+', desc: descRaw };
-                continue;
+            // Find amount(s) in the line
+            const amtRe = /([+\-]?\s*[\d][\d ]*\.\d{2})\s*₽/g;
+            let firstAmt = null, amtMatch;
+            while ((amtMatch = amtRe.exec(raw)) !== null) {
+                if (!firstAmt) firstAmt = amtMatch[1].replace(/\s/g, '');
             }
+            if (!firstAmt) continue;
 
-            if (dateTok && !amtTok) {
-                flush();
-                cur = { date: tbDate(dateTok.str), amount: null, isIncome: false, desc: descRaw };
-                continue;
-            }
+            const date     = `${dateM[3]}-${dateM[2]}-${dateM[1]}`;
+            const amount   = parseFloat(firstAmt);
+            const isIncome = firstAmt.startsWith('+');
 
-            if (amtTok && !dateTok && cur && cur.amount == null) {
-                const m = AMT_RE.exec(amtTok.str.trim());
-                const amount = parseFloat(m[2].replace(/\s/g, ''));
-                if (!isNaN(amount) && amount !== 0) {
-                    cur.amount = amount;
-                    cur.isIncome = (m[1] || '') === '+';
-                    if (descRaw) cur.desc += (cur.desc ? ' ' : '') + descRaw;
+            // Description: characters starting at DESC_COL on this line
+            const descParts = [];
+            const descHere = raw.length > DESC_COL ? raw.slice(DESC_COL).replace(/\s*\d{4}\s*$/, '').replace(/^—\s*/, '').trim() : '';
+            if (descHere) descParts.push(descHere);
+
+            // Continuation lines (next lines with blank left part)
+            let j = i + 1;
+            while (j < lines.length) {
+                const nl = lines[j];
+                const nt = nl.trim();
+                if (!nt) { j++; break; }
+                if (DATE4.test(nl.slice(0, 12))) break;
+                if (SKIP_.test(nt)) { j++; continue; }
+                if (/([+\-]?\s*[\d][\d ]*\.\d{2})\s*₽/.test(nl.slice(0, DESC_COL))) break;
+                if (nl.length > DESC_COL) {
+                    const cont = nl.slice(DESC_COL).replace(/\s*\d{4}\s*$/, '').replace(/^—\s*/, '').trim();
+                    if (cont && cont !== '—') descParts.push(cont);
                 }
-                continue;
+                j++;
             }
+            i = j - 1;
 
-            if (cur && !amtTok && !dateTok) {
-                const piece = tbClean(toks.filter(t => t.x < X_AMT_MIN).map(t => t.str).join(' '));
-                if (/\+7\d{10}/.test(piece)) cur._hasPhone = true;
-                if (piece && !SKIP.test(piece)) cur.desc += (cur.desc ? ' ' : '') + piece;
-            }
+            const desc = descParts.join(' ')
+                .replace(/^Оплата в\s+/i, '')
+                .replace(/SANT?KT?-?\s*PETERBU\s+RUS/gi, '')
+                .replace(/SANKTPETERBU\s+RUS/gi, '')
+                .replace(/\s*PETERBU\s+RUS\s*/gi, '')
+                .replace(/AVOSEND\s+RUS/gi, 'AVOSEND')
+                .replace(/\+7\d{10}/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+
+            ops.push({ date, isIncome, amount: Math.abs(amount), desc });
         }
-        flush();
 
         const result = [];
         for (const op of ops) {
-            if (!op.date || op.amount == null) continue;
-            const isIncome = op.isIncome && !op._hasPhone && !/Внешний перевод по номеру телефона/i.test(op.desc);
+            if (!op.date || !op.amount) continue;
+            // "Внешний перевод по номеру телефона" — всегда расход
+            const forceExpense = /Внешний перевод по номеру телефона/i.test(op.desc);
+            const isIncome = op.isIncome && !forceExpense;
             const category = isIncome
                 ? this._mapTBankIncomeCategory(op.desc)
-                : this._mapExpenseCategory(op.desc);
+                : this._mapTBankExpenseCategory(op.desc);
             result.push({ date: op.date, type: isIncome ? 'income' : 'expense', amount: op.amount, category, description: op.desc });
         }
         return result;
-
-        function tbDate(str) {
-            const m = /^(\d{2})\.(\d{2})\.(\d{2})/.exec(str.trim());
-            return m ? `20${m[3]}-${m[2]}-${m[1]}` : null;
-        }
-        function tbClean(str) {
-            return str
-                .replace(/^Оплата в\s+/i, '')
-                .replace(/\s+(SANKT-PETERBU|PETERBU|MOSKVA|MOSCOW)\s+RUS\s*$/i, '')
-                .replace(/\s+SANKT-\s*$/i, '')
-                .replace(/\bPETERBU\s*RUS\s*$/i, '')
-                .replace(/\bPETERBU\s*$/i, '')
-                .replace(/\bRUS\s*$/i, '')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
-        }
     }
+
+
 
     _parseGenericBankPDF(text) {
         const result = [];
@@ -687,30 +635,53 @@ export class ExcelImportManager {
 
     _mapSberExpenseCategory(sberCat, desc) {
         const c = (sberCat || '').toLowerCase();
+        const d = (desc  || '').toLowerCase();
 
         const catMap = {
-            'рестораны и кафе': '🍽️ Кафе и рестораны',
-            'супермаркеты': '🥦 Продукты',
-            'транспорт': '🚇 Транспорт',
-            'одежда и аксессуары': '👗 Одежда',
-            'развлечения': '🎮 Развлечения',
-            'красота и здоровье': '💄 Красота',
-            'аптеки': '💊 Аптека и здоровье',
-            'медицина': '🏥 Медицина',
-            'связь': '📱 Мобильная связь',
-            'топливо': '⛽ Топливо',
-            'жкх': '🏠 Коммунальные услуги',
-            'такси': '🚕 Такси',
-            'образование': '📚 Образование',
-            'страхование': '🛡️ Страхование',
-            'путешествия': '✈️ Путешествия',
-            'перевод с карты': '🔄 Перевод',
+            'рестораны и кафе':     '🍽️ Кафе и рестораны',
+            'супермаркеты':          '🥦 Продукты',
+            'транспорт':             '🚇 Транспорт',
+            'одежда и аксессуары':  '👗 Одежда',
+            'развлечения':           '🎮 Развлечения',
+            'здоровье и красота':   '💄 Красота и здоровье',
+            'красота и здоровье':   '💄 Красота и здоровье',
+            'аптека':                '💊 Аптека и здоровье',
+            'аптеки':                '💊 Аптека и здоровье',
+            'медицина':              '🏥 Медицина',
+            'связь':                 '📱 Мобильная связь',
+            'топливо':               '⛽ Топливо',
+            'жкх':                   '🏠 Коммунальные услуги',
+            'такси':                 '🚕 Такси',
+            'образование':           '📚 Образование',
+            'страхование':           '🛡️ Страхование',
+            'путешествия':           '✈️ Путешествия',
+            'перевод с карты':       '🔄 Перевод',
+            'перевод на карту':      '🔄 Перевод',
+            'перевод сбп':           '🔄 Перевод СБП',
             'оплата по qr–коду сбп': '💳 Оплата QR',
-            'прочие операции': '🗿 Прочее',
+            'оплата по qr-коду сбп': '💳 Оплата QR',
         };
 
+        // Матчим по catRaw
         for (const [key, val] of Object.entries(catMap)) {
             if (c.includes(key)) return val;
+        }
+
+        // Матчим по catRaw — если не нашли, ищем название категории Сбера в desc
+        for (const [key, val] of Object.entries(catMap)) {
+            if (d.includes(key)) return val;
+        }
+
+        // «Прочие операции» / «Прочие расходы» — смотрим в desc
+        if (c.includes('прочие')) {
+            if (/karta.vklad|карта.*вклад/i.test(d))   return '🏦 Перевод на вклад';
+            if (/vklad.karta|вклад.*карта/i.test(d))   return '🏦 Перевод с вклада';
+            if (/sberbank.*onl|сбербанк.*онлайн/i.test(d)) return '🏦 Внутренний перевод Сбер';
+            if (/wildberries|sbscr/i.test(d))           return '📦 Wildberries';
+            if (/заработная плата/i.test(d))            return '💰 Зарплата';
+            if (/перевод/i.test(d))                     return '🔄 Перевод';
+            if (/оплата/i.test(d))                      return this._mapExpenseCategory(desc);
+            return '🗿 Прочее';
         }
 
         return this._mapExpenseCategory(desc);
@@ -718,28 +689,43 @@ export class ExcelImportManager {
 
     _mapSberIncomeCategory(sberCat, desc) {
         const c = (sberCat || '').toLowerCase();
-        const d = (desc || '').toLowerCase();
+        const d = (desc  || '').toLowerCase();
 
-        if (c.includes('перевод сбп') || d.includes('перевод от')) return '🔄 Входящий перевод СБП';
-        if (d.includes('заработная плата') || d.includes('зарплата')) return '💰 Зарплата';
-        if (c.includes('прочие') && d.includes('зарплат')) return '💰 Зарплата';
-        if (d.includes('кэшбэк') || d.includes('cashback')) return '💳 Кэшбэк';
-        if (c.includes('прочие')) return '🔮 Загадочное поступление';
+        if (d.includes('заработная плата') || d.includes('зарплата'))  return '💰 Зарплата';
+        if (c.includes('прочие') && d.includes('зарплат'))              return '💰 Зарплата';
+        if (c.includes('перевод сбп') || d.includes('перевод от'))      return '🔄 Входящий перевод СБП';
+        if (c.includes('перевод на карту'))                              return '🔄 Входящий перевод';
+        if (d.includes('кэшбэк') || d.includes('cashback'))             return '💳 Кэшбэк';
+
+        // «Прочие операции» — смотрим в desc
+        if (c.includes('прочие')) {
+            if (/vklad.karta|вклад.*карта/i.test(d))               return '🏦 Перевод с вклада';
+            if (/karta.vklad|карта.*вклад/i.test(d))               return '🏦 Перевод на вклад';
+            if (/sberbank.*onl|сбербанк.*онлайн/i.test(d))         return '🏦 Внутренний перевод Сбер';
+            if (/заработная плата|зарплат/i.test(d))               return '💰 Зарплата';
+            return '🔮 Загадочное поступление';
+        }
 
         return this._mapIncomeCategory(desc);
     }
 
-    _mapTBankIncomeCategory(desc) {
+    _mapTBankExpenseCategory(desc) {
         const d = (desc || '').toLowerCase();
-
         if (/кэшбэк/i.test(d)) return '💳 Кэшбэк';
-        if (/пополнение.*сбербанк|сбер/i.test(d)) return '🔄 Входящий перевод';
-        if (/пополнение.*быстрых платеж|пополнение.*сбп/i.test(d)) return '🔄 Входящий перевод СБП';
-        if (/пополнение.*avosend|avosend/i.test(d)) return '💰 Зарплата';
-        if (/пополнение/i.test(d)) return '🔄 Пополнение счёта';
-
-        return this._mapIncomeCategory(desc);
+        if (/magnit|магнит/i.test(d)) return '🥦 Продукты';
+        if (/pyaterochka|пятёрочка|пятерочка/i.test(d)) return '🥦 Продукты';
+        if (/fixprice|fix.price/i.test(d)) return '🏷️ Fix Price';
+        if (/bulochnaya|булочная/i.test(d)) return '🍽️ Кафе и рестораны';
+        if (/apteka|аптека/i.test(d)) return '💊 Аптека и здоровье';
+        if (/taxi|такси|yandex.*taxi|yandex.*go/i.test(d)) return '🚕 Такси';
+        if (/kafe|cafe|ресторан|restaurant/i.test(d)) return '🍽️ Кафе и рестораны';
+        if (/uts1|столовая/i.test(d)) return '🍽️ Кафе и рестораны';
+        if (/market b|market/i.test(d)) return '🥦 Продукты';
+        if (/внешний перевод|перевод/i.test(d)) return '🔄 P2P переводы';
+        if (/gk yuvenko/i.test(d)) return '🍽️ Кафе и рестораны';
+        return this._mapExpenseCategory(desc);
     }
+
 
     _parseDateDMY(raw) {
         if (!raw) return null;

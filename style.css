@@ -283,14 +283,14 @@ header {
 }
 
 
-header h1 {
+header h1, #current-budget {
     font-size: 1.3rem;
     cursor: pointer;
     max-width: 60%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--primary-color);
+    color: var(--primary-color)!important;
 }
 
 

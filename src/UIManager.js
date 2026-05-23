@@ -133,6 +133,7 @@ export class UIManager {
 
     updateHeader() {
         const headerEl = document.getElementById('current-budget');
+        const nameEl   = document.getElementById('current-budget-name') || headerEl;
         let budgetName = this.budgetManager.getCurrentBudget()?.name || 'BudgetIt';
 
         // Проверка на новогодний период (с 15 декабря по 20 января)
@@ -145,7 +146,7 @@ export class UIManager {
             budgetName = `🎄 ${budgetName}`;
         }
 
-        headerEl.textContent = budgetName;
+        nameEl.textContent = budgetName;
         this.adjustHeaderTitleFont();
     }
 
@@ -1059,7 +1060,7 @@ export class UIManager {
                 document.getElementById('transaction-list').innerHTML = '';
                 document.querySelectorAll('.summary-block .block-value')
                     .forEach(el => el.textContent = '0');
-                document.getElementById('current-budget').textContent = 'BudgetIt';
+                (document.getElementById('current-budget-name') || document.getElementById('current-budget')).textContent = 'BudgetIt';
                 window.location.href = 'onboarding.html';
             } else {
                 this.updateHeader();
@@ -2679,7 +2680,8 @@ export class UIManager {
     }
 
     adjustHeaderTitleFont() {
-        const titleEl = document.getElementById('current-budget');
+        const titleEl = document.getElementById('current-budget-name')
+                     || document.getElementById('current-budget');
         if (!titleEl) return;
         const header = titleEl.closest('header');
         if (!header) return;
