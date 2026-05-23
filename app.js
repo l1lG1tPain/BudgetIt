@@ -1,4 +1,4 @@
-// app.js — полностью исправленный под StorageManager и миграцию
+// app.js — полностью исправленный под StorageManager, миграцию и planner
 // ====================================================================
 import { BudgetManager } from './src/BudgetManager.js';
 import { UIManager } from './src/UIManager.js';
@@ -6,10 +6,13 @@ import { StorageManager } from './src/StorageManager.js';
 import { initThemeSelector } from './src/ThemeManager.js';
 import { initSettings } from './src/settings.js';
 import { showLoader } from './src/utils/loader.js';
-// import { initAnalyticsPage } from './src/analytics/ui/analyticsPage.js';
+import { SearchManager } from './src/Searchmanager.js';
+import { PlannerManager } from './src/planner/PlannerManager.js';
+import { PlannerPage } from './src/planner/PlannerPage.js';
+import { PlannerSheet } from './src/planner/PlannerSheet.js';
 
 // ===============================================================
-// 🔥 1. Создаём StorageManager (если есть IndexedDB)
+// 1. Создаём StorageManager (если есть IndexedDB)
 // ===============================================================
 let storageManager = null;
 
@@ -23,7 +26,7 @@ try {
 }
 
 // ===============================================================
-// 🔥 2. Onboarding checker (оставляем как есть)
+// 2. Onboarding checker
 // ===============================================================
 function needOnboarding() {
     try {
@@ -45,13 +48,12 @@ if (needOnboarding() && !isOnboardingPage) {
 }
 
 // ===============================================================
-// 🔥 3. Основная инициализация (DOM Loaded)
+// 3. Основная инициализация
 // ===============================================================
 document.addEventListener('DOMContentLoaded', async () => {
     showLoader();
     initThemeSelector();
 
-    // 3.1. Загружаем state через StorageManager (с миграцией)
     let initialState = null;
 
     if (storageManager) {
@@ -63,26 +65,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3.2. Создаём BudgetManager с StorageManager как сингл-стораджем
     const budgetManager = new BudgetManager(storageManager);
 
-    // Если migration дала состояние — подкидываем его менеджеру
     if (initialState) {
-        budgetManager.budgets            = initialState.budgets;
-        budgetManager.currentBudgetIndex = initialState.currentBudgetIndex;
-        budgetManager.productNames       = initialState.productNames;
+        budgetManager.budgets = Array.isArray(initialState.budgets) ? initialState.budgets : [];
+        budgetManager.currentBudgetIndex = Number.isInteger(initialState.currentBudgetIndex)
+            ? initialState.currentBudgetIndex
+            : 0;
+        budgetManager.productNames = Array.isArray(initialState.productNames)
+            ? initialState.productNames
+            : [];
+        budgetManager.planners = Array.isArray(initialState.planners)
+            ? initialState.planners
+            : [];
     }
 
-    // 3.3. UIManager
     const uiManager = new UIManager(budgetManager);
     uiManager.initialize();
 
-    // 3.4. Settings page
+    window._budgetAppRef = { budgetManager, uiManager };
+
+    const plannerManager = new PlannerManager(budgetManager);
+
+    const plannerPage = new PlannerPage({
+        budgetManager,
+        plannerManager,
+        plannerSheet: null,
+        uiManager
+    });
+
+    const plannerSheet = new PlannerSheet({
+        plannerManager,
+        plannerPage
+    });
+
+    plannerPage.plannerSheet = plannerSheet;
+
+    plannerSheet.init();
+    plannerPage.init();
+
+    window._budgetPlannerRef = { plannerManager, plannerPage, plannerSheet };
+
     initSettings(budgetManager, uiManager);
+
+    const searchManager = new SearchManager(budgetManager, uiManager);
+    searchManager.init();
 });
 
 // ===============================================================
-// 🔥 4. Service Worker (как было)
+// 4. Service Worker
 // ===============================================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', event => {
@@ -116,67 +147,63 @@ function createSnow() {
     const container = document.getElementById('snow-overlay');
     if (!container) return;
 
-    // Создаем canvas вместо множества span
     container.innerHTML = '';
+
     const canvas = document.createElement('canvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvas.style.position = 'absolute';
     canvas.style.top = '0';
     canvas.style.left = '0';
+
     container.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
     const symbols = ['❄', '❅', '❆', '•'];
     const particles = [];
-    const particleCount = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 30 : 60; // Меньше частиц на iOS для оптимизации
+    const particleCount = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 30 : 60;
 
-    // Создание частиц
     for (let i = 0; i < particleCount; i++) {
         particles.push({
             x: Math.random() * canvas.width,
-            y: Math.random() * -canvas.height, // Стартуем выше экрана
+            y: Math.random() * -canvas.height,
             symbol: symbols[Math.floor(Math.random() * symbols.length)],
-            size: Math.random() * 15 + 10, // Размер от 10 до 25px
-            speedY: Math.random() * 2 + 1, // Скорость падения 1-3 px/frame
-            amp: Math.random() * 30 + 10, // Амплитуда колебания 10-40px
-            freq: Math.random() * 0.02 + 0.01, // Частота колебания
-            phase: Math.random() * Math.PI * 2, // Случайная фаза
-            rotSpeed: Math.random() * 0.02 - 0.01, // Скорость вращения -0.01 to 0.01 rad/frame
+            size: Math.random() * 15 + 10,
+            speedY: Math.random() * 2 + 1,
+            amp: Math.random() * 30 + 10,
+            freq: Math.random() * 0.02 + 0.01,
+            phase: Math.random() * Math.PI * 2,
+            rotSpeed: Math.random() * 0.02 - 0.01,
             angle: 0,
-            layer: Math.random(), // 0-1 для симуляции глубины (opacity и blur)
+            layer: Math.random(),
         });
     }
 
-    // Функция анимации
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         particles.forEach(p => {
-            // Обновление позиции
             p.y += p.speedY;
             p.phase += p.freq;
-            p.x += Math.sin(p.phase) * (p.amp / 10); // Синусоидальное колебание
+            p.x += Math.sin(p.phase) * (p.amp / 10);
             p.angle += p.rotSpeed;
 
-            // Симуляция глубины: opacity и "blur" через размер/прозрачность
-            const opacity = 0.2 + (1 - p.layer) * 0.8; // Ближе - ярче
-            const blurSim = p.layer * 3; // Симулируем blur уменьшением размера или opacity
+            const opacity = 0.2 + (1 - p.layer) * 0.8;
 
-            // Если вышла за экран, респавн сверху
             if (p.y > canvas.height + p.size) {
                 p.y = -p.size;
                 p.x = Math.random() * canvas.width;
                 p.phase = Math.random() * Math.PI * 2;
             }
 
-            // Рисование
             ctx.save();
             ctx.translate(p.x, p.y);
             ctx.rotate(p.angle);
-            ctx.font = `${p.size * (1 - p.layer * 0.3)}px serif`; // Меньший размер для "дальних"
+            ctx.font = `${p.size * (1 - p.layer * 0.3)}px serif`;
             ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.fillText(p.symbol, -p.size / 2, p.size / 2); // Центрируем
+            ctx.fillText(p.symbol, -p.size / 2, p.size / 2);
             ctx.restore();
         });
 
@@ -185,7 +212,6 @@ function createSnow() {
 
     animate();
 
-    // Обработка ресайза
     window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;

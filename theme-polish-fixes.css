@@ -1,0 +1,444 @@
+/* ============================================================
+   BudgetIt readable fixes
+   Минимальные фиксы читаемости без смены визуального стиля.
+   ============================================================ */
+
+/* 1. Общие недостающие переменные */
+:root {
+    --text: var(--secondary-color);
+    --text-muted: color-mix(in srgb, var(--secondary-color) 58%, transparent);
+    --border-color: color-mix(in srgb, var(--secondary-color) 14%, transparent);
+    --input-bg: var(--tertiary-color);
+    --card-bg: var(--tertiary-color);
+}
+
+/* 2. Светлые темы: нормальные muted/бордеры */
+:root:not([data-theme]),
+:root[data-theme="light"],
+:root[data-theme="dolphin"],
+:root[data-theme="sage"],
+:root[data-theme="yogurt"] {
+    --text: var(--secondary-color);
+    --text-muted: color-mix(in srgb, var(--secondary-color) 55%, transparent);
+    --border-color: color-mix(in srgb, var(--secondary-color) 14%, transparent);
+    --input-bg: color-mix(in srgb, var(--tertiary-color) 82%, var(--main-ground));
+    --card-bg: var(--tertiary-color);
+}
+
+/* 3. Инпуты: не меняем стиль, только читаемость */
+input,
+select,
+textarea,
+.custom-select-button,
+.custom-select {
+    color: var(--secondary-color);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+/* 4. Excel/import/export используют --text/--text-muted, страхуем */
+.ei-feature-title,
+.ei-map-label,
+.ei-preview-table td,
+.ei-done-text,
+.eip-title,
+.eip-stat-value,
+.eip-chart-title,
+.eip-budgets-title,
+.eip-action-text b {
+    color: var(--secondary-color);
+}
+
+.ei-feature-desc,
+.ei-inst-body > p,
+.ei-inst-source,
+.ei-desc-hint,
+.ei-preview-table th,
+.ei-more-rows,
+.eip-subtitle,
+.eip-stat-label,
+.eip-chart-total,
+.eip-budget-meta,
+.eip-action-text small {
+    color: var(--text-muted);
+}
+
+/* 5. Analytics insights: белые rgba на светлых темах заменяем на переменные */
+.bi-kpi,
+.bi-health,
+.bi-card {
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .bi-kpi,
+:root:not([data-theme]) .bi-health,
+:root:not([data-theme]) .bi-card,
+:root[data-theme="light"] .bi-kpi,
+:root[data-theme="light"] .bi-health,
+:root[data-theme="light"] .bi-card,
+:root[data-theme="dolphin"] .bi-kpi,
+:root[data-theme="dolphin"] .bi-health,
+:root[data-theme="dolphin"] .bi-card,
+:root[data-theme="sage"] .bi-kpi,
+:root[data-theme="sage"] .bi-health,
+:root[data-theme="sage"] .bi-card,
+:root[data-theme="yogurt"] .bi-kpi,
+:root[data-theme="yogurt"] .bi-health,
+:root[data-theme="yogurt"] .bi-card {
+    border-color: color-mix(in srgb, var(--secondary-color) 13%, transparent);
+}
+
+/* 6. Planner: только светлые темы, убираем слишком тёмные карточки */
+:root:not([data-theme]) .planner-empty-card,
+:root:not([data-theme]) .planner-stat-card,
+:root:not([data-theme]) .planner-mini-card,
+:root:not([data-theme]) .planner-section-card,
+:root:not([data-theme]) .planner-insight-card,
+:root:not([data-theme]) .planner-day-card,
+:root[data-theme="light"] .planner-empty-card,
+:root[data-theme="light"] .planner-stat-card,
+:root[data-theme="light"] .planner-mini-card,
+:root[data-theme="light"] .planner-section-card,
+:root[data-theme="light"] .planner-insight-card,
+:root[data-theme="light"] .planner-day-card,
+:root[data-theme="light-classic"] .planner-empty-card,
+:root[data-theme="light-classic"] .planner-stat-card,
+:root[data-theme="light-classic"] .planner-mini-card,
+:root[data-theme="light-classic"] .planner-section-card,
+:root[data-theme="light-classic"] .planner-insight-card,
+:root[data-theme="light-classic"] .planner-day-card,
+:root[data-theme="dolphin"] .planner-empty-card,
+:root[data-theme="dolphin"] .planner-stat-card,
+:root[data-theme="dolphin"] .planner-mini-card,
+:root[data-theme="dolphin"] .planner-section-card,
+:root[data-theme="dolphin"] .planner-insight-card,
+:root[data-theme="dolphin"] .planner-day-card,
+:root[data-theme="sage"] .planner-empty-card,
+:root[data-theme="sage"] .planner-stat-card,
+:root[data-theme="sage"] .planner-mini-card,
+:root[data-theme="sage"] .planner-section-card,
+:root[data-theme="sage"] .planner-insight-card,
+:root[data-theme="sage"] .planner-day-card,
+:root[data-theme="yogurt"] .planner-empty-card,
+:root[data-theme="yogurt"] .planner-stat-card,
+:root[data-theme="yogurt"] .planner-mini-card,
+:root[data-theme="yogurt"] .planner-section-card,
+:root[data-theme="yogurt"] .planner-insight-card,
+:root[data-theme="yogurt"] .planner-day-card {
+    background: var(--tertiary-color);
+    color: var(--secondary-color);
+    border-color: var(--border-color);
+}
+
+/* 7. Search: оставляем твой стиль, только текст/placeholder */
+.search-input {
+    color: var(--secondary-color);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+/* 8. Кнопки primary на светлых темах, где белый текст может быть плохо */
+:root[data-theme="dolphin"] .add-btn,
+:root[data-theme="dolphin"] #add-btn,
+:root[data-theme="sage"] .add-btn,
+:root[data-theme="sage"] #add-btn,
+:root[data-theme="yogurt"] .add-btn,
+:root[data-theme="yogurt"] #add-btn {
+    color: var(--secondary-color);
+}
+
+/* 9. Planner — light themes: dropdown, form inputs, inner element backgrounds */
+:root:not([data-theme]) .planner-dropdown-trigger,
+:root[data-theme="dolphin"] .planner-dropdown-trigger,
+:root[data-theme="sage"] .planner-dropdown-trigger,
+:root[data-theme="yogurt"] .planner-dropdown-trigger {
+    border-color: var(--border-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+:root:not([data-theme]) .planner-dropdown-trigger.is-open,
+:root[data-theme="dolphin"] .planner-dropdown-trigger.is-open,
+:root[data-theme="sage"] .planner-dropdown-trigger.is-open,
+:root[data-theme="yogurt"] .planner-dropdown-trigger.is-open {
+    border-color: color-mix(in srgb, var(--secondary-color) 25%, transparent);
+}
+
+:root:not([data-theme]) .planner-dropdown-menu,
+:root[data-theme="dolphin"] .planner-dropdown-menu,
+:root[data-theme="sage"] .planner-dropdown-menu,
+:root[data-theme="yogurt"] .planner-dropdown-menu {
+    border-color: var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+:root:not([data-theme]) .planner-dropdown-divider,
+:root[data-theme="dolphin"] .planner-dropdown-divider,
+:root[data-theme="sage"] .planner-dropdown-divider,
+:root[data-theme="yogurt"] .planner-dropdown-divider {
+    background: var(--border-color);
+}
+
+:root:not([data-theme]) .planner-dropdown-item,
+:root:not([data-theme]) .planner-dropdown-create,
+:root[data-theme="dolphin"] .planner-dropdown-item,
+:root[data-theme="dolphin"] .planner-dropdown-create,
+:root[data-theme="sage"] .planner-dropdown-item,
+:root[data-theme="sage"] .planner-dropdown-create,
+:root[data-theme="yogurt"] .planner-dropdown-item,
+:root[data-theme="yogurt"] .planner-dropdown-create {
+    background: color-mix(in srgb, var(--secondary-color) 5%, transparent);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-dropdown-item:hover,
+:root:not([data-theme]) .planner-dropdown-create:hover,
+:root[data-theme="dolphin"] .planner-dropdown-item:hover,
+:root[data-theme="dolphin"] .planner-dropdown-create:hover,
+:root[data-theme="sage"] .planner-dropdown-item:hover,
+:root[data-theme="sage"] .planner-dropdown-create:hover,
+:root[data-theme="yogurt"] .planner-dropdown-item:hover,
+:root[data-theme="yogurt"] .planner-dropdown-create:hover {
+    background: color-mix(in srgb, var(--secondary-color) 9%, transparent);
+}
+
+:root:not([data-theme]) .planner-form-sheet .input,
+:root:not([data-theme]) .planner-form-sheet select,
+:root:not([data-theme]) .planner-form-sheet input,
+:root[data-theme="dolphin"] .planner-form-sheet .input,
+:root[data-theme="dolphin"] .planner-form-sheet select,
+:root[data-theme="dolphin"] .planner-form-sheet input,
+:root[data-theme="sage"] .planner-form-sheet .input,
+:root[data-theme="sage"] .planner-form-sheet select,
+:root[data-theme="sage"] .planner-form-sheet input,
+:root[data-theme="yogurt"] .planner-form-sheet .input,
+:root[data-theme="yogurt"] .planner-form-sheet select,
+:root[data-theme="yogurt"] .planner-form-sheet input {
+    border-color: var(--border-color);
+    background: var(--input-bg);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-period-chip,
+:root[data-theme="dolphin"] .planner-period-chip,
+:root[data-theme="sage"] .planner-period-chip,
+:root[data-theme="yogurt"] .planner-period-chip {
+    border-color: var(--border-color);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-form-section,
+:root[data-theme="dolphin"] .planner-form-section,
+:root[data-theme="sage"] .planner-form-section,
+:root[data-theme="yogurt"] .planner-form-section {
+    background: color-mix(in srgb, var(--secondary-color) 3%, transparent);
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .planner-inline-add,
+:root[data-theme="dolphin"] .planner-inline-add,
+:root[data-theme="sage"] .planner-inline-add,
+:root[data-theme="yogurt"] .planner-inline-add {
+    background: color-mix(in srgb, var(--secondary-color) 6%, transparent);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-secondary-btn,
+:root[data-theme="dolphin"] .planner-secondary-btn,
+:root[data-theme="sage"] .planner-secondary-btn,
+:root[data-theme="yogurt"] .planner-secondary-btn {
+    background: color-mix(in srgb, var(--secondary-color) 6%, transparent);
+    color: var(--secondary-color);
+}
+
+/* Hardcoded white text overrides inside planner cards */
+:root:not([data-theme]) .planner-stat-value,
+:root:not([data-theme]) .planner-mini-value,
+:root:not([data-theme]) .planner-section-title,
+:root:not([data-theme]) .planner-list-name,
+:root:not([data-theme]) .planner-list-amount,
+:root:not([data-theme]) .planner-insight-title,
+:root:not([data-theme]) .planner-day-title,
+:root:not([data-theme]) .planner-days-title,
+:root:not([data-theme]) .planner-day-balance,
+:root[data-theme="dolphin"] .planner-stat-value,
+:root[data-theme="dolphin"] .planner-mini-value,
+:root[data-theme="dolphin"] .planner-section-title,
+:root[data-theme="dolphin"] .planner-list-name,
+:root[data-theme="dolphin"] .planner-list-amount,
+:root[data-theme="dolphin"] .planner-insight-title,
+:root[data-theme="dolphin"] .planner-day-title,
+:root[data-theme="dolphin"] .planner-days-title,
+:root[data-theme="dolphin"] .planner-day-balance,
+:root[data-theme="sage"] .planner-stat-value,
+:root[data-theme="sage"] .planner-mini-value,
+:root[data-theme="sage"] .planner-section-title,
+:root[data-theme="sage"] .planner-list-name,
+:root[data-theme="sage"] .planner-list-amount,
+:root[data-theme="sage"] .planner-insight-title,
+:root[data-theme="sage"] .planner-day-title,
+:root[data-theme="sage"] .planner-days-title,
+:root[data-theme="sage"] .planner-day-balance,
+:root[data-theme="yogurt"] .planner-stat-value,
+:root[data-theme="yogurt"] .planner-mini-value,
+:root[data-theme="yogurt"] .planner-section-title,
+:root[data-theme="yogurt"] .planner-list-name,
+:root[data-theme="yogurt"] .planner-list-amount,
+:root[data-theme="yogurt"] .planner-insight-title,
+:root[data-theme="yogurt"] .planner-day-title,
+:root[data-theme="yogurt"] .planner-days-title,
+:root[data-theme="yogurt"] .planner-day-balance {
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-today-badge,
+:root[data-theme="dolphin"] .planner-today-badge,
+:root[data-theme="sage"] .planner-today-badge,
+:root[data-theme="yogurt"] .planner-today-badge {
+    color: color-mix(in srgb, #18c964 20%, #002210);
+}
+
+/* Inner elements with rgba(white) backgrounds */
+:root:not([data-theme]) .planner-section-count,
+:root[data-theme="dolphin"] .planner-section-count,
+:root[data-theme="sage"] .planner-section-count,
+:root[data-theme="yogurt"] .planner-section-count {
+    background: color-mix(in srgb, var(--secondary-color) 7%, transparent);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-list-row,
+:root[data-theme="dolphin"] .planner-list-row,
+:root[data-theme="sage"] .planner-list-row,
+:root[data-theme="yogurt"] .planner-list-row {
+    background: color-mix(in srgb, var(--secondary-color) 3%, transparent);
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .planner-list-empty,
+:root[data-theme="dolphin"] .planner-list-empty,
+:root[data-theme="sage"] .planner-list-empty,
+:root[data-theme="yogurt"] .planner-list-empty {
+    background: color-mix(in srgb, var(--secondary-color) 2%, transparent);
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .planner-day-metric,
+:root[data-theme="dolphin"] .planner-day-metric,
+:root[data-theme="sage"] .planner-day-metric,
+:root[data-theme="yogurt"] .planner-day-metric {
+    background: color-mix(in srgb, var(--secondary-color) 4%, transparent);
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .planner-day-hint,
+:root[data-theme="dolphin"] .planner-day-hint,
+:root[data-theme="sage"] .planner-day-hint,
+:root[data-theme="yogurt"] .planner-day-hint {
+    background: color-mix(in srgb, var(--secondary-color) 4%, transparent);
+    border-color: var(--border-color);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-day-extra span,
+:root[data-theme="dolphin"] .planner-day-extra span,
+:root[data-theme="sage"] .planner-day-extra span,
+:root[data-theme="yogurt"] .planner-day-extra span {
+    background: color-mix(in srgb, var(--secondary-color) 5%, transparent);
+    border-color: var(--border-color);
+    color: var(--secondary-color);
+}
+
+:root:not([data-theme]) .planner-insight-icon,
+:root[data-theme="dolphin"] .planner-insight-icon,
+:root[data-theme="sage"] .planner-insight-icon,
+:root[data-theme="yogurt"] .planner-insight-icon {
+    background: color-mix(in srgb, var(--secondary-color) 6%, transparent);
+}
+
+/* 10. Budget-switch-sheet: items invisible on white background */
+:root:not([data-theme]) .budget-item {
+    background: var(--main-ground);
+    border: 1px solid var(--border-color);
+}
+
+/* 11. Planner empty state — light theme visual improvements */
+
+/* Empty card: soft gradient instead of plain white */
+:root:not([data-theme]) .planner-empty-card,
+:root[data-theme="dolphin"] .planner-empty-card,
+:root[data-theme="sage"] .planner-empty-card,
+:root[data-theme="yogurt"] .planner-empty-card {
+    background: linear-gradient(160deg,
+        color-mix(in srgb, var(--primary-color) 8%, var(--tertiary-color)) 0%,
+        var(--tertiary-color) 60%
+    );
+}
+
+/* Feature icon cards: dark-friendly backgrounds */
+:root:not([data-theme]) .planner-empty-feature,
+:root[data-theme="dolphin"] .planner-empty-feature,
+:root[data-theme="sage"] .planner-empty-feature,
+:root[data-theme="yogurt"] .planner-empty-feature {
+    background: color-mix(in srgb, var(--secondary-color) 5%, transparent);
+    border: 1px solid var(--border-color);
+}
+
+/* Feature text colors */
+:root:not([data-theme]) .planner-empty-feature-title,
+:root[data-theme="dolphin"] .planner-empty-feature-title,
+:root[data-theme="sage"] .planner-empty-feature-title,
+:root[data-theme="yogurt"] .planner-empty-feature-title {
+    color: var(--secondary-color);
+}
+
+/* Create button text: ensure dark text on light theme green button */
+:root:not([data-theme]) .planner-empty-create-btn,
+:root[data-theme="dolphin"] .planner-empty-create-btn,
+:root[data-theme="sage"] .planner-empty-create-btn,
+:root[data-theme="yogurt"] .planner-empty-create-btn {
+    color: #fff;
+}
+
+/* Planner topbar quick-create and form submit on light themes */
+:root:not([data-theme]) #planner-quick-create-btn,
+:root[data-theme="dolphin"] #planner-quick-create-btn,
+:root[data-theme="sage"] #planner-quick-create-btn,
+:root[data-theme="yogurt"] #planner-quick-create-btn,
+:root:not([data-theme]) .planner-sheet-actions [type="submit"],
+:root[data-theme="dolphin"] .planner-sheet-actions [type="submit"],
+:root[data-theme="sage"] .planner-sheet-actions [type="submit"],
+:root[data-theme="yogurt"] .planner-sheet-actions [type="submit"] {
+    color: #fff;
+}
+
+/* Period chips: better contrast on light theme */
+:root:not([data-theme]) .planner-period-chip,
+:root[data-theme="dolphin"] .planner-period-chip,
+:root[data-theme="sage"] .planner-period-chip,
+:root[data-theme="yogurt"] .planner-period-chip {
+    background: var(--main-ground);
+}
+
+/* Form sheet close button */
+:root:not([data-theme]) #planner-sheet-close,
+:root[data-theme="dolphin"] #planner-sheet-close,
+:root[data-theme="sage"] #planner-sheet-close,
+:root[data-theme="yogurt"] #planner-sheet-close {
+    background: color-mix(in srgb, var(--secondary-color) 8%, transparent);
+    color: var(--secondary-color);
+}
+
+/* Stat card left-bar colors stay vivid, but card has a tinted bg */
+:root:not([data-theme]) .planner-stat-card {
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--primary-color) 4%, var(--tertiary-color)) 0%,
+        var(--tertiary-color) 100%
+    );
+}

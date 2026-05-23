@@ -1,0 +1,800 @@
+/* ═══════════════════════════════════════════════════════════════
+   export-import-page.css  —  Данные профиля
+   Совместим с: fullscreen-sheet, subpage-content из style.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Не трогаем subpage-content padding — он уже задан в style.css ──
+   Добавляем только gap между секциями через flex */
+#export-import-page .subpage-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* padding уже есть в style.css, НЕ переопределяем */
+}
+
+/* ─────────────────────────────────────────────────────────────
+   1. Статистика (4 плитки)
+───────────────────────────────────────────────────────────── */
+.eip-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+/* На экранах ≥360px переходим к 4 колонкам */
+@media (min-width: 360px) {
+    .eip-stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.eip-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 12px 4px;
+    text-align: center;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.eip-stat-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.eip-stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.eip-stat-label {
+    font-size: 0.65rem;
+    color: var(--text-muted, #777);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   2. Заголовок блоков
+───────────────────────────────────────────────────────────── */
+.eip-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.eip-chart-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+}
+
+.eip-chart-total {
+    font-size: 0.76rem;
+    color: var(--text-muted, #666);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3. Горизонтальные бары
+───────────────────────────────────────────────────────────── */
+.eip-chart-block {
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.eip-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.eip-bar-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 30px;
+    align-items: center;
+    gap: 8px;
+}
+
+.eip-bar-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: var(--text-muted, #aaa);
+    white-space: nowrap;
+}
+
+.eip-bar-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.eip-bar-track {
+    height: 7px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.eip-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.eip-bar-count {
+    font-size: 0.75rem;
+    color: var(--text-muted, #888);
+    text-align: right;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. Sparkline
+───────────────────────────────────────────────────────────── */
+.eip-activity-block {
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.eip-sparkline-wrap {
+    position: relative;
+    height: 80px;
+    width: 100%;
+}
+
+.eip-sparkline-wrap canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. Бюджеты
+───────────────────────────────────────────────────────────── */
+.eip-budgets-block {
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.eip-budgets-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+    margin-bottom: 10px;
+}
+
+.eip-budget-row {
+    display: grid;
+    grid-template-columns: 1fr 70px 28px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.eip-budget-row:last-child { border-bottom: none; }
+
+.eip-budget-name {
+    font-size: 0.84rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eip-budget-bar-track {
+    height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.eip-budget-bar-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    min-width: 2px;
+}
+
+.eip-budget-count {
+    font-size: 0.75rem;
+    color: var(--text-muted, #666);
+    text-align: right;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. Кнопки действий — 2×2 сетка
+───────────────────────────────────────────────────────────── */
+.eip-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    box-sizing: border-box;
+}
+
+.eip-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.eip-action-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+/* Скрытый file input — занимает всю площадь кнопки */
+.eip-action-btn input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.eip-action-primary   { background: var(--primary-color); color: #fff; margin: 0;}
+.eip-action-secondary { background: #1e3040; color: #7ec8e3; }
+.eip-action-muted     { background: rgba(255,255,255,0.06); color: var(--text-muted, #aaa); }
+.eip-action-danger    { background: rgba(255, 75, 92, 0.12); color: #ff6b6b; }
+
+.eip-action-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.eip-action-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.eip-action-text b     { font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.eip-action-text small { font-size: 0.7rem; opacity: 0.65; white-space: nowrap; }
+
+/* ─────────────────────────────────────────────────────────────
+   7. Блок «Работа с данными»
+───────────────────────────────────────────────────────────── */
+.eip-data-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.eip-tools-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.eip-tools-head h3 {
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin: 0 0 2px;
+}
+
+.eip-tools-head p {
+    font-size: 0.74rem;
+    color: var(--text-muted, #666);
+    margin: 0;
+}
+
+.eip-mini-icon-btn {
+    background: rgba(255,255,255,0.07);
+    border: none;
+    color: var(--text-muted, #aaa);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.eip-mini-icon-btn:active { background: rgba(255,255,255,0.12); }
+
+/* ── Карточки инструментов — ВСЕГДА вертикальный стек ── */
+.eip-tools-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8. Карточки инструментов
+───────────────────────────────────────────────────────────── */
+.eip-tool-card {
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.eip-tool-card-primary {
+    border: 1.5px solid rgba(var(--primary-color-rgb, 100, 150, 255), 0.25);
+}
+
+.eip-tool-card-title {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary-color);
+}
+
+.eip-tool-label {
+    font-size: 0.74rem;
+    color: var(--text-muted, #888);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.eip-month-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.eip-month-input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text-color, #fff);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    outline: none;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+}
+.eip-month-input:focus { border-color: var(--primary-color); }
+
+.eip-mini-btn {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--text-color, #ccc);
+    font-size: 0.74rem;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.eip-mini-btn:active { background: rgba(255,255,255,0.14); }
+
+.eip-type-row { display: flex; flex-direction: column; }
+
+.eip-type-select {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text-color, #fff);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+}
+.eip-type-select:focus { border-color: var(--primary-color); }
+
+.eip-month-summary {
+    font-size: 0.78rem;
+    color: var(--text-muted, #888);
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 10px;
+    line-height: 1.7;
+}
+
+.eip-tool-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.eip-tool-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 0;
+}
+.eip-tool-btn:active { transform: scale(0.97); opacity: 0.8; }
+
+.eip-tool-btn-safe   { background: rgba(39,174,96,0.15); color: #4dbb7a; }
+.eip-tool-btn-danger { background: rgba(255,75,92,0.12); color: #ff6b6b; }
+
+/* ─────────────────────────────────────────────────────────────
+   9. Сетка обслуживания
+───────────────────────────────────────────────────────────── */
+.eip-maintenance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+.eip-maintenance-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    text-align: left;
+    color: var(--text-color, #fff);
+    box-sizing: border-box;
+    width: 100%;
+}
+.eip-maintenance-btn:active { transform: scale(0.97); background: rgba(255,255,255,0.07); }
+
+.eip-maintenance-btn span  { font-size: 1.2rem; line-height: 1; }
+.eip-maintenance-btn b     { font-size: 0.8rem; font-weight: 700; }
+.eip-maintenance-btn small { font-size: 0.7rem; color: var(--text-muted, #666); line-height: 1.3; }
+
+.eip-maintenance-danger { border-color: rgba(255,75,92,0.25); color: #ff6b6b; }
+
+/* ─────────────────────────────────────────────────────────────
+   10. Результат дублей
+───────────────────────────────────────────────────────────── */
+.eip-duplicates-result {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.8rem;
+    color: var(--text-muted, #aaa);
+    line-height: 1.6;
+}
+.eip-duplicates-result.hidden { display: none; }
+
+/* ─────────────────────────────────────────────────────────────
+   11. Пачки импорта / автобэкапы
+───────────────────────────────────────────────────────────── */
+.eip-import-batches,
+.eip-backups-block {
+    background: var(--card-bg, #1e1e1e);
+    border-radius: 12px;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.eip-import-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.eip-import-head h4 {
+    font-size: 0.86rem;
+    font-weight: 700;
+    margin: 0 0 2px;
+}
+
+.eip-import-head p {
+    font-size: 0.73rem;
+    color: var(--text-muted, #666);
+    margin: 0;
+}
+
+.eip-import-batches-list,
+.eip-backups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eip-backup-card,
+.eip-batch-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--primary-color);
+    box-sizing: border-box;
+}
+
+.eip-backup-main,
+.eip-batch-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.eip-backup-main b,
+.eip-batch-main b {
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eip-backup-main span,
+.eip-batch-main span {
+    font-size: 0.7rem;
+    color: var(--text-muted, #666);
+}
+
+.eip-backup-actions,
+.eip-batch-actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.eip-backup-download,
+.eip-backup-restore,
+.eip-batch-export,
+.eip-batch-rollback {
+    font-size: 0.7rem;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+.eip-backup-download,
+.eip-batch-export   { background: rgba(255,255,255,0.08); color: var(--text-color, #ccc); }
+.eip-backup-restore,
+.eip-batch-rollback { background: rgba(255,75,92,0.15); color: #ff6b6b; }
+
+.eip-backup-download:active,
+.eip-batch-export:active,
+.eip-backup-restore:active,
+.eip-batch-rollback:active { opacity: 0.65; }
+
+/* ─────────────────────────────────────────────────────────────
+   12. Пустые состояния
+───────────────────────────────────────────────────────────── */
+.eip-empty-note {
+    font-size: 0.78rem;
+    color: var(--text-muted, #555);
+    text-align: center;
+    padding: 12px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   СВЕТЛЫЕ ТЕМЫ — переопределения для читаемости
+   Покрывает: default (:root без data-theme), light, light-classic,
+              dolphin, sage, yogurt
+   ═══════════════════════════════════════════════════════════════ */
+
+:root:not([data-theme]),
+:root[data-theme="light"],
+:root[data-theme="light-classic"],
+:root[data-theme="dolphin"],
+:root[data-theme="sage"],
+:root[data-theme="yogurt"] {
+
+    /* ── Stat-карточки ── */
+    .eip-stat-card {
+        background: color-mix(in srgb, var(--secondary-color) 6%, var(--tertiary-color));
+    }
+
+    .eip-stat-value {
+        color: var(--secondary-color);
+    }
+
+    /* ── Блоки с графиками / бюджетами / sparkline ── */
+    .eip-chart-block,
+    .eip-activity-block,
+    .eip-budgets-block,
+    .eip-tool-card,
+    .eip-import-batches,
+    .eip-backups-block {
+        background: var(--tertiary-color);
+        border: 1px solid color-mix(in srgb, var(--secondary-color) 10%, transparent);
+    }
+
+    /* ── Треки прогресс-баров (было rgba(255,255,255,...) — на белом невидимо) ── */
+    .eip-bar-track,
+    .eip-budget-bar-track {
+        background: color-mix(in srgb, var(--secondary-color) 10%, transparent);
+    }
+
+    /* ── Разделитель строк бюджета ── */
+    .eip-budget-row {
+        border-bottom-color: color-mix(in srgb, var(--secondary-color) 10%, transparent);
+    }
+
+    /* ── Тексты ── */
+    .eip-chart-title,
+    .eip-budgets-title,
+    .eip-budget-name,
+    .eip-bar-label,
+    .eip-tools-head h3,
+    .eip-import-head h4,
+    .eip-tool-card-title {
+        color: var(--secondary-color);
+    }
+
+    .eip-chart-total,
+    .eip-stat-label,
+    .eip-bar-count,
+    .eip-budget-count,
+    .eip-tools-head p,
+    .eip-import-head p,
+    .eip-tool-label,
+    .eip-month-summary,
+    .eip-empty-note,
+    .eip-backup-main span,
+    .eip-batch-main span {
+        color: color-mix(in srgb, var(--secondary-color) 55%, transparent);
+    }
+
+    .eip-backup-main b,
+    .eip-batch-main b {
+        color: var(--secondary-color);
+    }
+
+    /* ── Кнопки действий ── */
+    /* primary — цвет текста по теме */
+    .eip-action-primary {
+        color: var(--tertiary-color);
+    }
+
+    /* secondary — заменяем тёмный хардкод #1e3040 */
+    .eip-action-secondary {
+        background: color-mix(in srgb, var(--primary-color) 12%, var(--tertiary-color));
+        color: color-mix(in srgb, var(--primary-color) 85%, var(--secondary-color));
+    }
+
+    /* muted — было rgba(255,255,255,0.06) — невидимо */
+    .eip-action-muted {
+        background: color-mix(in srgb, var(--secondary-color) 7%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    /* danger — цвет текста читаем, фон чуть теплее */
+    .eip-action-danger {
+        background: rgba(255, 75, 92, 0.09);
+        color: #d93040;
+    }
+
+    .eip-action-text b,
+    .eip-action-text small {
+        color: inherit;
+    }
+
+    /* ── Инпуты и селект ── */
+    .eip-month-input,
+    .eip-type-select {
+        background: color-mix(in srgb, var(--secondary-color) 5%, var(--tertiary-color));
+        border-color: color-mix(in srgb, var(--secondary-color) 18%, transparent);
+        color: var(--secondary-color);
+    }
+
+    .eip-month-input:focus,
+    .eip-type-select:focus {
+        border-color: var(--primary-color);
+    }
+
+    /* ── Кнопки «Текущий», иконка ↻ ── */
+    .eip-mini-btn {
+        background: color-mix(in srgb, var(--secondary-color) 8%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    .eip-mini-icon-btn {
+        background: color-mix(in srgb, var(--secondary-color) 7%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    /* ── Сводка месяца ── */
+    .eip-month-summary {
+        background: color-mix(in srgb, var(--secondary-color) 5%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    /* ── Кнопки обслуживания ── */
+    .eip-maintenance-btn {
+        background: color-mix(in srgb, var(--secondary-color) 5%, var(--tertiary-color));
+        border-color: color-mix(in srgb, var(--secondary-color) 12%, transparent);
+        color: var(--secondary-color);
+    }
+
+    .eip-maintenance-btn small {
+        color: color-mix(in srgb, var(--secondary-color) 50%, transparent);
+    }
+
+    .eip-maintenance-btn:active {
+        background: color-mix(in srgb, var(--secondary-color) 10%, var(--tertiary-color));
+    }
+
+    .eip-maintenance-danger {
+        border-color: rgba(255, 75, 92, 0.3);
+        color: #d93040;
+    }
+
+    /* ── Результат дублей ── */
+    .eip-duplicates-result {
+        background: color-mix(in srgb, var(--secondary-color) 5%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    /* ── Карточки бэкапов / пачек ── */
+    .eip-backup-card,
+    .eip-batch-card {
+        background: color-mix(in srgb, var(--secondary-color) 4%, var(--tertiary-color));
+    }
+
+    /* ── Кнопки внутри карточки бэкапа ── */
+    .eip-backup-download,
+    .eip-batch-export {
+        background: color-mix(in srgb, var(--secondary-color) 9%, var(--tertiary-color));
+        color: var(--secondary-color);
+    }
+
+    /* ── Кнопки в tool-card ── */
+    .eip-tool-btn-safe {
+        background: rgba(39, 174, 96, 0.12);
+        color: #1a7a45;
+    }
+
+    .eip-tool-btn-danger {
+        background: rgba(255, 75, 92, 0.10);
+        color: #d93040;
+    }
+}

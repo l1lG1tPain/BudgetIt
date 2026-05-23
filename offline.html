@@ -127,6 +127,61 @@
     a {
       color: inherit;
     }
+    /* === BudgetIt Error CTA === */
+    .error-cta {
+        width: 100%;
+        padding: 14px 20px;
+
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.12);
+
+        background:
+                linear-gradient(
+                        135deg,
+                        rgba(43,232,42,0.18),
+                        rgba(43,232,42,0.04)
+                );
+
+        color: var(--secondary-color);
+
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+
+        box-shadow:
+                0 6px 20px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(43,232,42,0.25);
+
+        cursor: pointer;
+        transition:
+                transform 0.15s ease,
+                box-shadow 0.2s ease,
+                background 0.25s ease;
+    }
+
+    /* hover */
+    .error-cta:hover {
+        transform: translateY(-2px);
+        box-shadow:
+                0 10px 28px rgba(0,0,0,0.55),
+                0 0 0 1px rgba(43,232,42,0.45);
+    }
+
+    /* active */
+    .error-cta:active {
+        transform: translateY(1px) scale(0.98);
+    }
+
+    /* disabled (offline reload) */
+    .error-cta:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
   </style>
 </head>
 <body>
@@ -143,7 +198,7 @@
   <p>📡 Нет интернета. <br>Акулка потеряла связь с сетью и теперь зависла в оффлайне…</p>
 
   <div class="actions">
-    <button id="reload-btn" onclick="tryReload()">🔁 Попробовать снова</button>
+      <button class="error-cta" onclick="location.href='/'">🔁 Попробовать снова</button>
   </div>
 
   <script>

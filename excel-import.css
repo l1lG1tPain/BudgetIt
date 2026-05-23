@@ -1,0 +1,1242 @@
+/* ====================================================
+   ExcelImportManager.css — стили для таба «⚡ Залётом»
+   Вставить в основной CSS или подключить отдельно
+   ==================================================== */
+
+/* ─── Баннер определённого источника (Payme / Click / etc) ─── */
+.ei-detected-source {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent, #6366f1);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 8px;
+    padding: 5px 10px;
+    text-align: center;
+}
+
+
+
+.ei-feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ei-feature-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text, #e2e8f0);
+}
+.ei-feature-desc {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    line-height: 1.5;
+}
+
+/* Убираем старый крестик — используем close-form */
+.ei-btn-cancel { display: none; }
+
+/* Ссылка-отмена под кнопками (шаг 2) */
+.ei-btn-close-link {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    margin-top: 2px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.ei-btn-close-link:hover { opacity: 1; }
+
+/* Первый шаг — не нужен relative больше */
+#ei-step-upload { position: static; }
+
+/* ─── Инструкция/описание ─── */
+.ei-instructions {
+    background: var(--accent-color, rgba(30,41,59,0.6));
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+.ei-inst-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text, #e2e8f0);
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border-color, #1e293b);
+}
+.ei-inst-body {
+    padding: 10px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ei-inst-body > p {
+    font-size: 12.5px;
+    color: var(--text-muted, #94a3b8);
+    margin: 0;
+    line-height: 1.5;
+}
+.ei-inst-sources {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ei-inst-source {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    line-height: 1.45;
+}
+.ei-inst-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.ei-inst-source b {
+    color: var(--text, #e2e8f0);
+    display: block;
+    margin-bottom: 1px;
+    font-size: 12.5px;
+}
+
+/* Подсказка под маппингом */
+.ei-desc-hint {
+    font-size: 11.5px;
+    color: var(--text-muted, #94a3b8);
+    opacity: 0.7;
+    padding: 2px 2px 0;
+    line-height: 1.4;
+}
+
+/* ─── Обёртка формы ─── */
+.excel-import-wrap {
+    padding: 4px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ─── Шаги (показывается только один) ─── */
+.ei-step {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ei-step.hidden {
+    display: none !important;
+}
+
+/* ─── Дропзона ─── */
+.ei-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 32px 20px;
+    border: 2px dashed var(--border-color, #334155);
+    border-radius: 16px;
+    cursor: pointer;
+    background: var(--accent-color, #1e293b);
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+}
+.ei-dropzone:hover,
+.ei-dropzone.ei-drag-over {
+    border-color: var(--accent, #6366f1);
+    background: var(--card-bg-hover, #1e2a3a);
+}
+.ei-drop-icon  { font-size: 36px; }
+.ei-drop-title { font-size: 15px; font-weight: 600; color: var(--text, #e2e8f0); }
+.ei-drop-sub   { font-size: 12px; color: var(--text-muted, #94a3b8); }
+
+/* ─── Имя файла ─── */
+.ei-file-name {
+    font-size: 13px;
+    color: var(--accent, #6366f1);
+    padding: 6px 10px;
+    background: var(--card-bg, #1e293b);
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* ─── Ошибки ─── */
+.ei-error {
+    font-size: 13px;
+    color: #f87171;
+    padding: 8px 12px;
+    background: rgba(248, 113, 113, 0.12);
+    border-radius: 8px;
+}
+.ei-error.hidden { display: none; }
+
+/* ─── Заголовок секции ─── */
+.ei-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ─── Грид маппинга ─── */
+.ei-map-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+.ei-map-label {
+    font-size: 13px;
+    color: var(--text, #e2e8f0);
+    white-space: nowrap;
+}
+.ei-select {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #334155);
+    background: var(--input-bg, #0f172a);
+    color: var(--text, #e2e8f0);
+    font-size: 13px;
+    cursor: pointer;
+    appearance: auto;
+}
+.ei-select:focus {
+    outline: 2px solid var(--accent, #6366f1);
+    outline-offset: 1px;
+}
+
+/* ─── Превью таблица ─── */
+.ei-preview-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #334155);
+    max-height: 240px;
+    overflow-y: auto;
+}
+.ei-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.ei-preview-table thead tr {
+    background: var(--card-bg, #1e293b);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.ei-preview-table th {
+    padding: 6px 10px;
+    text-align: left;
+    color: var(--text-muted, #64748b);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ei-preview-table td {
+    padding: 5px 10px;
+    border-top: 1px solid var(--border-color, #1e293b);
+    color: var(--text, #e2e8f0);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ei-preview-row.ei-type-income td:nth-child(1) { color: #34d399; }
+.ei-preview-row.ei-type-expense td:nth-child(1) { color: #f87171; }
+.ei-preview-row:nth-child(even) {
+    background: var(--input-bg, rgba(15,23,42,0.5));
+}
+.ei-desc-cell {
+    color: var(--text-muted, #94a3b8) !important;
+    font-style: italic;
+}
+.ei-more-rows {
+    text-align: center;
+    color: var(--text-muted, #64748b);
+    padding: 8px !important;
+    font-style: italic;
+}
+
+/* ─── Кнопки действий ─── */
+.ei-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+.ei-btn-primary {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent, #6366f1);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.ei-btn-primary:hover { opacity: 0.88; }
+
+.ei-btn-secondary {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #334155);
+    background: transparent;
+    color: var(--text-muted, #94a3b8);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.ei-btn-secondary:hover { background: var(--card-bg, #1e293b); }
+
+/* ─── Экран «Готово» ─── */
+.ei-done-icon {
+    font-size: 52px;
+    text-align: center;
+    margin: 12px 0 4px;
+}
+.ei-done-text {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text, #e2e8f0);
+    line-height: 1.6;
+}
+.ei-done-text strong {
+    color: #34d399;
+    font-size: 18px;
+}
+
+/* ─── Адаптация на светлых темах ─── */
+[data-theme="light"] .ei-select,
+[data-theme="yogurt"] .ei-select,
+[data-theme="dolphin"] .ei-select,
+[data-theme="mint"] .ei-select,
+[data-theme="sage"] .ei-select {
+    background: var(--input-bg, #f8fafc);
+    border-color: var(--border-color, #cbd5e1);
+    color: var(--text, #1e293b);
+}
+
+[data-theme="light"] .ei-feature-banner,
+[data-theme="yogurt"] .ei-feature-banner,
+[data-theme="dolphin"] .ei-feature-banner,
+[data-theme="mint"] .ei-feature-banner,
+[data-theme="sage"] .ei-feature-banner {
+    background: var(--card-bg, #f1f5f9);
+    border-color: var(--border-color, #cbd5e1);
+}
+
+[data-theme="light"] .ei-instructions,
+[data-theme="yogurt"] .ei-instructions,
+[data-theme="dolphin"] .ei-instructions,
+[data-theme="mint"] .ei-instructions,
+[data-theme="sage"] .ei-instructions {
+    background: var(--card-bg, #f8fafc);
+    border-color: var(--border-color, #e2e8f0);
+}
+
+[data-theme="light"] .ei-inst-title,
+[data-theme="yogurt"] .ei-inst-title,
+[data-theme="dolphin"] .ei-inst-title,
+[data-theme="mint"] .ei-inst-title,
+[data-theme="sage"] .ei-inst-title {
+    color: var(--text, #1e293b);
+    border-bottom-color: var(--border-color, #e2e8f0);
+}
+
+[data-theme="light"] .ei-inst-source b,
+[data-theme="yogurt"] .ei-inst-source b,
+[data-theme="dolphin"] .ei-inst-source b,
+[data-theme="mint"] .ei-inst-source b,
+[data-theme="sage"] .ei-inst-source b {
+    color: var(--text, #1e293b);
+}
+
+[data-theme="light"] .ei-inst-source span,
+[data-theme="yogurt"] .ei-inst-source span,
+[data-theme="dolphin"] .ei-inst-source span,
+[data-theme="mint"] .ei-inst-source span,
+[data-theme="sage"] .ei-inst-source span {
+    color: var(--text-muted, #64748b);
+}
+
+[data-theme="light"] .ei-feature-title,
+[data-theme="yogurt"] .ei-feature-title,
+[data-theme="dolphin"] .ei-feature-title,
+[data-theme="mint"] .ei-feature-title,
+[data-theme="sage"] .ei-feature-title {
+    color: var(--text, #1e293b);
+}
+
+[data-theme="light"] .ei-feature-desc,
+[data-theme="yogurt"] .ei-feature-desc,
+[data-theme="dolphin"] .ei-feature-desc,
+[data-theme="mint"] .ei-feature-desc,
+[data-theme="sage"] .ei-feature-desc {
+    color: var(--text-muted, #64748b);
+}
+
+[data-theme="light"] .ei-dropzone,
+[data-theme="yogurt"] .ei-dropzone,
+[data-theme="dolphin"] .ei-dropzone,
+[data-theme="mint"] .ei-dropzone,
+[data-theme="sage"] .ei-dropzone {
+    background: var(--card-bg, #f8fafc);
+    border-color: var(--border-color, #cbd5e1);
+}
+
+[data-theme="light"] .ei-drop-title,
+[data-theme="yogurt"] .ei-drop-title,
+[data-theme="dolphin"] .ei-drop-title,
+[data-theme="mint"] .ei-drop-title,
+[data-theme="sage"] .ei-drop-title {
+    color: var(--text, #1e293b);
+}
+
+[data-theme="light"] .ei-preview-table td,
+[data-theme="yogurt"] .ei-preview-table td,
+[data-theme="dolphin"] .ei-preview-table td,
+[data-theme="mint"] .ei-preview-table td,
+[data-theme="sage"] .ei-preview-table td {
+    color: var(--text, #1e293b);
+    border-top-color: var(--border-color, #e2e8f0);
+}
+
+[data-theme="light"] .ei-preview-table thead tr,
+[data-theme="yogurt"] .ei-preview-table thead tr,
+[data-theme="dolphin"] .ei-preview-table thead tr,
+[data-theme="mint"] .ei-preview-table thead tr,
+[data-theme="sage"] .ei-preview-table thead tr {
+    background: var(--card-bg, #f1f5f9);
+}
+
+[data-theme="light"] .ei-map-label,
+[data-theme="yogurt"] .ei-map-label,
+[data-theme="dolphin"] .ei-map-label,
+[data-theme="mint"] .ei-map-label,
+[data-theme="sage"] .ei-map-label {
+    color: var(--text, #1e293b);
+}
+
+[data-theme="light"] .ei-done-text,
+[data-theme="yogurt"] .ei-done-text,
+[data-theme="dolphin"] .ei-done-text,
+[data-theme="mint"] .ei-done-text,
+[data-theme="sage"] .ei-done-text {
+    color: var(--text, #1e293b);
+}
+
+
+/* ====================================================
+   ExcelImportManager.css — «⚡ Залётом» UI refresh
+   ==================================================== */
+
+.excel-import-wrap {
+    padding: 2px 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ei-step {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ei-step.hidden {
+    display: none !important;
+}
+
+/* ─── Верхняя карточка «Залётом» ─── */
+
+.ei-feature-banner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 133px 1fr;
+    gap: 12px;
+    min-height: 132px;
+    padding: 0;
+    border-radius: 22px;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+            linear-gradient(
+                    135deg,
+                    rgba(255,255,255,0.1),
+                    rgba(255,255,255,0.025)
+            ),
+            radial-gradient(
+                    circle at 15% 0%,
+                    color-mix(in srgb, var(--primary-color) 26%, transparent),
+                    transparent 48%
+            ),
+            radial-gradient(
+                    circle at 90% 100%,
+                    rgba(99,102,241,0.22),
+                    transparent 46%
+            ),
+            rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.09);
+}
+
+.ei-feature-bg-glow {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    left: -58px;
+    top: -58px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary-color) 28%, transparent);
+    filter: blur(26px);
+    opacity: 0.75;
+    z-index: -1;
+}
+
+.ei-shark-frame {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    align-self: center;
+    background:
+            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+            rgba(0,0,0,0.32);
+}
+
+.ei-shark-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+            linear-gradient(
+                    180deg,
+                    transparent 42%,
+                    rgba(0,0,0,0.34) 100%
+            );
+    pointer-events: none;
+}
+
+.ei-shark-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center 42%;
+    transform: scale(1.08);
+    border-radius: 0;
+}
+
+.ei-feature-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 2px 2px 2px 0;
+}
+
+.ei-feature-title {
+    font-size: 1.28rem;
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--secondary-color);
+}
+
+.ei-feature-desc {
+    max-width: 96%;
+    font-size: 0.74rem;
+    color: var(--secondary-color);
+    opacity: 0.72;
+    line-height: 1.42;
+    font-weight: 600;
+}
+
+.ei-feature-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.ei-feature-tags span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 800;
+    color: var(--secondary-color);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ─── Инструкция стала компактнее ─── */
+
+.ei-instructions {
+    background:
+            linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.055),
+                    rgba(255,255,255,0.02)
+            ),
+            rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.ei-inst-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--secondary-color);
+    padding: 11px 13px 9px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    letter-spacing: -0.01em;
+}
+
+.ei-inst-body {
+    padding: 10px 12px 12px;
+}
+
+.ei-inst-sources {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.ei-inst-source {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.055);
+    color: var(--secondary-color);
+}
+
+.ei-inst-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: rgba(0,0,0,0.18);
+    flex-shrink: 0;
+}
+
+.ei-inst-source b {
+    color: var(--secondary-color);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.76rem;
+    line-height: 1.15;
+}
+
+.ei-inst-source span:not(.ei-inst-icon) {
+    color: var(--secondary-color);
+    opacity: 0.58;
+    font-size: 0.68rem;
+    line-height: 1.25;
+}
+
+/* ─── Главная зона загрузки ─── */
+
+.ei-dropzone {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1.5px dashed color-mix(in srgb, var(--primary-color) 42%, rgba(255,255,255,0.14));
+    border-radius: 18px;
+    cursor: pointer;
+    background:
+            linear-gradient(
+                    135deg,
+                    color-mix(in srgb, var(--primary-color) 14%, transparent),
+                    rgba(255,255,255,0.025)
+            ),
+            rgba(0,0,0,0.16);
+    transition:
+            transform 0.14s ease,
+            border-color 0.18s ease,
+            background 0.18s ease,
+            box-shadow 0.18s ease;
+    text-align: left;
+    overflow: hidden;
+}
+
+.ei-dropzone::after {
+    content: "Выбрать";
+    justify-self: end;
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 900;
+    color: var(--secondary-color);
+    background: var(--primary-color);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.ei-dropzone:hover,
+.ei-dropzone.ei-drag-over {
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+    box-shadow:
+            0 14px 30px rgba(0,0,0,0.22),
+            0 0 0 1px color-mix(in srgb, var(--primary-color) 16%, transparent);
+}
+
+.ei-drop-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.07);
+}
+
+.ei-drop-title {
+    font-size: 0.86rem;
+    font-weight: 900;
+    color: var(--secondary-color);
+    line-height: 1.15;
+}
+
+.ei-drop-sub {
+    font-size: 0.68rem;
+    color: var(--secondary-color);
+    opacity: 0.55;
+    line-height: 1.2;
+}
+
+/* ─── Файл / ошибки ─── */
+
+.ei-file-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    padding: 9px 11px;
+    background: color-mix(in srgb, var(--primary-color) 10%, rgba(0,0,0,0.08));
+    border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.ei-error {
+    font-size: 0.78rem;
+    color: #ff7b7b;
+    padding: 10px 12px;
+    background: rgba(255, 75, 92, 0.12);
+    border: 1px solid rgba(255, 75, 92, 0.22);
+    border-radius: 12px;
+}
+
+.ei-error.hidden {
+    display: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   Data Tools — Работа с данными
+   export-import-page.css
+   ══════════════════════════════════════════════════════ */
+
+.eip-data-tools {
+    margin: 4px 0 24px;
+    padding: 14px;
+    border-radius: 20px;
+    background:
+            linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.055),
+                    rgba(255,255,255,0.02)
+            ),
+            var(--tertiary-color);
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: var(--shadow-sm);
+}
+
+.eip-tools-head,
+.eip-import-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.eip-tools-head h3,
+.eip-import-head h4 {
+    margin: 0 0 3px;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 850;
+    color: var(--secondary-color);
+}
+
+.eip-tools-head p,
+.eip-import-head p {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--secondary-color);
+    opacity: 0.55;
+}
+
+.eip-mini-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 13px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    color: var(--secondary-color);
+    margin: 0 !important;
+    font-weight: 900;
+}
+
+.eip-tools-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.eip-tool-card {
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(0,0,0,0.14);
+    border: 1px solid rgba(255,255,255,0.065);
+}
+
+.eip-tool-card-primary {
+    background:
+            radial-gradient(
+                    circle at 0% 0%,
+                    color-mix(in srgb, var(--primary-color) 15%, transparent),
+                    transparent 42%
+            ),
+            rgba(0,0,0,0.14);
+}
+
+.eip-tool-card-title {
+    margin-bottom: 10px;
+    color: var(--secondary-color);
+    font-size: 0.82rem;
+    font-weight: 850;
+    opacity: 0.82;
+}
+
+.eip-tool-label {
+    display: block;
+    margin: 0 0 7px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--secondary-color);
+    opacity: 0.62;
+}
+
+.eip-month-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.eip-type-row {
+    margin-top: 10px;
+}
+
+.eip-month-input,
+.eip-type-select {
+    width: 100%;
+    height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.09);
+    background: rgba(0,0,0,0.18);
+    color: var(--secondary-color);
+    padding: 0 12px;
+    font-weight: 800;
+}
+
+.eip-mini-btn {
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--primary-color) 32%, transparent);
+    background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+    color: var(--secondary-color);
+    font-weight: 850;
+    margin: 0 !important;
+}
+
+.eip-month-summary,
+.eip-duplicates-result,
+.eip-empty-note {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 13px;
+    background: rgba(255,255,255,0.04);
+    color: var(--secondary-color);
+    opacity: 0.82;
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
+.eip-tool-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 10px;
+}
+
+.eip-tool-btn {
+    min-height: 42px;
+    border-radius: 15px;
+    font-weight: 850;
+    font-size: 0.76rem;
+    margin: 0 !important;
+}
+
+.eip-tool-btn-safe {
+    background: color-mix(in srgb, var(--primary-color) 18%, rgba(255,255,255,0.04));
+    color: var(--secondary-color);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+}
+
+.eip-tool-btn-danger,
+.eip-maintenance-danger {
+    background: rgba(255, 75, 92, 0.14) !important;
+    color: #ff6b78 !important;
+    border: 1px solid rgba(255, 75, 92, 0.28) !important;
+}
+
+.eip-maintenance-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-bottom: 12px;
+}
+
+.eip-maintenance-grid-compact {
+    margin-bottom: 0;
+}
+
+.eip-maintenance-btn {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    grid-template-areas:
+        "icon title"
+        "icon desc";
+    align-items: center;
+    column-gap: 10px;
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.065);
+    background: rgba(255,255,255,0.045);
+    color: var(--secondary-color);
+    text-align: left;
+    margin: 0 !important;
+}
+
+.eip-maintenance-btn span {
+    grid-area: icon;
+    width: 34px;
+    height: 34px;
+    border-radius: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.18);
+    font-size: 18px;
+}
+
+.eip-maintenance-btn b {
+    grid-area: title;
+    font-size: 0.8rem;
+    line-height: 1.15;
+}
+
+.eip-maintenance-btn small {
+    grid-area: desc;
+    font-size: 0.68rem;
+    line-height: 1.25;
+    opacity: 0.55;
+}
+
+.eip-duplicates-result.hidden {
+    display: none;
+}
+
+.eip-duplicate-row {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.eip-duplicate-row:last-child {
+    border-bottom: 0;
+}
+
+.eip-duplicate-row span {
+    opacity: 0.6;
+}
+
+/* ══════════════════════════════════════════════════════
+   Import batches / backups
+   ══════════════════════════════════════════════════════ */
+
+.eip-import-batches,
+.eip-backups-block {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.eip-import-batches-list,
+.eip-backups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eip-import-batch-card,
+.eip-backup-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.13);
+    border: 1px solid rgba(255,255,255,0.055);
+}
+
+.eip-import-batch-main,
+.eip-backup-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.eip-import-batch-main b,
+.eip-backup-main b {
+    font-size: 0.78rem;
+    color: var(--secondary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.eip-import-batch-main span,
+.eip-backup-main span,
+.eip-import-batch-main small {
+    font-size: 0.67rem;
+    color: var(--secondary-color);
+    opacity: 0.56;
+    line-height: 1.25;
+}
+
+.eip-import-batch-actions,
+.eip-backup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.eip-import-batch-actions button,
+.eip-backup-actions button {
+    width: auto;
+    min-width: 84px;
+    min-height: 30px;
+    margin: 0 !important;
+    padding: 6px 9px;
+    border-radius: 11px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.055);
+    color: var(--secondary-color);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.eip-batch-rollback,
+.eip-backup-restore {
+    color: #ffcf6b !important;
+    border-color: rgba(255,207,107,0.22) !important;
+    background: rgba(255,207,107,0.09) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   Mobile / wider screens
+   ══════════════════════════════════════════════════════ */
+
+@media (min-width: 520px) {
+    .eip-tools-grid {
+        grid-template-columns: 1.15fr 0.85fr;
+    }
+
+    .eip-maintenance-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   Data Confirm Modal
+   ══════════════════════════════════════════════════════ */
+
+.data-confirm-modal.hidden {
+    display: none;
+}
+
+.data-confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+}
+
+.data-confirm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.58);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.data-confirm-card {
+    position: relative;
+    width: min(420px, 100%);
+    padding: 16px;
+    border-radius: 24px;
+    background:
+            linear-gradient(
+                    180deg,
+                    rgba(255,255,255,0.08),
+                    rgba(255,255,255,0.025)
+            ),
+            var(--tertiary-color);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow:
+            0 24px 70px rgba(0,0,0,0.45),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+    color: var(--secondary-color);
+    animation: dataConfirmIn 0.18s ease both;
+}
+
+.data-confirm-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 12px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.data-confirm-danger .data-confirm-icon {
+    background: rgba(255, 75, 92, 0.14);
+    border-color: rgba(255, 75, 92, 0.28);
+}
+
+.data-confirm-warning .data-confirm-icon {
+    background: rgba(255, 207, 107, 0.13);
+    border-color: rgba(255, 207, 107, 0.25);
+}
+
+.data-confirm-content {
+    text-align: center;
+}
+
+.data-confirm-content h3 {
+    margin: 0 0 8px;
+    padding: 0;
+    font-size: 1.05rem;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--secondary-color);
+}
+
+.data-confirm-message {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--secondary-color);
+    opacity: 0.76;
+}
+
+.data-confirm-message b {
+    color: var(--secondary-color);
+    opacity: 1;
+}
+
+.data-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.data-confirm-btn {
+    min-height: 44px;
+    margin: 0 !important;
+    border-radius: 16px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.data-confirm-btn-cancel {
+    background: rgba(255,255,255,0.055);
+    color: var(--secondary-color);
+}
+
+.data-confirm-btn-ok {
+    background: rgba(255, 75, 92, 0.18);
+    color: #ff6b78;
+    border-color: rgba(255, 75, 92, 0.32);
+}
+
+.data-confirm-warning .data-confirm-btn-ok {
+    background: rgba(255, 207, 107, 0.14);
+    color: #ffcf6b;
+    border-color: rgba(255, 207, 107, 0.28);
+}
+
+@keyframes dataConfirmIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

@@ -1,7 +1,7 @@
 // ===============================
 // Chart.js: аналитика BudgetIt — с кликом по подписям и фиксами списка
 // ===============================
-
+import { refreshAnalyticsInsights } from '../Analyticsinsights.js';
 // --- tiny-guard: если Chart.js не загрузился (офлайн / проблемы с CDN),
 // просто отключаем аналитику, но приложение не ломаем
 let chartsAvailable = true;
@@ -18,8 +18,18 @@ try {
 
 // --- глобальные настройки Chart.js ------------------------------
 if (chartsAvailable) {
-    Chart.defaults.maintainAspectRatio = false;
-    Chart.defaults.aspectRatio        = 2;   // ширина : высота ≈ 2 : 1
+    Chart.defaults.maintainAspectRatio        = false;
+    Chart.defaults.aspectRatio                = 2;
+    Chart.defaults.animation.duration         = 600;
+    Chart.defaults.animation.easing           = 'easeOutQuart';
+    Chart.defaults.elements.bar.borderRadius  = 8;
+    Chart.defaults.elements.bar.borderSkipped = false;
+    Chart.defaults.elements.point.radius      = 0;
+    Chart.defaults.elements.point.hoverRadius = 5;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+    Chart.defaults.plugins.legend.labels.pointStyle    = 'circle';
+    Chart.defaults.plugins.legend.labels.padding       = 16;
+    Chart.defaults.plugins.legend.labels.font          = { size: 12 };
 }
 
 const CHART_DEFAULT_HEIGHT = 260;
@@ -51,7 +61,7 @@ const HEIGHT_MAP = {
     categoriesByDescendingChart: 0.7, // чуть выше, чтобы уместить все категории
     categoryHistoryChart       : 0.6,
     spendingByWeekdayChart     : 0.6,
-    spendingByAmountRangeChart : 0.6,
+    incomeBySourceChart        : 0.6,
     annualSummaryChart         : 0.8
 };
 
@@ -102,9 +112,110 @@ function buildWarmExpensePalette(count) {
 }
 
 
-// ------------------------------------------------------------------
-// 1) Хранилище графиков и вспомогательные карты
-// ------------------------------------------------------------------
+// ─── Единая семантическая палитра ────────────────────────────────────────────
+// Все чарты берут цвета отсюда — консистентность с CSS темами
+const PALETTE = {
+    income : () => getCssVar('--income-color',  '#10b981'),
+    expense: () => getCssVar('--expense-color', '#f43f5e'),
+    debt   : () => getCssVar('--debt-color',    '#f59e0b'),
+    deposit: () => getCssVar('--deposit-color', '#8b5cf6'),
+    primary: () => getCssVar('--primary-color', '#6366f1'),
+    // Радужная шкала для категорий — тёплая сторона
+    catHue : (i, total) => {
+        const hue = Math.round((i / Math.max(total - 1, 1)) * 310 + 10);
+        return `hsl(${hue}, 80%, 58%)`;
+    },
+    // Зелёная шкала для доходов по источникам
+    incomeHue: (i, total) => {
+        const hue = Math.round(130 + (i / Math.max(total - 1, 1)) * 50);
+        return `hsl(${hue}, 65%, 55%)`;
+    },
+    // Неделя: нейтрально-синяя → горячий день красный
+    weekday: (sums) => {
+        const max = Math.max(...sums, 1);
+        return sums.map(v => {
+            const intensity = v / max;
+            const hue = Math.round(220 - intensity * 200); // синий → красный
+            return `hsl(${hue}, ${60 + intensity * 25}%, ${55 + intensity * 5}%)`;
+        });
+    }
+};
+
+// ─── Градиент под линейный график ────────────────────────────────────────────
+function makeLineGradient(ctx, canvas, colorTop, colorBottom = 'transparent') {
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 300);
+    gradient.addColorStop(0,   colorTop);
+    gradient.addColorStop(0.6, colorBottom === 'transparent'
+        ? colorTop.replace('hsl', 'hsla').replace(')', ', 0.08)')
+        : colorBottom);
+    gradient.addColorStop(1,   'rgba(0,0,0,0)');
+    return gradient;
+}
+
+// ─── Общие options для осей ───────────────────────────────────────────────────
+function axisDefaults(isLight) {
+    const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+    const tickColor = getCssVar('--secondary-color', isLight ? '#475569' : '#94a3b8');
+    return { gridColor, tickColor };
+}
+
+// ─── Rich tooltip: топ-платежи внутри категории/элемента ───────────────────────
+/**
+ * Возвращает массив строк для тултипа с топ-5 платежами,
+ * отфильтрованными по переданной categoryLabel
+ */
+function getRichTooltipLines(tx, categoryLabel, totalAmt) {
+    const lines = [];
+    const catTx = tx.filter(t => {
+        const label = t.products?.[0]?.name || t.category || 'Без категории';
+        return (t.category === categoryLabel || label === categoryLabel) && t.type === 'expense';
+    });
+
+    if (!catTx.length) return lines;
+
+    // топ-5 по сумме
+    const top5 = [...catTx].sort((a, b) => amtOf(b) - amtOf(a)).slice(0, 5);
+    lines.push(''); // пустая строка-разделитель
+    lines.push(`📋 Топ платежей:`);
+    top5.forEach(t => {
+        const name = t.products?.[0]?.name || t.description || t.category || '—';
+        const date = t.date ? t.date.slice(5).replace('-', '.') : '';
+        const short = name.length > 22 ? name.slice(0, 21) + '…' : name;
+        lines.push(`  ${date}  ${short}  ${withCurrency(amtOf(t))}`);
+    });
+    if (catTx.length > 5) {
+        lines.push(`  … ещё ${catTx.length - 5} платежей`);
+    }
+    return lines;
+}
+
+/**
+ * Глобальные настройки тултипа — читаемый стиль на мобильном
+ */
+function buildTooltipDefaults() {
+    const isLight = document.documentElement.dataset.theme &&
+        ['light','yogurt','dolphin','mint','sage'].includes(
+            document.documentElement.dataset.theme
+        );
+    return {
+        backgroundColor: isLight ? 'rgba(255,255,255,0.97)' : 'rgba(13,17,32,0.96)',
+        borderColor    : isLight ? 'rgba(99,102,241,0.2)'   : 'rgba(99,102,241,0.35)',
+        borderWidth    : 1,
+        titleColor     : isLight ? '#1e293b' : '#f1f5f9',
+        bodyColor      : isLight ? '#475569' : '#94a3b8',
+        padding        : { x: 14, y: 11 },
+        cornerRadius   : 14,
+        caretSize      : 6,
+        caretPadding   : 6,
+        titleFont      : { size: 13, weight: '700' },
+        bodyFont       : { size: 12 },
+        displayColors  : false,
+        boxPadding     : 4,
+        multiKeyBackground: 'transparent',
+    };
+}
+
+
 let charts           = {};
 const canvasHandlers = new Map();
 
@@ -158,6 +269,7 @@ function initializeAnalytics(budgetManager) {
 
     initAnalyticsMonthPicker();
     renderCharts();
+    refreshAnalyticsInsights(budgetManager);
 
     if (wasHidden) settingsPage.classList.add('hidden');
 }
@@ -184,7 +296,7 @@ function showAnalyticsSlide(index) {
             renderCategoriesByDescendingChart,
             renderCategoryHistoryChart,
             renderSpendingByWeekdayChart,
-            renderSpendingByAmountRangeChart
+            renderIncomeBySourceChart
         ];
         if (chartRenderers[index] && !isChartRendered(index)) {
             chartRenderers[index]();
@@ -202,7 +314,7 @@ function isChartRendered(index) {
         'categoriesByDescending',
         'categoryHistory',
         'spendingByWeekday',
-        'spendingByAmountRange'
+        'incomeBySource'
     ];
     return charts[chartKeys[index]];
 }
@@ -228,7 +340,7 @@ function renderCharts() {
         renderCategoriesByDescendingChart,
         renderCategoryHistoryChart,
         renderSpendingByWeekdayChart,
-        renderSpendingByAmountRangeChart,
+        renderIncomeBySourceChart,
         renderAnnualSummaryChart
     ].forEach(fn => fn());
 }
@@ -281,6 +393,7 @@ function applyAnalyticsMonthFilter(rawValue) {
     localStorage.setItem(ANALYTICS_MONTH_STORAGE_KEY, currentAnalyticsMonthFilter);
     transactionsCache.clear();
     renderCharts();
+    refreshAnalyticsInsights(budgetManager);
 }
 
 function initAnalyticsMonthPicker() {
@@ -476,12 +589,7 @@ function renderExpensesByCategoryChart() {
 
     ensureNonEmptyData(labels, data);
 
-    const colors = labels.map((_, i) => {
-        const hue = (i * 360 / labels.length + 15) % 360;
-        const sat = 75;
-        const light = 55;
-        return `hsl(${hue}, ${sat}%, ${light}%)`;
-    });
+    const colors = buildWarmExpensePalette(labels.length);
 
 
     // убиваем старый график, если есть
@@ -519,17 +627,16 @@ function renderExpensesByCategoryChart() {
             datasets: [{
                 data,
                 backgroundColor: colors,
-                // делаем дуги толще и более «капсульными»
-                borderWidth : 0,
-                borderRadius: 0,
-                hoverOffset : 22,
-                // без зазоров между секторами
-                spacing     : 0
+                borderWidth : 2,
+                borderColor : 'transparent',
+                borderRadius: 6,
+                hoverOffset : 16,
+                spacing     : 3
             }]
         },
         options: {
             // пончик толще и старт сверху
-            cutout   : '55%',
+            cutout   : '68%',
             rotation : -0.5 * Math.PI,
             plugins  : {
                 legend: {
@@ -580,8 +687,18 @@ function renderExpensesByCategoryChart() {
                     }
                 },
                 tooltip: {
+                    ...buildTooltipDefaults(),
                     callbacks: {
-                        label: c => `${c.label}: ${withCurrency(c.raw)}`
+                        title: c => c[0]?.label || '',
+                        label: c => {
+                            const val = c.raw || 0;
+                            const pct = totalAll > 0 ? (val / totalAll * 100).toFixed(1) : 0;
+                            return `${withCurrency(val)}  ·  ${pct}% от расходов`;
+                        },
+                        afterLabel: c => {
+                            const allTx = getCurrentBudgetTransactions();
+                            return getRichTooltipLines(allTx, c.label, c.raw);
+                        }
                     }
                 }
             }
@@ -674,16 +791,20 @@ function renderMonthlyExpensesChart() {
             labels: keys,
             datasets: [
                 {
-                    label: 'Доходы',
-                    data : income,
-                    backgroundColor: getCssVar('--primary-color', 'hsl(160,80%,60%)'),
-                    borderRadius   : 10
+                    label          : 'Доходы',
+                    data           : income,
+                    backgroundColor: PALETTE.income(),
+                    borderRadius   : { topLeft: 8, topRight: 8, bottomLeft: 2, bottomRight: 2 },
+                    borderSkipped  : false,
+                    barPercentage  : 0.72
                 },
                 {
-                    label: 'Расходы',
-                    data : expense,
-                    backgroundColor: getCssVar('--expense-color', 'hsl(0,80%,60%)'),
-                    borderRadius   : 10
+                    label          : 'Расходы',
+                    data           : expense,
+                    backgroundColor: PALETTE.expense(),
+                    borderRadius   : { topLeft: 8, topRight: 8, bottomLeft: 2, bottomRight: 2 },
+                    borderSkipped  : false,
+                    barPercentage  : 0.72
                 }
             ]
         },
@@ -704,14 +825,28 @@ function renderMonthlyExpensesChart() {
                         callback: formatNumber
                     },
                     grid: {
-                        color: 'rgba(255,255,255,0.06)'
+                        color: 'rgba(128,128,128,0.1)',
+                        drawBorder: false
                     }
                 }
             },
             plugins: {
                 tooltip: {
+                    ...buildTooltipDefaults(),
                     callbacks: {
-                        label: c => `${c.dataset.label}: ${withCurrency(c.raw)}`
+                        title: c => c[0]?.label || '',
+                        label: c => {
+                            const val = c.raw || 0;
+                            return `${c.dataset.label}: ${withCurrency(val)}`;
+                        },
+                        afterBody: (items) => {
+                            if (items.length < 2) return [];
+                            const inc = items.find(i => i.dataset.label === 'Доходы')?.raw || 0;
+                            const exp = items.find(i => i.dataset.label === 'Расходы')?.raw || 0;
+                            const bal = inc - exp;
+                            const sign = bal >= 0 ? '+' : '';
+                            return ['', `💰 Остаток: ${sign}${withCurrency(bal)}`];
+                        }
                     }
                 }
             }
@@ -780,14 +915,16 @@ function renderIncomeVsExpensesChart() {
                 {
                     label: 'Доходы',
                     data : [safeIncome],
-                    backgroundColor: getCssVar('--primary-color', 'hsl(160,80%,60%)'),
-                    borderRadius   : 999
+                    backgroundColor: PALETTE.income(),
+                    borderRadius   : 999,
+                    borderSkipped  : false
                 },
                 {
                     label: 'Расходы',
                     data : [safeExpense],
-                    backgroundColor: getCssVar('--expense-color', 'hsl(0,80%,60%)'),
-                    borderRadius   : 999
+                    backgroundColor: PALETTE.expense(),
+                    borderRadius   : 999,
+                    borderSkipped  : false
                 }
             ]
         },
@@ -847,13 +984,11 @@ function renderTopExpensesChart() {
     const data   = sorted.map(([, a]) => a);
 
     ensureNonEmptyData(labels, data);
-    const colors = labels.map((_, i) =>
-        `hsl(${360 - i * 24}, 70%, 60%)`
-    );
+    const colors = labels.map((_, i) => PALETTE.catHue(i, labels.length));
 
     charts.topExpenses = new Chart(ctx, {
         type: 'bar',
-        data: { labels, datasets: [{ data, backgroundColor: colors }] },
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 20, borderSkipped: false }] },
         options: {
             indexAxis: 'y',
             layout   : { padding: { left: 10, right: 10, bottom: 24, top: 6 } },
@@ -874,12 +1009,47 @@ function renderTopExpensesChart() {
                         color   : getCssVar('--secondary-color', '#fff'),
                         callback: formatNumber
                     },
-                    grid: { color: 'rgba(255,255,255,0.06)' }
+                    grid: { color: 'rgba(128,128,128,0.1)', drawBorder: false }
                 }
             },
             plugins : {
                 legend : { display: false },
-                tooltip: { callbacks: { label: c => withCurrency(c.raw) } }
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    callbacks: {
+                        title: c => c[0]?.label || '',
+                        label: c => {
+                            const val = c.raw || 0;
+                            // Считаем количество транзакций с этим именем
+                            const allTx = getCurrentBudgetTransactions();
+                            const matching = allTx.filter(t => {
+                                const label = t.products?.[0]?.name || t.category || 'Без категории';
+                                return label === c.label && t.type === 'expense';
+                            });
+                            const cnt = matching.length;
+                            return cnt > 1
+                                ? `${withCurrency(val)}  ·  ${cnt} операций`
+                                : withCurrency(val);
+                        },
+                        afterLabel: c => {
+                            const allTx = getCurrentBudgetTransactions();
+                            const matching = allTx.filter(t => {
+                                const label = t.products?.[0]?.name || t.category || 'Без категории';
+                                return label === c.label && t.type === 'expense';
+                            }).sort((a, b) => new Date(b.date) - new Date(a.date));
+                            if (!matching.length) return [];
+                            const last = matching[0];
+                            const lastDate = last.date?.slice(0, 10) || '';
+                            const lines = [''];
+                            if (lastDate) lines.push(`📅 Последний: ${lastDate}`);
+                            if (matching.length > 1) {
+                                const avg = (matching.reduce((s,t) => s + amtOf(t), 0) / matching.length);
+                                lines.push(`📊 Средний: ${withCurrency(avg)}`);
+                            }
+                            return lines;
+                        }
+                    }
+                }
             },
             elements: {
                 bar: {
@@ -937,12 +1107,18 @@ function renderBalanceDynamicsChart() {
         data: {
             labels: sortedDays,
             datasets: [{
-                data     : data,
-                tension  : 0.3,
-                borderWidth: 3,
-                borderColor: getCssVar('--primary-color', 'hsl(160,80%,60%)'),
-                pointRadius: 0,
-                fill       : false
+                data            : data,
+                tension         : 0.4,
+                borderWidth     : 2.5,
+                borderColor     : PALETTE.primary(),
+                pointRadius     : 0,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: PALETTE.primary(),
+                pointHoverBorderColor    : 'rgba(255,255,255,0.8)',
+                pointHoverBorderWidth    : 2,
+                fill            : true,
+                backgroundColor : makeLineGradient(ctx, canvas,
+                    PALETTE.primary().replace(')', ', 0.35)').replace('hsl(', 'hsla('))
             }]
         },
         options: {
@@ -957,12 +1133,31 @@ function renderBalanceDynamicsChart() {
                         color   : getCssVar('--secondary-color', '#fff'),
                         callback: formatNumber
                     },
-                    grid: { color: 'rgba(255,255,255,0.06)' }
+                    grid: { color: 'rgba(128,128,128,0.1)', drawBorder: false }
                 }
             },
             plugins: {
                 legend : { display: false },
-                tooltip: { callbacks: { label: c => withCurrency(c.raw) } }
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    callbacks: {
+                        title: c => `📅 ${c[0]?.label || ''}`,
+                        label: c => `Баланс: ${withCurrency(c.raw)}`,
+                        afterLabel: c => {
+                            const day = c.label;
+                            const dayTx = tx.filter(t => t.date?.slice(0,10) === day);
+                            if (!dayTx.length) return [];
+                            const lines = [''];
+                            dayTx.forEach(t => {
+                                const name = t.products?.[0]?.name || t.category || '—';
+                                const short = name.length > 20 ? name.slice(0, 19) + '…' : name;
+                                const sign = t.type === 'income' ? '+' : '−';
+                                lines.push(`  ${sign} ${short}  ${withCurrency(amtOf(t))}`);
+                            });
+                            return lines;
+                        }
+                    }
+                }
             }
         }
     });
@@ -1019,13 +1214,21 @@ function renderCategoryHistoryChart() {
         data: {
             labels,
             datasets: [{
-                data       : data,
-                tension    : 0.4,
-                borderWidth: 3,
-                borderColor: getCssVar('--primary-color', 'hsl(160,80%,60%)'),
-                pointRadius: 3,
-                pointHoverRadius: 4,
-                fill       : false
+                data                     : data,
+                tension                  : 0.4,
+                borderWidth              : 2.5,
+                borderColor              : PALETTE.expense(),
+                pointRadius              : 3,
+                pointBackgroundColor     : PALETTE.expense(),
+                pointBorderColor         : 'rgba(255,255,255,0.6)',
+                pointBorderWidth         : 1.5,
+                pointHoverRadius         : 6,
+                pointHoverBackgroundColor: PALETTE.expense(),
+                pointHoverBorderColor    : '#fff',
+                pointHoverBorderWidth    : 2,
+                fill                     : true,
+                backgroundColor          : makeLineGradient(ctx, canvas,
+                    PALETTE.expense().replace(')', ', 0.28)').replace('hsl(', 'hsla(').replace('rgb(', 'rgba(').replace(')', ', 0.28)'))
             }]
         },
         options: {
@@ -1040,19 +1243,47 @@ function renderCategoryHistoryChart() {
                         color   : getCssVar('--secondary-color', '#fff'),
                         callback: formatNumber
                     },
-                    grid: { color: 'rgba(255,255,255,0.06)' }
+                    grid: { color: 'rgba(128,128,128,0.1)', drawBorder: false }
                 }
             },
             plugins: {
                 legend : { display: false },
-                tooltip: { callbacks: { label: c => withCurrency(c.raw) } }
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    callbacks: {
+                        title: c => `${c[0]?.label || ''}  ·  ${cat}`,
+                        label: c => withCurrency(c.raw),
+                        afterLabel: c => {
+                            // Показываем топ-3 платежа в этом месяце для данной категории
+                            const [mm, yy] = (c.label || '').split('/');
+                            if (!mm || !yy) return [];
+                            const monthTx = tx.filter(t => {
+                                if (t.type !== 'expense') return false;
+                                const isMatch = cat === 'Другие'
+                                    ? !charts.expensesByCategory?.data?.labels?.includes(t.category)
+                                    : t.category === cat;
+                                if (!isMatch) return false;
+                                const d = new Date(t.date);
+                                return d.getMonth() + 1 === +mm && d.getFullYear() === +yy;
+                            }).sort((a, b) => amtOf(b) - amtOf(a)).slice(0, 3);
+                            if (!monthTx.length) return [];
+                            const lines = [''];
+                            monthTx.forEach(t => {
+                                const name = t.products?.[0]?.name || t.category || '—';
+                                const short = name.length > 20 ? name.slice(0,19) + '…' : name;
+                                lines.push(`  ${short}  ${withCurrency(amtOf(t))}`);
+                            });
+                            return lines;
+                        }
+                    }
+                }
             }
         }
     });
 }
 
 // -----------------------------------------------------------------
-// 7. Категории по убыванию (фиксы видимости + клик по подписям)
+// 7. Категории по убыванию
 // -----------------------------------------------------------------
 // --- утилиты для подписей ---
 function softHyphenate(word, chunk = 15) {
@@ -1148,9 +1379,7 @@ function renderCategoriesByDescendingChart() {
         )
     );
 
-    const colors = labels.map((_, i) =>
-        `hsl(${i * 360 / Math.max(labels.length, 1)}, 70%, 60%)`
-    );
+    const colors = labels.map((_, i) => PALETTE.catHue(i, labels.length));
 
     // уничтожаем старый график при перерисовке
     if (charts.categoriesByDescending) {
@@ -1197,8 +1426,20 @@ function renderCategoriesByDescendingChart() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    ...buildTooltipDefaults(),
                     callbacks: {
-                        label: ctx => ` ${withCurrency(ctx.raw)}`
+                        title: c => Array.isArray(c[0]?.label) ? c[0].label.join(' ') : (c[0]?.label || ''),
+                        label: ctx => {
+                            const val = ctx.raw || 0;
+                            const totalAll = sorted.reduce((s, [,v]) => s + v, 0);
+                            const pct = totalAll > 0 ? (val / totalAll * 100).toFixed(1) : 0;
+                            return `${withCurrency(val)}  ·  ${pct}%`;
+                        },
+                        afterLabel: ctx => {
+                            const catName = fullLabels[ctx.dataIndex];
+                            if (!catName) return [];
+                            return getRichTooltipLines(getCurrentBudgetTransactions(), catName, ctx.raw);
+                        }
                     }
                 }
             },
@@ -1242,11 +1483,11 @@ function renderSpendingByWeekdayChart() {
     });
 
     ensureNonEmptyData(days, sums);
-    const colors = days.map((_, i) => `hsl(${i * 50},70%,60%)`);
+    const colors = PALETTE.weekday(sums);
 
     charts.spendingByWeekday = new Chart(ctx, {
         type: 'bar',
-        data: { labels: days, datasets: [{ data: sums, backgroundColor: colors, borderRadius: 10 }] },
+        data: { labels: days, datasets: [{ data: sums, backgroundColor: colors, borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 3, bottomRight: 3 }, borderSkipped: false }] },
         options: {
             layout: { padding: { bottom: 30 } },
             scales: {
@@ -1259,72 +1500,116 @@ function renderSpendingByWeekdayChart() {
                         color   : getCssVar('--secondary-color', '#fff'),
                         callback: formatNumber
                     },
-                    grid: { color: 'rgba(255,255,255,0.06)' }
+                    grid: { color: 'rgba(128,128,128,0.1)', drawBorder: false }
                 }
             },
             plugins: {
                 legend : { display: false },
-                tooltip: { callbacks: { label: c => withCurrency(c.raw) } }
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    callbacks: {
+                        title: c => `${c[0]?.label || ''} — траты`,
+                        label: c => withCurrency(c.raw),
+                        afterLabel: c => {
+                            const dayIdx = c.dataIndex;
+                            const allTx = getCurrentBudgetTransactions();
+                            const dayTx = allTx.filter(t => t.type === 'expense' && new Date(t.date).getDay() === dayIdx);
+                            if (!dayTx.length) return [];
+                            const avg = (c.raw || 0) / Math.max(dayTx.length, 1);
+                            return ['', `Операций: ${dayTx.length}`, `Средний чек: ${withCurrency(avg)}`];
+                        }
+                    }
+                }
             }
         }
     });
 }
 
 // -----------------------------------------------------------------
-// 9. Траты по размеру чека (кол-во чеков)
 // -----------------------------------------------------------------
-function renderSpendingByAmountRangeChart() {
-    const canvas = document.getElementById('spendingByAmountRangeChart');
+// 9. Доходы по источникам
+// -----------------------------------------------------------------
+function renderIncomeBySourceChart() {
+    const canvas = document.getElementById('incomeBySourceChart');
     if (!canvas) return;
-    setAdaptiveCanvasHeight(canvas);
 
     const ctx = canvas.getContext('2d');
-    const tx  = getCurrentBudgetTransactions();
+    const tx  = getCurrentBudgetTransactions(false);
 
-    const ranges = {
-        '<100 000'             : 0,
-        '100 000–500 000'      : 0,
-        '500 000–1 000 000'    : 0,
-        '1 000 000–5 000 000'  : 0,
-        '5 000 000–10 000 000' : 0,
-        '>10 000 000'          : 0
-    };
-
-    tx.filter(t => t.type === 'expense').forEach(t => {
-        const a = amtOf(t);
-        if      (a < 100_000)    ranges['<100 000']++;
-        else if (a < 500_000)    ranges['100 000–500 000']++;
-        else if (a < 1_000_000)  ranges['500 000–1 000 000']++;
-        else if (a < 5_000_000)  ranges['1 000 000–5 000 000']++;
-        else if (a < 10_000_000) ranges['5 000 000–10 000 000']++;
-        else                     ranges['>10 000 000']++;
+    const map = {};
+    tx.filter(t => t.type === 'income').forEach(t => {
+        const cat = t.category || '💰 Прочие доходы';
+        map[cat]  = (map[cat] || 0) + amtOf(t);
     });
 
-    const labels = Object.keys(ranges);
-    const data   = Object.values(ranges);
+    const sorted  = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 15);
+    const labels  = sorted.map(([l]) => l.length > 22 ? l.slice(0, 21) + '…' : l);
+    const data    = sorted.map(([, a]) => a);
+    const totalInc = data.reduce((s, v) => s + v, 0);
+
     ensureNonEmptyData(labels, data);
 
-    const baseColors = [
-        'rgb(43,232,42)','rgb(42,172,232)','rgb(232,43,42)',
-        'rgb(138,43,226)','hsl(270,70%,60%)','hsl(320,70%,60%)'
-    ];
+    const colors = labels.map((_, i) => PALETTE.incomeHue(i, labels.length));
 
-    charts.spendingByAmountRange = new Chart(ctx, {
-        type: 'pie',
-        data: { labels, datasets: [{ data, backgroundColor: baseColors }] },
+    // динамическая высота под количество строк
+    const rowH    = 34;
+    const extra   = 60;
+    const desiredH = Math.min(window.innerHeight * 0.7, Math.max(220, labels.length * rowH + extra));
+    canvas.style.height = `${Math.round(desiredH)}px`;
+    canvas.height = Math.round(desiredH) * window.devicePixelRatio;
+
+    const barThickness = Math.max(12, Math.min(26,
+        Math.floor((desiredH - extra) / Math.max(labels.length, 1)) - 8
+    ));
+
+    charts.incomeBySource = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 8, borderSkipped: false, barThickness }] },
         options: {
-            layout : { padding: { top: 10, bottom: 50, left: 10, right: 10 } },
-            plugins: {
-                legend : {
-                    position: 'bottom',
-                    labels  : { color: getCssVar('--secondary-color', '#fff') }
+            indexAxis: 'y',
+            layout   : { padding: { left: 10, right: 14, top: 8, bottom: 20 } },
+            scales   : {
+                y: {
+                    offset: true,
+                    grid  : { display: false },
+                    ticks : { autoSkip: false, color: getCssVar('--secondary-color', '#fff'), font: { size: 11 } }
                 },
-                tooltip: { callbacks: { label: c => `${c.label}: ${c.raw} чеков` } }
-            }
+                x: {
+                    grid : { color: 'rgba(255,255,255,0.06)', drawBorder: false },
+                    ticks: { color: getCssVar('--text-muted', '#888'), callback: v => formatNumber(v) }
+                }
+            },
+            plugins: {
+                legend : { display: false },
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    callbacks: {
+                        title: c => c[0]?.label || '',
+                        label: c => {
+                            const val = c.raw || 0;
+                            const pct = totalInc > 0 ? (val / totalInc * 100).toFixed(1) : 0;
+                            return `${withCurrency(val)}  ·  ${pct}% доходов`;
+                        },
+                        afterLabel: c => {
+                            const catName = sorted[c.dataIndex]?.[0];
+                            if (!catName) return [];
+                            const catTx = tx.filter(t => t.type === 'income' && t.category === catName);
+                            if (!catTx.length) return [];
+                            const avg = catTx.reduce((s, t) => s + amtOf(t), 0) / catTx.length;
+                            const last = [...catTx].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                            const lines = [''];
+                            lines.push(`Поступлений: ${catTx.length}`);
+                            if (catTx.length > 1) lines.push(`Среднее: ${withCurrency(avg)}`);
+                            if (last?.date) lines.push(`Последнее: ${last.date}`);
+                            return lines;
+                        }
+                    }
+                }
+            },
+            animation: { duration: 500, easing: 'easeOutCubic' }
         }
     });
 }
-
 // -----------------------------------------------------------------
 // 10. Годовая сводка
 // -----------------------------------------------------------------
@@ -1354,11 +1639,11 @@ function renderAnnualSummaryChart() {
         data: {
             labels  : months,
             datasets: [
-                { label: 'Бюджет', data: dataBudget,  backgroundColor: 'hsl(130,70%,60%)' },
-                { label: 'Доходы', data: dataIncome,  backgroundColor: 'hsl(210,70%,60%)' },
-                { label: 'Расходы',data: dataExpense, backgroundColor: 'hsl(0,70%,60%)'   },
-                { label: 'Вклад',  data: dataDeposit, backgroundColor: 'hsl(270,70%,60%)' },
-                { label: 'Долг',   data: dataDebt,    backgroundColor: 'hsl(45,70%,60%)'  }
+                { label: 'Бюджет',  data: dataBudget,  backgroundColor: PALETTE.primary(), borderRadius: 6, borderSkipped: false },
+                { label: 'Доходы',  data: dataIncome,  backgroundColor: PALETTE.income(),  borderRadius: 6, borderSkipped: false },
+                { label: 'Расходы', data: dataExpense, backgroundColor: PALETTE.expense(), borderRadius: 6, borderSkipped: false },
+                { label: 'Вклад',   data: dataDeposit, backgroundColor: PALETTE.deposit(), borderRadius: 6, borderSkipped: false },
+                { label: 'Долг',    data: dataDebt,    backgroundColor: PALETTE.debt(),    borderRadius: 6, borderSkipped: false }
             ]
         },
         options: {
@@ -1372,11 +1657,11 @@ function renderAnnualSummaryChart() {
                 legend : {
                     position: 'bottom',
                     labels  : {
-                        boxWidth : 14,
-                        boxHeight: 14,
-                        padding  : 12,
+                        padding  : 14,
                         font     : { size: 12 },
-                        color    : getCssVar('--secondary-color', '#fff')
+                        color    : getCssVar('--secondary-color', '#e2e8f0'),
+                        usePointStyle: true,
+                        pointStyle   : 'rectRounded'
                     }
                 }
             },

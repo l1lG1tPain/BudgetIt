@@ -139,8 +139,13 @@ export function refreshUserProfile(budgetManager) {
         nameEl.textContent = profile?.name || 'Неизвестный эмодзи';
     }
 
+    // ── Обновляем имя акулки в hero-карточке settings-page ──
+    const heroNameEl = document.getElementById('sp-hero-name');
+    if (heroNameEl) {
+        heroNameEl.textContent = profile?.name || userId || '—';
+    }
+
     if (idTextEl && window.budgetItUserId) {
         idTextEl.textContent = window.budgetItUserId;
     }
 }
-

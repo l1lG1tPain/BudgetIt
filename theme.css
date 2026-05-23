@@ -1,4 +1,62 @@
 :root {
+    --primary-color:  #3B82F6;      /* фирменный синий — бренд/акцент */
+    --income-color:   #27AE60;      /* зелёный только для доходов */
+    --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
+    --deposit-color:  #9B59B6;      /* нежная сирень */
+    --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+
+    --secondary-color: #1A1A1A;     /* насыщенный тёмный текст */
+    --tertiary-color:  #FFFFFF;     /* чистый белый для карточек */
+    --dark-color:      #000000;
+
+    --accent-color:    #EFF6FF;     /* лёгкий голубовато-молочный фон */
+    --main-ground:     #F5F7F9;     /* мягкий серо-молочный фон страницы */
+    --bg-secondary-color: #FFFFFF;  /* светлые блоки и карточки */
+
+    /* Analytics */
+    --an-primary-color:    #3B82F6;
+    --an-income-color:     #27AE60;
+    --an-expense-color:    #E74C3C;
+    --an-debt-color:       #F1C40F;
+    --an-secondary-color:  #1A1A1A;
+    --an-tertiary-color:   #FFFFFF;
+    --an-accent-color:     #BDC3C7;
+    --an-shadow-md:        0 4px 12px rgba(0,0,0,0.25);
+    --an-border-radius-md: 12px;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+    --spacing-xl: 32px;
+
+    --border-radius-sm: 4px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 14px;
+    --border-radius-xl: 24px;
+
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.2);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.9);
+
+    --transition-fast:   0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow:   0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+    --z-index-header:       900;
+    --z-index-backdrop:    1099;
+    --z-index-bottom-sheet:1200;
+    --z-index-modal:       1200;
+    --z-index-loading:     9999;
+
+    --linear-progress-bar: linear-gradient(135deg, #3B82F6, #6366F1);
+
+    .add-btn, #pay-debt, #close-detail, #delete-transaction, #close-budget-sheet, #add-budget-btn, #close-settings, #budget-form button, #cancel-delete-budget, #confirm-delete-budget, #pay-debt-detail {
+        color: #000000;
+    }
+}
+
+:root[data-theme="light-classic"] {
     --primary-color:  #2ECC71;      /* свежий сочный зелёный */
     --income-color:   #27AE60;      /* чуть темнее для доходов */
     --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
@@ -32,7 +90,7 @@
 
     --border-radius-sm: 4px;
     --border-radius-md: 10px;
-    --border-radius-lg: 12px;
+    --border-radius-lg: 14px;
     --border-radius-xl: 24px;
 
     --shadow-sm: 0 2px 5px rgba(0,0,0,0.1);
@@ -45,7 +103,7 @@
 
     --z-index-header:       900;
     --z-index-backdrop:    1099;
-    --z-index-bottom-sheet:1100;
+    --z-index-bottom-sheet:1200;
     --z-index-modal:       1200;
     --z-index-loading:     9999;
 
@@ -55,14 +113,80 @@
         color: var(--secondary-color);
     }
 
-  }
+}
 
-  :root[data-theme="dark"] {
-      --primary-color:  #2ECC71;      /* свежий сочный зелёный */
-      --income-color:   #27AE60;      /* чуть темнее для доходов */
-      --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
-      --deposit-color:  #9B59B6;      /* нежная сирень */
-      --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+:root[data-theme="dark"] {
+    --primary-color:  #3B82F6;      /* фирменный синий — бренд/акцент */
+    --income-color:   #27AE60;      /* зелёный только для доходов */
+    --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
+    --deposit-color:  #9B59B6;      /* нежная сирень */
+    --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+
+    --secondary-color:    #dcddde;
+    --bg-secondary-color: #000000;
+    --tertiary-color:     #000000;
+    --accent-color:       #1E2A3A;  /* тёмно-синеватый вместо серого */
+    --main-ground:        #0F1419;  /* чуть холоднее, в тон синему */
+
+    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
+    --shadow-lg: 0 -2px 25px rgba(0,0,0,0.8);
+
+    --an-primary-color:   var(--primary-color);
+    --an-income-color:    var(--income-color);
+    --an-expense-color:   var(--expense-color);
+    --an-debt-color:      var(--debt-color);
+    --an-secondary-color: #f0f0f0;
+    --an-tertiary-color:  #1e1e1e;
+    --an-accent-color:    var(--accent-color);
+
+    --linear-progress-bar: linear-gradient(135deg, #3B82F6, #6366F1);
+
+    .currency-chip {
+        background-color: var(--bg-secondary-color);
+        color: var(--secondary-color);
+    }
+
+    .chip-btn.active {
+        color: var(--tertiary-color);
+    }
+
+    .term-chip {
+        color: var(--secondary-color) !important;
+    }
+
+    #add-btn, #install-btn {
+        color: #FFFFFF;
+    }
+
+    #add-budget-btn, .add-btn, #add-product {
+        color: #FFFFFF;
+    }
+
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    .faq-item summary {
+        color: #ffffff;
+    }
+
+    input, select, textarea,
+    .custom-select-button, .custom-select {
+        color: var(--secondary-color);
+    }
+
+    #summary-blocks {
+        color: var(--bg-secondary-color);
+    }
+}
+
+:root[data-theme="dark-classic"] {
+    --primary-color:  #2ECC71;      /* свежий сочный зелёный */
+    --income-color:   #27AE60;      /* чуть темнее для доходов */
+    --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
+    --deposit-color:  #9B59B6;      /* нежная сирень */
+    --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
 
     --secondary-color:  #dcddde;
     --bg-secondary-color: #000000;
@@ -83,24 +207,24 @@
     --an-accent-color:     var(--accent-color);
 
     .currency-chip{
-      background-color: var(--bg-secondary-color);
-      color: var(--secondary-color);
+        background-color: var(--bg-secondary-color);
+        color: var(--secondary-color);
     }
 
-      .chip-btn.active {
-          color: var(--tertiary-color);
-      }
+    .chip-btn.active {
+        color: var(--tertiary-color);
+    }
 
-      .term-chip {
-          color: var(--secondary-color) !important;
-      }
+    .term-chip {
+        color: var(--secondary-color) !important;
+    }
 
     #add-btn, #install-btn {
-      color: var(--tertiary-color);
+        color: var(--tertiary-color);
     }
 
     #add-budget-btn, .add-btn, #add-product {
-      color: var(--tertiary-color);
+        color: var(--tertiary-color);
     }
 
     .analytics-slide h4 {
@@ -108,19 +232,18 @@
     }
 
     .faq-item summary {
-      color: #ffffff;
+        color: #ffffff;
     }
 
     input, select, textarea,
     .custom-select-button, .custom-select {
-      color: var(--secondary-color);
+        color: var(--secondary-color);
     }
 
     #summary-blocks {
-      color: var(--bg-secondary-color);
+        color: var(--bg-secondary-color);
     }
-  }
-
+}
 
 :root[data-theme="onyx"] {
     /* 🖤 Базовый Onyx — глубокий тёмный камень */
@@ -298,133 +421,167 @@
 
 
 :root[data-theme="shark"] {
-    --main-ground:    #0d0d0d;
-    --tertiary-color: #1a1a1a;
-    --accent-color:   #561b2f; /* Бордовая кофточка */
-    --sidebar-bg:     #000000;
 
-    --secondary-color: #e0e0e0;
-    --text-muted:      #888888;
-    --bg-secondary-color: #0d0d0d;
+    /* ── ОСНОВА ── */
+    --main-ground:        #080a0d;   /* почти чёрный с лёгким холодным оттенком */
+    --sidebar-bg:         #000000;
+    --bg-secondary-color: #080a0d;
+    --tertiary-color:     #12151a;   /* карточки — тёмный графит */
 
-    --primary-color:  #00ff66;  /* Яркий зелёный акцент */
-    --income-color:   #00c87f;
-    --expense-color:  #ff4c4c;
-    --deposit-color:  #8e44ad;
-    --debt-color:     #e67e22;
+    --secondary-color:    #dde3ec;   /* текст — чуть голубоватый белый (в тон акулке) */
+    --text-muted:         #6b7585;
+    --dark-color:         #000000;
 
-    --dark-color:      #000000;
+    /* ── АКЦЕНТЫ ── */
+    --primary-color:   #00ff7f;      /* неоновый зелёный — B$T логотип */
+    --income-color:    #00d96b;      /* чуть темнее для доходов */
+    --expense-color:   #ff3d55;      /* яркий красный */
+    --deposit-color:   #7b5ea7;      /* приглушённый фиолетовый */
+    --debt-color:      #f0913a;      /* оранжевый */
 
-    --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.6);
-    --shadow-lg: 0 -2px 25px rgba(0,255,102,0.3);
+    --accent-color:    #6b1f35;      /* бордо худи — чуть насыщеннее */
 
-    /* Аналитика */
+    /* ── ТЕНИ — зелёное свечение акулки ── */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 255, 127, 0.06);
+    --shadow-lg: 0 -2px 30px rgba(0, 255, 127, 0.18);
+
+    /* ── АНАЛИТИКА ── */
     --an-primary-color:    var(--primary-color);
     --an-income-color:     var(--income-color);
     --an-expense-color:    var(--expense-color);
     --an-debt-color:       var(--debt-color);
     --an-secondary-color:  var(--secondary-color);
-    --an-tertiary-color:   var(--tertiary-color);
-    --an-accent-color:     var(--accent-color);
-    --an-shadow-md:        0 4px 12px rgba(0,255,102,0.3);
+    --an-tertiary-color:   #0d1017;
+    --an-accent-color:     #1a2030;
+    --an-shadow-md:        0 4px 16px rgba(0, 255, 127, 0.2);
     --an-border-radius-md: var(--border-radius-md);
 
-    .currency-chip{
-      background-color: var(--sidebar-bg);
-      color: var(--secondary-color);
+    --linear-progress-bar: linear-gradient(135deg, #00ff7f, #00c86a);
+
+    /* ── КОМПОНЕНТЫ ── */
+
+    .currency-chip {
+        background-color: var(--sidebar-bg);
+        color: var(--secondary-color);
+        border: 1px solid rgba(0, 255, 127, 0.12);
     }
 
-      .achievement.unlocked {
-          background: linear-gradient(145deg, var(--accent-color) 0%, var(--deposit-color) 100%);
-          box-shadow: 0 0 5px var(--accent-color);
-      }
-
-      .user-profile-card::before {
-          background: radial-gradient(circle, var(--accent-color, rgba(102, 204, 255, 0.1)) );
-      }
-
-      .emoji-avatar {
-          background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) border-box;
-          box-shadow: 0 0 15px var(--deposit-color, rgba(102, 204, 255, 0.5));
-      }
-
-      .category-group-label {
-          background-color: var(--dark-color);
-      }
-
-      .chip-btn.active {
-          color: var(--tertiary-color);
-      }
-
-      .term-chip {
-          color: var(--secondary-color) !important;
-      }
-
-    #add-btn, #add-budget-btn, .add-btn {
-      background-color: var(--accent-color) !important;
-      color: var(--secondary-color);
+    .achievement.unlocked {
+        background: linear-gradient(145deg, #6b1f35 0%, #7b5ea7 100%);
+        box-shadow: 0 0 12px rgba(0, 255, 127, 0.15);
     }
 
-    .open-subpage-btn {
-      background: var(--accent-color);
-      color: var(--secondary-color);
+    .user-profile-card::before {
+        background: radial-gradient(circle, rgba(107, 31, 53, 0.25), transparent 70%);
     }
 
-    .analytics-slide h4 {
+    .emoji-avatar {
+        background: linear-gradient(135deg, #00ff7f, #6b1f35) border-box;
+        box-shadow: 0 0 20px rgba(0, 255, 127, 0.3);
+    }
+
+    .category-group-label {
+        background-color: var(--dark-color);
+        color: var(--text-muted);
+    }
+
+    .chip-btn {
+        color: #fff;
+    }
+
+    .chip-btn.active {
+        color: #000;
+    }
+
+    .term-chip {
+        color: var(--secondary-color) !important;
+    }
+
+    /* Кнопки — бордо с зелёным текстом */
+    #add-btn {
+        background: var(--accent-color) !important;
+        color: var(--primary-color) !important;
+        box-shadow: 0 0 20px rgba(107, 31, 53, 0.5), 0 0 8px rgba(0, 255, 127, 0.15);
+    }
+
+    #add-budget-btn, .add-btn {
+        background: var(--accent-color) !important;
         color: var(--secondary-color);
     }
 
-    input, select, textarea,
-    .custom-select-button, .custom-select, .close-category-sheet, .close-settings-btn {
-      color: var(--secondary-color);
-      background-color: var(--tertiary-color);
+    .open-subpage-btn {
+        background: rgba(107, 31, 53, 0.35);
+        border: 1px solid rgba(107, 31, 53, 0.5);
+        color: var(--secondary-color);
     }
 
-    #summary-blocks, button {
-        /*color: #000;*/
+    .open-subpage-btn:hover {
+        background: rgba(107, 31, 53, 0.55);
+    }
+
+    /* Транзакции */
+    #transaction-list li.tx-item {
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        background: rgba(18, 21, 26, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Инпуты */
+    input, select, textarea,
+    .custom-select-button, .custom-select,
+    .close-category-sheet, .close-settings-btn {
+        color: var(--secondary-color);
+        background-color: var(--tertiary-color);
     }
 
     .category-select-button {
         color: var(--secondary-color);
     }
 
-    .chip-btn {
-        color: #fff;
-    }
-    .chip-btn.active {
-        color: #000;
-    }
-
-      #install-btn {
-          color: var(--tertiary-color);
-      }
-
-      #transaction-list li.tx-item {
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
-
-          background: rgba(0, 0, 0, 0.6);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      }
-
+    /* Месяц-пикер */
     #month-picker-btn, .month-item {
-        background-color: var(--accent-color);
+        background-color: rgba(107, 31, 53, 0.4);
         color: var(--secondary-color);
+        border: 1px solid rgba(107, 31, 53, 0.35);
+    }
+
+    .month-item.active {
+        background-color: var(--accent-color);
     }
 
     .close-form, .all-months-btn, .year-nav-btn {
         color: var(--secondary-color);
     }
 
+    #install-btn {
+        color: var(--tertiary-color);
+    }
 
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    /* ── ФОН — паттерн + CSS-градиент как фолбэк ── */
     main {
-        background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
-        url('/assets/shark-pattern.png');
-        background-size: 300px 300px;
-        background-repeat: repeat;
-      }
-  }
+        background-color: var(--main-ground);
+        background-image:
+            /* Зелёное свечение снизу — как логотип B$T */
+                radial-gradient(ellipse at bottom center, rgba(0, 255, 127, 0.07) 0%, transparent 55%),
+                    /* Бордовое свечение сверху — худи акулки */
+                radial-gradient(ellipse at top right, rgba(107, 31, 53, 0.18) 0%, transparent 50%),
+                    /* Холодный синий — цвет самой акулки */
+                radial-gradient(ellipse at top left, rgba(70, 110, 160, 0.08) 0%, transparent 45%),
+                    /* Паттерн поверх */
+                linear-gradient(rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.5)),
+                url('/assets/shark-pattern.png');
+        background-size: auto, auto, auto, auto, 300px 300px;
+        background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
+        background-attachment: fixed, fixed, fixed, fixed, fixed;
+    }
+}
 
 :root[data-theme="dolphin"] {
     /* 🐬 Основные "водные" слои */
@@ -1020,8 +1177,173 @@
 }
 
 
+:root[data-theme="burgundy"] {
 
+    /* 🧠 ОСНОВА — делаем темнее, почти black */
+    --main-ground:        #0f0a0d;
+    --sidebar-bg:         #12080c;
+    --bg-secondary-color: #1a0c11;
+    --tertiary-color:     #2a0f16;
 
+    --secondary-color:    #f3e8eb;
+    --text-muted:         #a07a84;
 
+    /* 🍷 АКЦЕНТЫ — приглушённые */
+    --primary-color:      #730c1e;
+    --income-color:       #a3203a;
+    --expense-color:      #ff4d6d;
+    --deposit-color:      #c75a6f;
+    --debt-color:         #ffb3c1;
 
+    --accent-color:       #12080c;
+    --dark-color:         #000000;
 
+    /* ✨ ТЕНИ — почти убираем glow */
+    --shadow-sm: 0 2px 6px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.7);
+    --shadow-lg: 0 10px 24px rgba(0,0,0,0.85);
+
+    /* 📊 АНАЛИТИКА */
+    --an-primary-color:    var(--primary-color);
+    --an-income-color:     var(--income-color);
+    --an-expense-color:    var(--expense-color);
+    --an-debt-color:       var(--debt-color);
+    --an-secondary-color:  var(--secondary-color);
+    --an-tertiary-color:   var(--main-ground);
+    --an-accent-color:     var(--accent-color);
+    --an-shadow-md:        var(--shadow-md);
+    --an-border-radius-md: var(--border-radius-md);
+
+    /* 💱 ЧИПЫ */
+    .currency-chip {
+        background: #12080c;
+        color: var(--secondary-color);
+    }
+
+    /* 🔘 КНОПКА — спокойная */
+    #add-btn {
+        background: var(--primary-color);
+        color: #fff;
+        box-shadow: none;
+    }
+
+    .add-btn,
+    .chip-btn.active,
+    #add-budget-btn {
+        background: var(--primary-color);
+        color: #fff;
+    }
+
+    /* 📋 ТРАНЗАКЦИИ — мягкие */
+    #transaction-list li.tx-item, .bi-kpi-row .bi-kpi, .bi-health, .bi-cards .bi-card, .open-subpage-btn, .theme-option {
+        background: #12080c;
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: none;
+    }
+
+    /* 📅 */
+    #month-picker-btn,
+    .month-item {
+        background-color: var(--accent-color);
+        color: var(--secondary-color);
+    }
+
+    .month-item.active {
+        background-color: var(--primary-color);
+    }
+
+    /* 🧾 INPUT */
+    input,
+    select,
+    textarea,
+    .custom-select-button,
+    .custom-select {
+        color: var(--secondary-color);
+        background-color: var(--tertiary-color);
+    }
+
+    /* 📊 */
+    .analytics-slide h4 {
+        color: var(--secondary-color);
+    }
+
+    /* 🎯 ГЛАВНОЕ — фон теперь не орёт */
+    main {
+        background-color: var(--main-ground);
+        background-image:
+                radial-gradient(circle at top, rgba(115,12,30,0.15), transparent 60%),
+                linear-gradient(135deg, #0a0507 0%, #0f0a0d 50%, #080405 100%);
+    }
+}
+
+/* 6. Planner: только светлые темы, убираем слишком тёмные карточки */
+:root:not([data-theme]) .planner-empty-card,
+:root:not([data-theme]) .planner-quick-create-btn,
+:root:not([data-theme]) .planner-stat-card,
+:root:not([data-theme]) .planner-mini-card,
+:root:not([data-theme]) .planner-section-card,
+:root:not([data-theme]) .planner-insight-card,
+:root:not([data-theme]) .planner-day-card,
+:root[data-theme="light"] .planner-empty-card,
+:root[data-theme="light"] .planner-stat-card,
+:root[data-theme="light"] .planner-mini-card,
+:root[data-theme="light"] .planner-section-card,
+:root[data-theme="light"] .planner-insight-card,
+:root[data-theme="light"] .planner-day-card,
+:root[data-theme="dolphin"] .planner-empty-card,
+:root[data-theme="dolphin"] .planner-stat-card,
+:root[data-theme="dolphin"] .planner-mini-card,
+:root[data-theme="dolphin"] .planner-section-card,
+:root[data-theme="dolphin"] .planner-insight-card,
+:root[data-theme="dolphin"] .planner-day-card,
+:root[data-theme="sage"] .planner-empty-card,
+:root[data-theme="sage"] .planner-stat-card,
+:root[data-theme="sage"] .planner-mini-card,
+:root[data-theme="sage"] .planner-section-card,
+:root[data-theme="sage"] .planner-insight-card,
+:root[data-theme="sage"] .planner-day-card,
+:root[data-theme="yogurt"] .planner-empty-card,
+:root[data-theme="yogurt"] .planner-stat-card,
+:root[data-theme="yogurt"] .planner-mini-card,
+:root[data-theme="yogurt"] .planner-section-card,
+:root[data-theme="yogurt"] .planner-insight-card,
+:root[data-theme="yogurt"] .planner-day-card {
+    background: var(--tertiary-color);
+    color: var(--secondary-color);
+    border-color: var(--border-color);
+}
+
+/* 5. Analytics insights: белые rgba на светлых темах заменяем на переменные */
+.bi-kpi,
+.bi-health,
+.bi-card {
+    border-color: var(--border-color);
+}
+
+:root:not([data-theme]) .bi-kpi,
+:root:not([data-theme]) .bi-health,
+:root:not([data-theme]) .bi-card,
+:root[data-theme="light"] .bi-kpi,
+:root[data-theme="light"] .bi-health,
+:root[data-theme="light"] .bi-card,
+:root[data-theme="dolphin"] .bi-kpi,
+:root[data-theme="dolphin"] .bi-health,
+:root[data-theme="dolphin"] .bi-card,
+:root[data-theme="sage"] .bi-kpi,
+:root[data-theme="sage"] .bi-health,
+:root[data-theme="sage"] .bi-card,
+:root[data-theme="yogurt"] .bi-kpi,
+:root[data-theme="yogurt"] .bi-health,
+:root[data-theme="yogurt"] .bi-card {
+    border-color: color-mix(in srgb, var(--secondary-color) 13%, transparent);
+}
+
+/* 8. Кнопки primary на светлых темах, где белый текст может быть плохо */
+:root[data-theme="dolphin"] .add-btn,
+:root[data-theme="dolphin"] #add-btn,
+:root[data-theme="sage"] .add-btn,
+:root[data-theme="sage"] #add-btn,
+:root[data-theme="yogurt"] .add-btn,
+:root[data-theme="yogurt"] #add-btn {
+    color: var(--tertiary-color);
+}

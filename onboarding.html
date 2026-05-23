@@ -1,528 +1,775 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="theme.css">
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json?v=2.10.1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json?v=2.10.1">
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502" data-auto-track="false"></script>
+    <script src="https://pwastat.ru/pwa_stats.php?id=406&token=4577f71b4b8147e853ec7a90eb82efdfd7eb8fd3af0199d3e654c09b3c2c4741"></script>
+    <meta name="theme-color" content="#F5F7F9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0a0a0a"  media="(prefers-color-scheme: dark)">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-title" content="BudgetIt">
+    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
+    <meta name="description" content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями.">
+    <meta name="author" content="BudgetIt by l1lG1tPain">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://budgetit-nine.vercel.app/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://budgetit-nine.vercel.app/">
+    <meta property="og:title" content="BudgetIt — Track your money with Shark">
+    <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode and offline.">
+    <meta property="og:image" content="https://budgetit-nine.vercel.app/assets/og-cover.png">
+    <meta property="og:locale" content="ru_RU">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BudgetIt — Акулка следит за твоим бюджетом">
+    <meta name="twitter:image" content="https://budgetit-nine.vercel.app/assets/og-cover.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">
+    <title>Добро пожаловать в BudgetIt</title>
+    <style>
+        :root {
+            --blue:        #3B82F6;
+            --blue-deep:   #1D4ED8;
+            --blue-light:  #EFF6FF;
+            --blue-glow:   rgba(59,130,246,0.10);
+            --blue-glow2:  rgba(59,130,246,0.06);
+            --income:      #27AE60;
+            --expense:     #ff4b5c;
+            --deposit:     #9B59B6;
+            --debt:        #F1C40F;
+            --bg:          #F5F7F9;
+            --bg-card:     #FFFFFF;
+            --text-primary:#1A1A1A;
+            --text-sub:    #7a808f;
+            --text-muted:  #b0b6c3;
+            --placeholder: #c0c6d3;
+            --border:      #e2e6ed;
+            --divider:     #eaedf2;
+            --btn-bg:      #1A1A1A;
+            --btn-fg:      #FFFFFF;
+            --btn-icon-bg: rgba(255,255,255,0.15);
+            --btn-icon-fg: #FFFFFF;
+            --import-fg:   #a0a6b3;
+            --tag-fg:      #9aa0ae;
+            --version-fg:  #c0c6d3;
+            --error:       rgba(255,75,92,0.5);
+            --error-glow:  rgba(255,75,92,0.08);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg:          #0a0a0a;
+                --bg-card:     rgba(255,255,255,0.05);
+                --text-primary:#FFFFFF;
+                --text-sub:    rgba(255,255,255,0.38);
+                --text-muted:  rgba(255,255,255,0.22);
+                --placeholder: rgba(255,255,255,0.22);
+                --border:      rgba(255,255,255,0.10);
+                --divider:     rgba(255,255,255,0.07);
+                --btn-bg:      #FFFFFF;
+                --btn-fg:      #0a0a0a;
+                --btn-icon-bg: rgba(0,0,0,0.18);
+                --btn-icon-fg: #0a0a0a;
+                --import-fg:   rgba(255,255,255,0.30);
+                --tag-fg:      rgba(255,255,255,0.28);
+                --version-fg:  rgba(255,255,255,0.15);
+                --blue-glow:   rgba(59,130,246,0.14);
+                --blue-glow2:  rgba(59,130,246,0.07);
+                --blue-light:  rgba(59,130,246,0.08);
+            }
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-y: auto;
+            user-select: none;
+            transition: background 0.3s, color 0.3s;
+        }
+        .ob-hero-screen {
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ob-glow {
+            position: absolute; width: 400px; height: 400px; border-radius: 50%;
+            background: radial-gradient(circle, var(--blue-glow) 0%, transparent 70%);
+            top: -130px; right: -110px; pointer-events: none;
+        }
+        .ob-glow2 {
+            position: absolute; width: 240px; height: 240px; border-radius: 50%;
+            background: radial-gradient(circle, var(--blue-glow2) 0%, transparent 70%);
+            bottom: -70px; left: -60px; pointer-events: none;
+        }
+        .ob-root {
+            width: 100%; max-width: 440px;
+            display: flex; flex-direction: column;
+            position: relative; z-index: 1;
+        }
+        .ob-tag {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 11px; font-weight: 500; color: var(--tag-fg);
+            letter-spacing: 0.11em; text-transform: uppercase;
+            margin-bottom: 52px;
+        }
+        .ob-tag-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--blue); flex-shrink: 0;
+            animation: ob-pulse 2s ease-in-out infinite;
+        }
+        @keyframes ob-pulse {
+            0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+            50%     { opacity:0.5; box-shadow: 0 0 0 5px rgba(59,130,246,0); }
+        }
+        .ob-hero { margin-bottom: 44px; }
+        .ob-shark-img {
+            display: none;
+        }
+        .ob-shark-emoji {
+            font-size: 64px; line-height: 1; display: block; margin-bottom: 22px;
+            animation: ob-float 3.5s ease-in-out infinite;
+        }
+        @keyframes ob-float {
+            0%,100% { transform: translateY(0); }
+            50%     { transform: translateY(-9px); }
+        }
+        .ob-heading {
+            font-size: 32px; font-weight: 300; line-height: 1.20;
+            letter-spacing: -0.6px; margin-bottom: 14px;
+            color: var(--text-primary);
+        }
+        .ob-heading em {
+            font-style: normal; font-weight: 700; color: transparent;
+            background: linear-gradient(90deg, var(--blue), var(--blue-deep));
+            -webkit-background-clip: text; background-clip: text;
+        }
+        .ob-sub {
+            font-size: 14px; font-weight: 300; color: var(--text-sub);
+            line-height: 1.75; max-width: 300px;
+        }
+        .ob-form { width: 100%; }
+        .ob-field {
+            display: flex; align-items: center;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 0 18px; height: 58px;
+            margin-bottom: 10px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .ob-field:focus-within {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+        }
+        .ob-field.ob-error {
+            border-color: var(--error) !important;
+            box-shadow: 0 0 0 3px var(--error-glow) !important;
+        }
+        .ob-field input {
+            flex: 1; background: none; border: none; outline: none;
+            color: var(--text-primary); font-size: 15px; font-weight: 400;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .ob-field input::placeholder { color: var(--placeholder); font-weight: 300; }
+        .ob-btn {
+            width: 100%; height: 58px; border: none; border-radius: 16px;
+            background: var(--btn-bg); color: var(--btn-fg);
+            font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.12s, background 0.25s, color 0.25s, box-shadow 0.25s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ob-btn:active { transform: scale(0.975); }
+        .ob-btn.ob-success {
+            background: linear-gradient(135deg, var(--blue), var(--blue-deep)) !important;
+            color: #fff !important;
+            box-shadow: 0 6px 24px rgba(59,130,246,0.35);
+        }
+        .ob-btn-icon {
+            width: 30px; height: 30px; border-radius: 9px;
+            background: var(--btn-icon-bg); color: var(--btn-icon-fg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; margin-left: auto; flex-shrink: 0; font-style: normal;
+            transition: background 0.25s, color 0.25s;
+        }
+        .ob-import {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            width: 100%; height: 48px; border-radius: 14px;
+            border: 1px solid var(--border); background: var(--bg-card); color: var(--import-fg);
+            font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif; cursor: pointer; margin-bottom: 28px;
+            transition: color 0.2s, border-color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ob-import { margin-bottom: 0; }
+        #file-input { display: none; }
 
-  <script defer
-        src="https://cloud.umami.is/script.js"
-        data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
-        data-auto-track="false"></script>
+        /* Sticky footer — всегда прижат к низу экрана */
+        .ob-sticky-footer {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            z-index: 100;
+            background: var(--bg);
+            border-top: 1px solid var(--divider);
+            padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .ob-sticky-footer .ob-help {
+            background: none; border: none; cursor: pointer; padding: 0;
+            color: var(--blue); font-size: 12px; font-weight: 400;
+            font-family: 'Montserrat', sans-serif;
+            display: flex; align-items: center; gap: 5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ob-sticky-footer .ob-version {
+            font-size: 11px; font-weight: 300; color: var(--version-fg); letter-spacing: 0.08em;
+        }
 
-  <script src="https://pwastat.ru/pwa_stats.php?id=406&token=4577f71b4b8147e853ec7a90eb82efdfd7eb8fd3af0199d3e654c09b3c2c4741"></script>
+        /* Отступ снизу чтобы контент не прятался за sticky footer */
+        .ob-hero-screen { padding-bottom: 150px; }
+        .landing { padding-bottom: 100px; }
+        .ob-scroll-hint {
+            position: absolute; bottom: 50px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            color: var(--text-muted); font-size: 10px; font-weight: 500;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            border: none; background: none; cursor: pointer;
+            opacity: 0;
+            animation: ob-in 0.5s ease 0.7s forwards, ob-bounce 2.5s ease-in-out 1.5s infinite;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @keyframes ob-bounce {
+            0%,100% { transform: translateX(-50%) translateY(0); }
+            50%     { transform: translateX(-50%) translateY(6px); }
+        }
+        .ob-tag, .ob-hero, .ob-form {
+            opacity: 0; transform: translateY(20px);
+            animation: ob-in 0.5s ease forwards;
+        }
+        .ob-tag  { animation-delay: 0.04s; }
+        .ob-hero { animation-delay: 0.12s; }
+        .ob-form { animation-delay: 0.20s; }
+        @keyframes ob-in { to { opacity: 1; transform: translateY(0); } }
 
-  <meta name="theme-color" content="#000000">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-title" content="BudgetIt">
-  <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-  <link rel="icon" href="https://budgetit.app/assets/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
-  
-  <meta name="description"
-        content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями. Акулка позаботится о ваших финансах!">
-  <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, расходы, доходы, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
-  <meta name="author" content="BudgetIt by l1lG1tPain">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://budgetit-nine.vercel.app/">
+        /* LANDING */
+        .landing { width: 100%; max-width: 440px; margin: 0 auto; padding: 0 20px 90px; }
+        .land-sep { width: calc(100% - 40px); max-width: 400px; height: 1px; background: var(--divider); margin: 0 auto 52px; }
+        .sec { margin-bottom: 52px; }
+        .sec-label {
+            font-size: 10px; font-weight: 600; color: var(--blue);
+            letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px;
+        }
+        .sec-title {
+            font-size: 22px; font-weight: 700; line-height: 1.25;
+            color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.3px;
+        }
+        .sec-sub { font-size: 13px; font-weight: 300; color: var(--text-sub); line-height: 1.75; margin-bottom: 22px; }
 
-  <!-- === OPEN GRAPH === -->
-  <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://budgetit-nine.vercel.app/">
-  <meta property="og:site_name" content="BudgetIt">
-  <meta property="og:title"       content="BudgetIt — Track your money with Shark 🦈">
-  <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
-  <meta property="og:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
-  <meta property="og:locale"      content="ru_RU">
-  <meta property="og:locale:alternate" content="en_US">
+        /* Stats */
+        .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 18px 16px;
+        }
+        .stat-num { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; font-weight: 400; color: var(--text-sub); }
 
-  <!-- === TWITTER === -->
-  <meta name="twitter:site" content="@CyberSnit4">
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="BudgetIt — Акулка следит за твоим бюджетом">
-  <meta name="twitter:description" content="Бесплатная PWA для управления личными финансами. Установи и начни экономить уже сегодня.">
-  <meta name="twitter:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
+        /* Chart */
+        .chart-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px 18px;
+        }
+        .chart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 100px; }
+        .chart-total { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+        .chart-badge {
+            font-size: 11px; font-weight: 600;
+            background: rgba(39,174,96,0.12); color: var(--income);
+            border-radius: 8px; padding: 3px 9px;
+        }
+        .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .bar { width: 100%; border-radius: 5px 5px 0 0; }
+        .bar-lbl { font-size: 10px; font-weight: 400; color: var(--text-muted); }
+        .chart-legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-sub); }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-  <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="BudgetIt">
-  <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">      
-  <title>Добро пожаловать в BudgetIt</title>
+        /* Features */
+        .feat-list { display: flex; flex-direction: column; gap: 10px; }
+        .feat-item {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px;
+        }
+        .feat-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: var(--blue-light);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+        }
+        .feat-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+        .feat-desc  { font-size: 12px; font-weight: 300; color: var(--text-sub); line-height: 1.6; }
 
-  <style>
-    :root {
-      --onboarding-radius: var(--border-radius-lg, 16px);
-    }
+        /* Shark CTA */
+        .shark-section {
+            background: var(--blue-light); border: 1px solid rgba(59,130,246,0.15);
+            border-radius: 20px; padding: 36px 20px;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .shark-section::before {
+            content: ""; position: absolute; inset: 0; border-radius: 20px;
+            background: radial-gradient(circle at 50% 0%, rgba(59,130,246,0.10), transparent 70%);
+            pointer-events: none;
+        }
+        .shark-cta-img {
+            width: 160px; height: 160px; border-radius: 50%; object-fit: cover;
+            margin-bottom: 22px; position: relative; z-index: 1;
+            animation: ob-float 3.5s ease-in-out infinite;
+            filter: drop-shadow(0 16px 28px rgba(59,130,246,0.20));
+        }
+        .shark-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; position: relative; z-index: 1; }
+        .shark-sub { font-size: 13px; font-weight: 300; color: var(--text-sub); line-height: 1.7; margin-bottom: 24px; position: relative; z-index: 1; }
+        .shark-btn {
+            height: 52px; border: none; border-radius: 14px;
+            background: var(--blue); color: #fff;
+            font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif; cursor: pointer; padding: 0 28px;
+            display: flex; align-items: center; gap: 8px;
+            transition: transform 0.12s, box-shadow 0.2s;
+            position: relative; z-index: 1;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 18px rgba(59,130,246,0.32);
+        }
+        .shark-btn:active { transform: scale(0.97); }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Montserrat', 'sans-serif';
-      background-color: #000;
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: stretch;
-      box-sizing: border-box;
-      padding: 24px 16px;
-      text-align: left;
-      overflow-y: auto; /* ✅ теперь можно скроллить на маленьких экранах */
-      user-select: none;
-    }
-
-    .onboarding-root {
-      width: 100%;
-      max-width: 480px;
-      margin: 0 auto;
-    }
-
-    .onboarding-header {
-      display: flex;
-      justify-content: flex-start;
-      margin-bottom: 16px;
-    }
-
-    .onboarding-pill {
-      font-size: 0.8rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.08);
-      color: #fff;
-      backdrop-filter: blur(12px);
-      align-items: center;
-      display: flex;
-    }
-
-    .onboarding-main {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #000;
-    }
-
-    .onboarding-card {
-      position: relative;
-      width: 100%;
-      padding: 20px 18px 22px;
-      border-radius: var(--onboarding-radius);
-      background: radial-gradient(circle at top left, rgb(5 69 32), transparent 55%), radial-gradient(circle at bottom right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.95));
-      /* border: 1px solid rgba(255,255,255,0.06); */
-      box-shadow: 0 16px 40px rgba(0,0,0,0.65);
-      overflow: hidden;
-    }
-
-    .onboarding-card::before {
-      content: "";
-      position: absolute;
-      inset: -40%;
-      background: radial-gradient(circle at 10% 0%, rgba(255,255,255,0.12), transparent 55%);
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    .onboarding-inner {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 12px;
-    }
-
-    .onboarding-logo {
-      max-width: 220px;
-      border-radius: 20px;
-      margin-bottom: 4px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      margin: 0;
-    }
-
-    p.onboarding-text {
-      font-size: 0.95rem;
-      margin: 4px 0 14px;
-    }
-
-    .onboarding-form {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .field-label {
-      align-self: flex-start;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #fff;
-      margin-bottom: -4px;
-    }
-
-    input[type="text"] {
-      padding: 12px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgb(24, 23, 23);
-      color: #fff;
-      /* font-size: 1rem; */
-      width: 100%;
-      box-sizing: border-box;
-      font-family: 'Montserrat', 'sans-serif';
-    }
-
-    input[type="text"]::placeholder {
-      color: var(--text-muted);
-      opacity: 0.9;
-    }
-
-    input[type="text"]:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
-    }
-
-    .onboarding-btn {
-      border: none;
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-      box-sizing: border-box;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
-    }
-
-    .onboarding-btn-primary {
-      background: linear-gradient(135deg, var(--primary-color), var(--income-color));
-      color: #000;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-    }
-
-    .onboarding-btn-secondary {
-      background: #000;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .onboarding-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.7);
-    }
-
-    .onboarding-btn:active {
-      transform: translateY(0);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    #file-input {
-      display: none;
-    }
-
-    .onboarding-help-link {
-      margin-top: 5px;
-      font-size: 0.9rem;
-      color: var(--primary-color);
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 0 0;
-    }
-
-    .onboarding-help-link span {
-      text-decoration: underline dotted;
-    }
-
-    /* ----- Модалки ----- */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      padding: 16px;
-      box-sizing: border-box;
-    }
-    .modal-content {
-      background-color: #000;
-      padding: 20px 18px 22px;
-      border-radius: var(--onboarding-radius);
-      max-width: 480px;
-      width: 100%;
-      color: #fff;
-      text-align: left;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.8);
-    }
-    .modal-content h2 {
-      margin-top: 0;
-      color: var(--primary-color);
-    }
-    .close-modal {
-      background: none;
-      border: none;
-      color: var(--accent-color);
-      font-size: 1.2em;
-      cursor: pointer;
-      padding: 0;
-      margin-bottom: 8px;
-    }
-
-    @media (max-height: 640px) {
-      body {
-        justify-content: flex-start;
-      }
-      .onboarding-main {
-        align-items: flex-start;
-      }
-      .onboarding-card {
-        margin-top: 8px;
-      }
-    }
-  </style>
+        /* MODAL */
+        .ob-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            display: flex; align-items: flex-end; justify-content: center;
+            z-index: 1000; padding: 16px;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .ob-modal.ob-modal--open { opacity: 1; pointer-events: all; }
+        .ob-modal-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 20px; padding: 24px 20px 28px;
+            width: 100%; max-width: 440px;
+            transform: translateY(24px); transition: transform 0.25s ease;
+        }
+        .ob-modal--open .ob-modal-card { transform: translateY(0); }
+        .ob-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .ob-modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .ob-modal-close {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; width: 30px; height: 30px; cursor: pointer;
+            font-size: 13px; color: var(--text-sub);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .ob-modal-step { display: flex; gap: 14px; margin-bottom: 16px; }
+        .ob-modal-step:last-child { margin-bottom: 0; }
+        .ob-modal-num {
+            width: 24px; height: 24px; border-radius: 8px;
+            background: rgba(59,130,246,0.12); color: var(--blue);
+            font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
+        }
+        .ob-modal-step-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+        .ob-modal-step-desc  { font-size: 12px; font-weight: 300; color: var(--text-sub); line-height: 1.65; }
+        .ob-alert {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; padding: 16px; animation: ob-in 0.15s ease;
+        }
+        .ob-alert-card {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px; width: 100%; max-width: 320px; text-align: center;
+        }
+        .ob-alert-icon { font-size: 28px; margin-bottom: 10px; }
+        .ob-alert-msg  { font-size: 13px; font-weight: 400; color: var(--text-sub); line-height: 1.6; margin-bottom: 16px; }
+        .ob-alert-btn  {
+            width: 100%; height: 40px; border: none; border-radius: 10px;
+            background: var(--btn-bg); color: var(--btn-fg);
+            font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+            font-family: 'Montserrat', sans-serif; cursor: pointer;
+        }
+        @media (max-height: 680px) {
+            .ob-shark-img { width: 96px; height: 96px; margin-bottom: 14px; }
+            .ob-heading   { font-size: 26px; }
+            .ob-tag       { margin-bottom: 32px; }
+            .ob-hero      { margin-bottom: 28px; }
+        }
+    </style>
 </head>
-
 <body>
-  <div class="onboarding-root">
-    <header class="onboarding-header">
-      <span class="onboarding-pill"><img src="/assets/favicon.ico" alt="💸" height="25px" width="25px"> BudgetIt · onboarding</span>
-    </header>
 
-    <main class="onboarding-main">
-      <section class="onboarding-card">
-        <div class="onboarding-inner">
-          <img src="assets/onbording-img.jpg" alt="BudgetIt Shark" class="onboarding-logo" />
-          <h1>Добро пожаловать в BudgetIt 🦈</h1>
-          <p class="onboarding-text">
-            Создай новый бюджет или импортируй свой, чтобы начать отслеживать расходы, долги и накопления.
-          </p>
+<section class="ob-hero-screen">
+    <div class="ob-glow"  aria-hidden="true"></div>
+    <div class="ob-glow2" aria-hidden="true"></div>
 
-          <div class="onboarding-form">
-            <span class="field-label">Название бюджета</span>
-            <input
-              type="text"
-              id="budget-name"
-              placeholder="Введи название (можно эмоджи)"
-              autocomplete="off"
-            />
-
-            <button class="onboarding-btn onboarding-btn-primary" onclick="createBudget()">
-              🚀 Создать бюджет
-            </button>
-
-            <label for="file-input" class="onboarding-btn onboarding-btn-secondary">
-              📥 Импортировать бюджет (JSON)
-            </label>
-            <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)" />
-          </div>
-
-          <button type="button" class="onboarding-help-link" onclick="openHelpModal()">
-            📖 <span>Как это работает?</span>
-          </button>
+    <div class="ob-root">
+        <div class="ob-tag">
+            <div class="ob-tag-dot"></div>
+            BudgetIt &middot; v4.0.0
         </div>
-      </section>
-    </main>
-  </div>
 
-  <div id="help-modal" class="modal hidden" style="display: none;">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeHelpModal()">Закрыть ✖️</button>
-      <p>Добро пожаловать в акулий клуб учёта! 🦈</p><br>
-      <h2>Как пользоваться BudgetIt?</h2><br>
-      <p><strong>1. Создай или импортируй бюджет.</strong> Это твоя основа. Каждый бюджет — это отдельный учёт расходов, доходов, долгов и вкладов.</p><br>
-      <p><strong>2. Добавляй транзакции.</strong> Можно записывать доходы, траты, долги (кому ты должен или кто тебе должен), и даже вклады.</p><br>
-      <p><strong>3. Анализируй.</strong> Визуализации помогут понять, на что ты тратишь больше всего, каков баланс и сколько ты должен или накопил.</p><br>
-      <p><strong>4. Переключай бюджеты и сохраняй данные.</strong> Все данные хранятся локально. Можно экспортировать и импортировать бюджеты через JSON.</p><br>
+        <div class="ob-hero">
+            <img src="assets/shark-import.png" alt="Акулка BudgetIt" class="ob-shark-img"
+                 onerror="this.style.display='none';document.querySelector('.ob-shark-emoji').style.display='block';"/>
+            <span class="ob-shark-emoji" aria-label="Акула">&#x1F988;</span>
+            <h1 class="ob-heading">
+                Твои деньги &mdash;<br>под <em>контролем</em>
+            </h1>
+            <p class="ob-sub">Дай бюджету имя и акулка начнёт следить за каждым рублём</p>
+        </div>
+
+        <div class="ob-form">
+            <div class="ob-field" id="ob-field">
+                <input type="text" id="budget-name" placeholder="Как назовём бюджет?" autocomplete="off" maxlength="40"/>
+            </div>
+            <button class="ob-btn" id="ob-create-btn" onclick="createBudget()">
+                Создать бюджет
+                <span class="ob-btn-icon" aria-hidden="true">&#x2192;</span>
+            </button>
+            <label for="file-input" class="ob-import">&#x2193; &nbsp;Импортировать JSON</label>
+            <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)"/>
+        </div>
     </div>
-  </div>
 
-  <script>
-      // 🔧 Помощник: сохраняем стейт в IndexedDB (AkulkaVault/DeepSeaState/mainShark)
-      function saveStateToIndexedDB(newState) {
-          if (!('indexedDB' in window)) return;
+    <button class="ob-scroll-hint" onclick="document.getElementById('landing').scrollIntoView({behavior:'smooth'})" aria-label="Листать вниз">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        Листай вниз
+    </button>
+</section>
 
-          const request = indexedDB.open('AkulkaVault', 1);
+<!-- Sticky footer — всегда внизу экрана -->
+<div class="ob-sticky-footer">
+    <button class="ob-help" onclick="openHelpModal()">? &nbsp;Как это работает</button>
+    <div class="ob-version">budgetit.app</div>
+</div>
 
-          request.onupgradeneeded = (event) => {
-              const db = event.target.result;
-              if (!db.objectStoreNames.contains('DeepSeaState')) {
-                  const store = db.createObjectStore('DeepSeaState', { keyPath: 'id' });
-                  store.createIndex('id', 'id', { unique: true });
-              }
-          };
+<div class="landing" id="landing">
+    <div class="land-sep"></div>
 
-          request.onsuccess = (event) => {
-              const db = event.target.result;
-              const tx = db.transaction('DeepSeaState', 'readwrite');
-              const store = tx.objectStore('DeepSeaState');
+    <!-- Что внутри -->
+    <div class="sec">
+        <div class="sec-label">Что внутри</div>
+        <div class="sec-title">Всё под одной крышей</div>
+        <p class="sec-sub">Четыре типа финансов, одно приложение — никакой путаницы</p>
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--income)">+</div>
+                <div class="stat-label">Доходы</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--expense)">−</div>
+                <div class="stat-label">Расходы</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--deposit)">%</div>
+                <div class="stat-label">Вклады</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--debt)">!</div>
+                <div class="stat-label">Долги</div>
+            </div>
+        </div>
+    </div>
 
-              const getReq = store.get('mainShark');
-              getReq.onsuccess = () => {
-                  const existing = getReq.result || {};
-                  const merged = { ...existing, ...newState }; // сохраняем userId и прочее
-                  store.put({ id: 'mainShark', ...merged });
-              };
-              getReq.onerror = () => {
-                  store.put({ id: 'mainShark', ...newState });
-              };
-          };
+    <!-- График -->
+    <div class="sec">
+        <div class="sec-label">Аналитика</div>
+        <div class="sec-title">Видишь куда уходят деньги</div>
+        <p class="sec-sub">Графики обновляются после каждой записи — без лишних кликов</p>
+        <div class="chart-card">
+            <div class="chart-head">
+                <div>
+                    <div style="font-size:12px;font-weight:400;color:var(--text-sub);margin-bottom:4px;">Баланс за месяц</div>
+                    <div class="chart-total">&#x20BD; 48 200</div>
+                </div>
+                <div class="chart-badge">+12%</div>
+            </div>
+            <div class="chart-bars" id="demo-bars"></div>
+            <div class="chart-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--income)"></div>Доходы</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--expense)"></div>Расходы</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--deposit)"></div>Вклады</div>
+            </div>
+        </div>
+    </div>
 
-          request.onerror = (event) => {
-              console.warn('[Onboarding] IndexedDB open error:', event.target.error);
-          };
-      }
+    <!-- Фичи -->
+    <div class="sec">
+        <div class="sec-label">Возможности</div>
+        <div class="sec-title">Минимум кликов</div>
+        <p class="sec-sub">Всё что нужно — уже под рукой</p>
+        <div class="feat-list">
+            <div class="feat-item">
+                <div class="feat-icon">&#x1F4F6;</div>
+                <div>
+                    <div class="feat-title">Работает офлайн</div>
+                    <div class="feat-desc">PWA с полным офлайн-режимом — данные никуда не исчезнут</div>
+                </div>
+            </div>
+            <div class="feat-item">
+                <div class="feat-icon">&#x1F512;</div>
+                <div>
+                    <div class="feat-title">Данные только у тебя</div>
+                    <div class="feat-desc">Всё хранится локально на устройстве. Никаких серверов, никакой слежки</div>
+                </div>
+            </div>
+            <div class="feat-item">
+                <div class="feat-icon">&#x1F4CA;</div>
+                <div>
+                    <div class="feat-title">Умная аналитика</div>
+                    <div class="feat-desc">Графики, категории, баланс — всё строится автоматически</div>
+                </div>
+            </div>
+            <div class="feat-item">
+                <div class="feat-icon">&#x1F4B8;</div>
+                <div>
+                    <div class="feat-title">Полностью бесплатно</div>
+                    <div class="feat-desc">Без подписок, рекламы и скрытых платежей — навсегда</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-      // 🚀 Создание нового бюджета
-      function createBudget() {
-          const name = document.getElementById('budget-name').value.trim();
-          if (!name) return showModal("Сначала введи название бюджета! Можно эмоджи");
+    <!-- Акулка CTA -->
+    <div class="sec" style="margin-bottom:0">
+        <div class="shark-section">
+            <img src="assets/shark-import.png" alt="Акулка BudgetIt" class="shark-cta-img"
+                 onerror="this.style.display='none'"/>
+            <div class="shark-title">Акулка уже ждёт &#x1F988;</div>
+            <p class="shark-sub">Создай первый бюджет прямо сейчас<br>и начни контролировать деньги сегодня</p>
+            <button class="shark-btn" onclick="scrollToInput()">
+                Начать &mdash; это бесплатно &nbsp;&#x2192;
+            </button>
+        </div>
+    </div>
+</div>
 
-          const budgets = [{ name, transactions: [] }];
-          const currentBudgetIndex = 0;
-          const productNames = [];
+<!-- Help modal -->
+<div id="help-modal" class="ob-modal" role="dialog" aria-modal="true">
+    <div class="ob-modal-card">
+        <div class="ob-modal-head">
+            <div class="ob-modal-title">Как это работает &#x1F988;</div>
+            <button class="ob-modal-close" onclick="closeHelpModal()" aria-label="Закрыть">&#x2715;</button>
+        </div>
+        <div class="ob-modal-step">
+            <div class="ob-modal-num">1</div>
+            <div>
+                <div class="ob-modal-step-title">Создай или импортируй бюджет</div>
+                <div class="ob-modal-step-desc">Каждый бюджет — отдельный учёт расходов, доходов, долгов и вкладов.</div>
+            </div>
+        </div>
+        <div class="ob-modal-step">
+            <div class="ob-modal-num">2</div>
+            <div>
+                <div class="ob-modal-step-title">Добавляй транзакции</div>
+                <div class="ob-modal-step-desc">Записывай доходы, траты, долги и вклады — всё в одном месте.</div>
+            </div>
+        </div>
+        <div class="ob-modal-step">
+            <div class="ob-modal-num">3</div>
+            <div>
+                <div class="ob-modal-step-title">Анализируй</div>
+                <div class="ob-modal-step-desc">Визуализации покажут, на что уходят деньги и сколько накоплено.</div>
+            </div>
+        </div>
+        <div class="ob-modal-step">
+            <div class="ob-modal-num">4</div>
+            <div>
+                <div class="ob-modal-step-title">Сохраняй данные</div>
+                <div class="ob-modal-step-desc">Все данные хранятся локально. Экспорт/импорт через JSON.</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-          // Пишем в localStorage (как раньше)
-          localStorage.setItem('budgets', JSON.stringify(budgets));
-          localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
-          localStorage.setItem('productNames', JSON.stringify(productNames));
-
-          // Синхронизируем с новой IndexedDB (AkulkaVault)
-          saveStateToIndexedDB({ budgets, currentBudgetIndex, productNames });
-
-          try {
-              window.trackSafe?.('onboarding-create-budget', { name });
-          } catch (e) {}
-
-          setTimeout(() => {
-              location.replace('index.html');
-          }, 200);
-      }
-
-      // 🧠 Парсер для импорта
-      function parseImportedBudgetData(parsed) {
-          let budgets, currentBudgetIndex, productNames;
-
-          if (Array.isArray(parsed)) {
-              budgets = parsed;
-              currentBudgetIndex = 0;
-              productNames = [];
-          } else if (parsed && typeof parsed === 'object') {
-              budgets = Array.isArray(parsed.budgets) ? parsed.budgets : [];
-              currentBudgetIndex = Number.isInteger(parsed.currentBudgetIndex)
-                  ? parsed.currentBudgetIndex
-                  : 0;
-              productNames = Array.isArray(parsed.productNames) ? parsed.productNames : [];
-          } else {
-              throw new Error('Invalid import format');
-          }
-
-          currentBudgetIndex = Math.min(
-              Math.max(0, currentBudgetIndex),
-              Math.max(0, budgets.length - 1)
-          );
-
-          return { budgets, currentBudgetIndex, productNames };
-      }
-
-      // 📥 Импорт на онбординге
-      function importBudget(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-
-          const reader = new FileReader();
-          reader.onload = () => {
-              try {
-                  const parsed = JSON.parse(reader.result);
-                  const { budgets, currentBudgetIndex, productNames } = parseImportedBudgetData(parsed);
-
-                  // В localStorage
-                  localStorage.setItem('budgets', JSON.stringify(budgets));
-                  localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
-                  localStorage.setItem('productNames', JSON.stringify(productNames));
-
-                  // В новую IndexedDB
-                  saveStateToIndexedDB({ budgets, currentBudgetIndex, productNames });
-
-                  trackSafe?.('onboarding-import-budget', { name: file.name });
-
-                  setTimeout(() => location.replace('index.html'), 200);
-              } catch (e) {
-                  console.error('[Onboarding import error]', e);
-                  showModal('Ошибка чтения JSON файла');
-              }
-          };
-          reader.readAsText(file);
-      }
-
-      function openHelpModal() {
-          const help = document.getElementById('help-modal');
-          help.classList.remove('hidden');
-          help.style.display = 'flex';
-      }
-
-      function closeHelpModal() {
-          const help = document.getElementById('help-modal');
-          help.classList.add('hidden');
-          help.style.display = 'none';
-      }
-
-      function showModal(message) {
-          const modal = document.createElement('div');
-          modal.className = 'modal';
-          modal.innerHTML = `
-      <div class="modal-content">
-        <button class="close-modal" onclick="this.parentElement.parentElement.remove()">Закрыть ✖️</button>
-        <h2>Ну куда ты?</h2><br>
-        <p>${message}</p>
-      </div>
-    `;
-          document.body.appendChild(modal);
-      }
-  </script>
-
-  <!-- Vercel Analytics -->
-  <script defer src="/_vercel/insights/script.js"></script>
-  <script type="module" src="./src/utils/analytics.js"></script>
-  <script src="./src/utils/umami-events.js" defer></script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log('[SW] Registered', reg))
-        .catch(err => console.warn('[SW] Failed', err));
+<script>
+    function scrollToInput() {
+        var input = document.getElementById('budget-name');
+        var field = document.getElementById('ob-field');
+        // Скроллим так чтобы поле оказалось в верхней трети экрана
+        // оставляя место для клавиатуры снизу
+        field.scrollIntoView({behavior: 'smooth', block: 'start'});
+        setTimeout(function() {
+            // Дополнительный отступ сверху чтобы поле не было вплотную к краю
+            window.scrollBy({top: -60, behavior: 'smooth'});
+            setTimeout(function() { input.focus(); }, 150);
+        }, 400);
     }
-  </script>
+
+    (function() {
+        var data = [
+            {lbl:'Янв',inc:72,exp:48,dep:18},
+            {lbl:'Фев',inc:60,exp:55,dep:22},
+            {lbl:'Мар',inc:80,exp:42,dep:30},
+            {lbl:'Апр',inc:68,exp:50,dep:25},
+            {lbl:'Май',inc:90,exp:38,dep:35},
+            {lbl:'Июн',inc:85,exp:44,dep:28}
+        ];
+        var colors = {inc:'var(--income)',exp:'var(--expense)',dep:'var(--deposit)'};
+        var container = document.getElementById('demo-bars');
+        if (!container) return;
+        var maxVal = 0;
+        data.forEach(function(d){maxVal = Math.max(maxVal,d.inc,d.exp,d.dep);});
+        data.forEach(function(d) {
+            var wrap = document.createElement('div');
+            wrap.className = 'bar-wrap';
+            ['inc','exp','dep'].forEach(function(k) {
+                var bar = document.createElement('div');
+                bar.className = 'bar';
+                var pct = Math.round((d[k] / maxVal) * 80);
+                bar.style.height = pct + 'px';
+                bar.style.background = colors[k];
+                bar.style.opacity = '0.85';
+                wrap.appendChild(bar);
+            });
+            var lbl = document.createElement('div');
+            lbl.className = 'bar-lbl';
+            lbl.textContent = d.lbl;
+            wrap.appendChild(lbl);
+            container.appendChild(wrap);
+        });
+    })();
+
+    function saveStateToIndexedDB(newState) {
+        if (!('indexedDB' in window)) return;
+        var request = indexedDB.open('AkulkaVault', 1);
+        request.onupgradeneeded = function(event) {
+            var db = event.target.result;
+            if (!db.objectStoreNames.contains('DeepSeaState')) {
+                var store = db.createObjectStore('DeepSeaState', {keyPath:'id'});
+                store.createIndex('id','id',{unique:true});
+            }
+        };
+        request.onsuccess = function(event) {
+            var db = event.target.result;
+            var tx = db.transaction('DeepSeaState','readwrite');
+            var store = tx.objectStore('DeepSeaState');
+            var getReq = store.get('mainShark');
+            getReq.onsuccess = function() {
+                var existing = getReq.result || {};
+                store.put(Object.assign({id:'mainShark'}, existing, newState));
+            };
+            getReq.onerror = function() {
+                store.put(Object.assign({id:'mainShark'}, newState));
+            };
+        };
+        request.onerror = function(ev) { console.warn('[Onboarding] IndexedDB error:', ev.target.error); };
+    }
+
+    var field     = document.getElementById('ob-field');
+    var nameEl    = document.getElementById('budget-name');
+    var createBtn = document.getElementById('ob-create-btn');
+
+    nameEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') createBudget(); });
+
+    function shakeField() {
+        field.classList.add('ob-error');
+        nameEl.placeholder = 'Сначала дай имя...';
+        nameEl.focus();
+        setTimeout(function() {
+            field.classList.remove('ob-error');
+            nameEl.placeholder = 'Как назовём бюджет?';
+        }, 2200);
+    }
+
+    function createBudget() {
+        var name = nameEl.value.trim();
+        if (!name) return shakeField();
+        var budgets = [{name:name, transactions:[]}];
+        var currentBudgetIndex = 0;
+        var productNames = [];
+        localStorage.setItem('budgets', JSON.stringify(budgets));
+        localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
+        localStorage.setItem('productNames', JSON.stringify(productNames));
+        saveStateToIndexedDB({budgets:budgets, currentBudgetIndex:currentBudgetIndex, productNames:productNames});
+        try { window.trackSafe && window.trackSafe('onboarding-create-budget', {name:name}); } catch(e) {}
+        createBtn.classList.add('ob-success');
+        createBtn.innerHTML = '&#x2713; &nbsp;Готово &mdash; открываем...';
+        setTimeout(function() { location.replace('index.html'); }, 600);
+    }
+
+    function parseImportedBudgetData(parsed) {
+        var budgets, currentBudgetIndex, productNames;
+        if (Array.isArray(parsed)) {
+            budgets = parsed; currentBudgetIndex = 0; productNames = [];
+        } else if (parsed && typeof parsed === 'object') {
+            budgets = Array.isArray(parsed.budgets) ? parsed.budgets : [];
+            currentBudgetIndex = Number.isInteger(parsed.currentBudgetIndex) ? parsed.currentBudgetIndex : 0;
+            productNames = Array.isArray(parsed.productNames) ? parsed.productNames : [];
+        } else { throw new Error('Invalid import format'); }
+        currentBudgetIndex = Math.min(Math.max(0, currentBudgetIndex), Math.max(0, budgets.length - 1));
+        return {budgets:budgets, currentBudgetIndex:currentBudgetIndex, productNames:productNames};
+    }
+
+    function importBudget(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function() {
+            try {
+                var parsed = JSON.parse(reader.result);
+                var result = parseImportedBudgetData(parsed);
+                localStorage.setItem('budgets', JSON.stringify(result.budgets));
+                localStorage.setItem('currentBudgetIndex', String(result.currentBudgetIndex));
+                localStorage.setItem('productNames', JSON.stringify(result.productNames));
+                saveStateToIndexedDB(result);
+                try { window.trackSafe && window.trackSafe('onboarding-import-budget', {name:file.name}); } catch(e) {}
+                setTimeout(function() { location.replace('index.html'); }, 200);
+            } catch(e) {
+                console.error('[Onboarding import error]', e);
+                showModal('Ошибка чтения JSON файла. Проверь формат и попробуй снова.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function openHelpModal() { document.getElementById('help-modal').classList.add('ob-modal--open'); }
+    function closeHelpModal() { document.getElementById('help-modal').classList.remove('ob-modal--open'); }
+    document.getElementById('help-modal').addEventListener('click', function(e) {
+        if (e.target === e.currentTarget) closeHelpModal();
+    });
+
+    function showModal(message) {
+        var el = document.createElement('div');
+        el.className = 'ob-alert';
+        el.innerHTML = '<div class="ob-alert-card"><div class="ob-alert-icon">&#x1F988;</div><div class="ob-alert-msg">' + message + '</div><button class="ob-alert-btn" onclick="this.closest(\'.ob-alert\').remove()">Понял</button></div>';
+        document.body.appendChild(el);
+    }
+</script>
+
+<script defer src="/_vercel/insights/script.js"></script>
+<script type="module" src="./src/utils/analytics.js"></script>
+<script src="./src/utils/umami-events.js" defer></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(function(reg) { console.log('[SW] Registered', reg); })
+            .catch(function(err) { console.warn('[SW] Failed', err); });
+    }
+</script>
 </body>
 </html>

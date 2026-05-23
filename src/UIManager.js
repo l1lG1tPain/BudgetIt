@@ -20,7 +20,19 @@ import { refreshExportAnalytics } from './settings.js';
 import { refreshUserProfile, normalizeEmoji, getFirstGraphemeCluster } from './profileAnalytics.js';
 import { initBannerCarousel } from './widgets/bannerCarousel.js';
 import { EditManager } from './EditManager.js';
+import { ExcelImportManager } from './Excelimportmanager.js';
+import { initAnalyticsInsights } from './Analyticsinsights.js';
 
+
+
+/* ── Shared HTML escaping (XSS prevention) ──────────────────────────── */
+function escapeHtml(value = '') {
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+}
 
 const categoryMap = {
     'income-category': incomeCategories,
@@ -49,6 +61,7 @@ function updateHeaderAvatar(userEmoji = '❔') {
   `;
 }
 
+
 export class UIManager {
     constructor(budgetManager) {
         this.budgetManager     = budgetManager;
@@ -67,6 +80,8 @@ export class UIManager {
         this.formatDate        = formatDate;
         this.getTypeName       = getTypeName;
         this.getTypeColor      = getTypeColor;
+
+        this.excelImportManager = new ExcelImportManager(budgetManager, this);
     }
 
     initialize() {
@@ -107,9 +122,13 @@ export class UIManager {
         this.initializeHeaderMonthPicker(); // новый month-picker в хедере
         this.updateUI();
         this.attachEventListeners();
+        this.excelImportManager.init();
         this.bindNumericFormats();
         this.bannerCleanup = initBannerCarousel('.banner-carousel .slides-container');
         refreshUserProfile(this.budgetManager);
+        if (document.getElementById('analytics-page')) {  // Проверка, чтобы не ломалось без страницы
+            initAnalyticsInsights(this.budgetManager);
+        }
     }
 
     updateHeader() {
@@ -136,7 +155,6 @@ export class UIManager {
         let totals;
 
         if (this.monthFilter === 'all') {
-            // Все месяцы – как и было
             totals = this.budgetManager.calculateTotals('all') || {
                 overallBudget : 0,
                 monthlyIncome : 0,
@@ -145,9 +163,16 @@ export class UIManager {
                 totalDebt     : 0,
                 carryOver     : 0
             };
+        } else if (this.monthFilter === 'year') {
+            totals = this.budgetManager.calculateTotals('all', activeYear) || {
+                overallBudget : 0,
+                monthlyIncome : 0,
+                monthlyExpense: 0,
+                depositBalance: 0,
+                totalDebt     : 0,
+                carryOver     : 0
+            };
         } else {
-            // 📆 Конкретный месяц – считаем через BudgetManager, чтобы
-            // вклады, долги и т.п. считались по одной общей формуле
             const yearFilter = activeYear || 'all';
 
             totals = this.budgetManager.calculateTotals(this.monthFilter, yearFilter) || {
@@ -158,17 +183,6 @@ export class UIManager {
                 totalDebt     : 0,
                 carryOver     : 0
             };
-        }
-
-        // 🏦 Для конкретного месяца пересчитываем ТОЛЬКО вклад по новой логике
-        if (this.monthFilter !== 'all') {
-            const monthDeposit = this.calculateDepositBalanceForMonth(
-                this.monthFilter,
-                activeYear
-            );
-            if (!Number.isNaN(monthDeposit)) {
-                totals.depositBalance = monthDeposit;
-            }
         }
 
         const isSingleMonth = this.monthFilter !== 'all';
@@ -213,6 +227,7 @@ export class UIManager {
         const mf = this.monthFilter;
         const fy = activeYear;
         const isAllMonth = mf === 'all';
+        const isYearMode = mf === 'year';
 
         const filtered = allTx.filter(tx => {
             if (this.transactionFilter !== 'all' && tx.type !== this.transactionFilter)
@@ -223,6 +238,7 @@ export class UIManager {
             const txYear  = parseInt(dateStr.slice(0, 4), 10) || null;
 
             if (isAllMonth) return true;
+            if (isYearMode) return txYear === fy;
             if (!txYear) return false;
 
             if (tx.type !== 'deposit') {
@@ -286,7 +302,7 @@ export class UIManager {
         }
 
         const mf = this.monthFilter;
-        const isAllMonth = mf === 'all';
+        const isAllMonth = mf === 'all' || mf === 'year';
 
         transactions
             .sort((a, b) => {
@@ -419,9 +435,10 @@ export class UIManager {
               </div>
               <div class="tx-bottom-row">
                 <div class="tx-title-wrap">
-                  <span class="tx-title">${cleanTitle}</span>
+                  <span class="tx-title">${escapeHtml(cleanTitle)}</span>
                   ${debtTag || ''}
                 </div>
+                ${t.type === 'income' && t.name ? `<div class="tx-income-name">${escapeHtml(t.name)}</div>` : ''}
                 ${t.type === 'debt' ? `
                   ${t.paid
                     ? '<div class="tx-debt-status">✅ Оплачен</div>'
@@ -442,6 +459,7 @@ export class UIManager {
                 e.stopPropagation();
                 const id = +btn.dataset.id;
                 const tx = this.budgetManager.getCurrentBudget().transactions.find(t => t.id === id);
+                if (!tx) return;
                 const remaining = tx.remainingAmount || tx.initialAmount || tx.amount;
                 this.openDebtPaymentModal(id, remaining);
             });
@@ -478,17 +496,49 @@ export class UIManager {
     openModal(id) {
         const m = document.getElementById(id);
         if (!m) return;
-        if (m.classList.contains('bottom-sheet'))
-            document.getElementById('bottom-sheet-backdrop').classList.remove('hidden');
+
+        // Fullscreen pages (settings, analytics) — синхронизируем с навбаром
+        if (id === 'settings-page' || id === 'analytics-page') {
+            if (window._navOpenPage) window._navOpenPage(id);
+            if (window._navSetActiveTab) {
+                window._navSetActiveTab(id === 'settings-page' ? 'profile' : 'analytics');
+            }
+            if (id === 'analytics-page') {
+                window.dispatchEvent(new CustomEvent('budgetit:analytics-open'));
+            }
+            return;
+        }
+
+        // Обычные bottom-sheets
+        if (m.classList.contains('bottom-sheet')) {
+            const bd = document.getElementById('bottom-sheet-backdrop');
+            if (bd) bd.classList.remove('hidden');
+        }
         m.classList.remove('hidden');
     }
 
     closeModal(id) {
         const m = document.getElementById(id);
         if (!m) return;
+
+        // Fullscreen pages — синхронизируем с навбаром
+        if (id === 'settings-page' || id === 'analytics-page') {
+            if (window._navClosePage) window._navClosePage(id);
+            if (window._navSetActiveTab) window._navSetActiveTab('home');
+            return;
+        }
+
+        // Обычные bottom-sheets
         m.classList.add('hidden');
-        if (!document.querySelector('.bottom-sheet:not(.hidden)'))
-            document.getElementById('bottom-sheet-backdrop').classList.add('hidden');
+
+        // Backdrop прячем если больше нет открытых шитов
+        const anyOpen = document.querySelector(
+            '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+        );
+        if (!anyOpen) {
+            const bd = document.getElementById('bottom-sheet-backdrop');
+            if (bd) bd.classList.add('hidden');
+        }
     }
 
     showInlineError(el, message) {
@@ -654,8 +704,25 @@ export class UIManager {
 
         detailName.innerHTML = `
           <span class="tx-detail-emoji">${emoji}</span>
-          <span class="tx-detail-title">${cleanTitle}</span>
+          <span class="tx-detail-title">${escapeHtml(cleanTitle)}</span>
         `;
+
+        // Название из импорта — отдельная строка между заголовком и суммой
+        const existingNameRow = document.getElementById('detail-income-name');
+        if (transaction.type === 'income' && transaction.name) {
+            if (existingNameRow) {
+                existingNameRow.textContent = transaction.name;
+                existingNameRow.classList.remove('hidden');
+            } else {
+                const nameRow = document.createElement('div');
+                nameRow.id = 'detail-income-name';
+                nameRow.className = 'tx-detail-income-name';
+                nameRow.textContent = transaction.name;
+                document.getElementById('detail-amount')?.insertAdjacentElement('beforebegin', nameRow);
+            }
+        } else if (existingNameRow) {
+            existingNameRow.classList.add('hidden');
+        }
 
 
         // ====== ДОЛГИ ======
@@ -725,7 +792,7 @@ export class UIManager {
 
                 depositMeta.classList.remove('hidden');
                 depositMeta.innerHTML = `
-          <div><strong>Вклад:</strong> ${root.name || 'Без названия'}</div>
+          <div><strong>Вклад:</strong> ${escapeHtml(root.name || 'Без названия')}</div>
           <div><strong>Годовой процент:</strong> ${meta.annualRate.toFixed(2)}%</div>
           <div><strong>Срок:</strong> ${meta.termMonths ? meta.termMonths + ' мес.' : 'Б/С'}</div>
           <div><strong>Стартовая сумма:</strong> ${this.formatNumber(meta.initialAmount)}</div>
@@ -788,7 +855,7 @@ export class UIManager {
         <div class="detail-products-list">
           ${transaction.products.map(p => `
             <div class="detail-product-row">
-              <span class="product-title">${p.name}</span>
+              <span class="product-title">${escapeHtml(p.name)}</span>
               <span class="product-meta">${p.quantity} × ${this.formatNumber(p.price)}</span>
             </div>
           `).join('')}
@@ -934,7 +1001,7 @@ export class UIManager {
         <div class="budget-item-main">
           <div class="budget-emoji">${emoji}</div>
           <div class="budget-info">
-            <div class="budget-name">${b.name}</div>
+            <div class="budget-name">${escapeHtml(b.name)}</div>
             <div class="budget-meta">
               ${index === currentIndex ? 'Текущий бюджет' : `Бюджет #${index + 1}`}
             </div>
@@ -1206,15 +1273,50 @@ export class UIManager {
         });
 
         document.getElementById('bottom-sheet-backdrop')?.addEventListener('click', e => {
-            if (e.target === e.currentTarget) {
-                document.querySelectorAll('.bottom-sheet').forEach(sheet => sheet.classList.add('hidden'));
-                const topSheet = document.getElementById('month-picker-sheet');
-                if (topSheet) {
-                    topSheet.classList.add('hidden');
-                    topSheet.classList.remove('show');
-                }
-                e.target.classList.add('hidden');
+            const backdrop = e.currentTarget;
+
+            // ── Month-picker особый случай: он использует .show класс, не :not(.hidden) ──
+            const monthPicker = document.getElementById('month-picker-sheet');
+            if (monthPicker && monthPicker.classList.contains('show')) {
+                monthPicker.classList.remove('show');
+                monthPicker.classList.add('hidden');
+                // Проверяем есть ли ещё открытые шиты (кроме month-picker)
+                const stillOpen = document.querySelector(
+                    '.bottom-sheet.show:not(#month-picker-sheet), ' +
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                );
+                if (!stillOpen) backdrop.classList.add('hidden');
+                return;
             }
+
+            // ── Обычные bottom-sheets — закрываем верхний по z-index ──
+            const openSheets = Array.from(document.querySelectorAll(
+                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+            )).filter(el => {
+                // Исключаем скрытые через CSS (display:none или нулевой opacity)
+                const style = getComputedStyle(el);
+                return style.display !== 'none' && parseFloat(style.opacity) > 0;
+            });
+
+            if (openSheets.length === 0) {
+                backdrop.classList.add('hidden');
+                return;
+            }
+
+            openSheets.sort((a, b) => {
+                const za = parseInt(a.style.zIndex) || parseInt(getComputedStyle(a).zIndex) || 0;
+                const zb = parseInt(b.style.zIndex) || parseInt(getComputedStyle(b).zIndex) || 0;
+                return zb - za;
+            });
+
+            const top = openSheets[0];
+            top.classList.add('hidden');
+            top.style.zIndex = '';
+
+            const remaining = document.querySelectorAll(
+                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+            );
+            if (!remaining.length) backdrop.classList.add('hidden');
         });
 
         window.addEventListener('resize', () => this.adjustHeaderTitleFont());
@@ -1349,7 +1451,7 @@ export class UIManager {
         trackSafe('create-expense', {
             category: hiddenCategoryInput.value,
             amount  : totalAmount,
-            products: products.map(p => p.name)
+            products_count: products.length
         });
         form.reset();
         document.getElementById('products-list').innerHTML = `
@@ -1999,7 +2101,9 @@ export class UIManager {
 
     openCategorySheet(currentSheet, currentSelect) {
         const categorySheet = document.getElementById('category-sheet');
-        const categoryList  = categorySheet?.querySelector('.category-list');
+        const categoryList = categorySheet?.querySelector('.category-list');
+        const backdrop = document.getElementById('bottom-sheet-backdrop');
+
         if (!categorySheet || !categoryList) {
             console.error('Не найден category-sheet или category-list');
             return;
@@ -2011,20 +2115,27 @@ export class UIManager {
             .filter(opt => opt.value)
             .map(opt => ({ value: opt.value, text: opt.text }));
 
-        // 🔢 Статистика использования категорий
         let usageStats = null;
         let optionsForSearch = allOptions;
 
         const id = currentSelect.id;
-        const isIncomeSelect  = id === 'income-category'  || id === 'edit-income-category';
-        const isExpenseSelect = id === 'expense-category' || id === 'edit-expense-category';
+        const selectType = currentSelect.dataset.categoryType || '';
+
+        const isIncomeSelect =
+            id === 'income-category' ||
+            id === 'edit-income-category' ||
+            selectType === 'income';
+
+        const isExpenseSelect =
+            id === 'expense-category' ||
+            id === 'edit-expense-category' ||
+            selectType === 'expense';
 
         if (isIncomeSelect || isExpenseSelect) {
             const txType = isIncomeSelect ? 'income' : 'expense';
             usageStats = this.getCategoryUsageStats(txType);
 
-            // 💰 ДОХОДЫ: сортировка по частоте
-            if (isIncomeSelect && usageStats && usageStats.size) {
+            if (isIncomeSelect && usageStats?.size) {
                 optionsForSearch = [...allOptions].sort((a, b) => {
                     const ca = usageStats.get(a.value) || 0;
                     const cb = usageStats.get(b.value) || 0;
@@ -2034,18 +2145,18 @@ export class UIManager {
             }
         }
 
-
         const isSearchable =
-            currentSelect.id === 'expense-category'      ||
-            currentSelect.id === 'income-category'       ||
+            currentSelect.id === 'expense-category' ||
+            currentSelect.id === 'income-category' ||
             currentSelect.id === 'edit-expense-category' ||
-            currentSelect.id === 'edit-income-category'  ||
-            currentSelect.dataset.searchable === 'true';
+            currentSelect.id === 'edit-income-category' ||
+            currentSelect.dataset.searchable === 'true' ||
+            currentSelect.dataset.categoryType === 'income' ||
+            currentSelect.dataset.categoryType === 'expense';
 
+        let searchInput = categorySheet.querySelector('#category-search');
 
-        let searchInput = null;
         if (isSearchable) {
-            searchInput = categorySheet.querySelector('#category-search');
             if (!searchInput) {
                 searchInput = document.createElement('input');
                 searchInput.id = 'category-search';
@@ -2053,53 +2164,48 @@ export class UIManager {
                 searchInput.placeholder = 'Поиск категории';
                 Object.assign(searchInput.style, {
                     width: '100%',
-                    padding: '8px',
-                    margin: '0 0 8px',
+                    padding: '10px 12px',
+                    margin: '0 0 10px',
                     boxSizing: 'border-box'
                 });
                 categorySheet.insertBefore(searchInput, categoryList);
             }
             searchInput.value = '';
-        } else {
-            const old = categorySheet.querySelector('#category-search');
-            if (old) old.remove();
+        } else if (searchInput) {
+            searchInput.remove();
+            searchInput = null;
         }
 
-        const buildGrouped = () => {
-            categoryList.innerHTML = '';
+        const escapeHtml = (value = '') =>
+            String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;');
 
-            const isIncome  = currentSelect.id === 'income-category'  || currentSelect.id === 'edit-income-category';
-            const isExpense = currentSelect.id === 'expense-category' || currentSelect.id === 'edit-expense-category';
+        const renderPlainList = (items) => {
+            categoryList.innerHTML = items.map(opt => `
+            <li class="category-item" data-value="${escapeHtml(opt.value)}">
+                ${escapeHtml(opt.text)}
+            </li>
+        `).join('');
+        };
 
+        const renderGroupedList = () => {
+            let html = '';
 
-            // 💰 ДОХОДЫ: плоский список (уже отсортированный по usageStats)
-            if (isIncome) {
-                const source = optionsForSearch || allOptions;
-                source.forEach(opt => {
-                    const li = document.createElement('li');
-                    li.className = 'category-item';
-                    li.textContent = opt.text;
-                    li.dataset.value = opt.value;
-                    categoryList.appendChild(li);
-                });
-                return;
-            }
-
-            // 💸 РАСХОДЫ: блок "Часто используемые" с объединением дублей по названию
-            if (isExpense && usageStats && usageStats.size) {
+            if (isExpenseSelect && usageStats?.size) {
                 const aggregateMap = new Map();
 
-                // идём по usageStats (value -> count)
                 for (const [value, rawCount] of usageStats.entries()) {
                     if (!rawCount) continue;
 
-                    // находим первый option с таким value
                     const opt = allOptions.find(o => o.value === value);
                     if (!opt) continue;
 
                     const titleKey = opt.text.trim();
-
                     const existing = aggregateMap.get(titleKey);
+
                     if (!existing) {
                         aggregateMap.set(titleKey, {
                             text: titleKey,
@@ -2111,136 +2217,135 @@ export class UIManager {
                     }
                 }
 
-
                 const aggregated = Array.from(aggregateMap.values())
-                    .sort((a, b) => b.count - a.count);
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 8);
 
-                const TOP_N = 8; // можно поменять на 5–10 по вкусу
-                const usedOptions = aggregated.slice(0, TOP_N);
-
-                if (usedOptions.length) {
-                    const popularWrapper = document.createElement('div');
-                    popularWrapper.className = 'optgroup-wrapper popular-optgroup';
-
-                    const popularLabel = document.createElement('div');
-                    popularLabel.className = 'category-group-label';
-                    popularLabel.textContent = '✨ Часто используемые';
-                    popularWrapper.appendChild(popularLabel);
-
-                    const optionsContainer = document.createElement('div');
-                    optionsContainer.className = 'group-options';
-
-                    usedOptions.forEach(opt => {
-                        const li = document.createElement('li');
-                        li.className = 'category-item';
-                        li.dataset.value = opt.value;
-
-                        const labelSpan = document.createElement('span');
-                        labelSpan.textContent = opt.text;
-
-                        const countSpan = document.createElement('span');
-                        countSpan.className = 'category-usage-badge';
-                        countSpan.textContent = `${opt.count}x`;
-
-                        li.append(labelSpan, countSpan);
-                        optionsContainer.appendChild(li);
-                    });
-
-                    popularWrapper.appendChild(optionsContainer);
-                    categoryList.appendChild(popularWrapper);
+                if (aggregated.length) {
+                    html += `
+                    <div class="optgroup-wrapper popular-optgroup">
+                        <div class="category-group-label">✨ Часто используемые</div>
+                        <div class="group-options">
+                            ${aggregated.map(opt => `
+                                <li class="category-item" data-value="${escapeHtml(opt.value)}">
+                                    <span>${escapeHtml(opt.text)}</span>
+                                    <span class="category-usage-badge">${opt.count}x</span>
+                                </li>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
                 }
             }
 
-            // 🧩 Остальные группы/опции — как и раньше
             Array.from(currentSelect.children).forEach(child => {
                 if (child.tagName === 'OPTGROUP') {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'optgroup-wrapper';
+                    const optionsHtml = Array.from(child.children)
+                        .filter(opt => opt.value)
+                        .map(opt => `
+                        <li class="category-item" data-value="${escapeHtml(opt.value)}">
+                            ${escapeHtml(opt.text)}
+                        </li>
+                    `)
+                        .join('');
 
-                    const groupLabel = document.createElement('div');
-                    groupLabel.className = 'category-group-label dropdown-toggle';
-                    groupLabel.textContent = `▶ ${child.label}`;
-                    wrapper.appendChild(groupLabel);
-
-                    const optionsContainer = document.createElement('div');
-                    optionsContainer.className = 'group-options hidden';
-
-                    Array.from(child.children).forEach(opt => {
-                        if (!opt.value) return;
-                        const li = document.createElement('li');
-                        li.className = 'category-item';
-                        li.textContent = opt.text;
-                        li.dataset.value = opt.value;
-                        optionsContainer.appendChild(li);
-                    });
-
-                    groupLabel.addEventListener('click', () => {
-                        const hidden = optionsContainer.classList.toggle('hidden');
-                        groupLabel.textContent = `${hidden ? '▶' : '▼'} ${child.label}`;
-                    });
-
-                    wrapper.appendChild(optionsContainer);
-                    categoryList.appendChild(wrapper);
+                    html += `
+                    <div class="optgroup-wrapper">
+                        <div class="category-group-label dropdown-toggle">▶ ${escapeHtml(child.label)}</div>
+                        <div class="group-options hidden">${optionsHtml}</div>
+                    </div>
+                `;
                 } else if (child.tagName === 'OPTION' && child.value) {
-                    const li = document.createElement('li');
-                    li.className = 'category-item';
-                    li.textContent = child.text;
-                    li.dataset.value = child.value;
-                    categoryList.appendChild(li);
+                    html += `
+                    <li class="category-item" data-value="${escapeHtml(child.value)}">
+                        ${escapeHtml(child.text)}
+                    </li>
+                `;
                 }
             });
+
+            categoryList.innerHTML = html;
         };
 
-        buildGrouped();
+        const render = (filter = '') => {
+            if (filter) {
+                const normalized = filter.trim().toLowerCase();
+                const filtered = (optionsForSearch || allOptions).filter(opt =>
+                    opt.text.toLowerCase().includes(normalized)
+                );
+                renderPlainList(filtered);
+                return;
+            }
 
-        const attachClickHandlers = () => {
-            categoryList.querySelectorAll('.category-item').forEach(item => {
-                item.onclick = () => {
-                    const value = item.dataset.value;
-                    const labelNode = item.querySelector('span');
-                    const labelText = labelNode ? labelNode.textContent : item.textContent;
-                    this.selectCategory(value, labelText.trim());
-                };
+            if (isIncomeSelect) {
+                renderPlainList(optionsForSearch || allOptions);
+                return;
+            }
+
+            renderGroupedList();
+        };
+
+        render('');
+
+        if (!categoryList.dataset.boundDelegation) {
+            categoryList.addEventListener('click', (e) => {
+                const toggle = e.target.closest('.dropdown-toggle');
+                if (toggle) {
+                    const optionsContainer = toggle.nextElementSibling;
+                    const hidden = optionsContainer.classList.toggle('hidden');
+                    toggle.textContent = `${hidden ? '▶' : '▼'} ${toggle.textContent.replace(/^[▶▼]\s*/, '')}`;
+                    return;
+                }
+
+                const item = e.target.closest('.category-item');
+                if (!item) return;
+
+                const value = item.dataset.value;
+                const labelNode = item.querySelector('span');
+                const labelText = labelNode ? labelNode.textContent : item.textContent;
+
+                this.selectCategory(value, labelText.trim());
             });
-        };
 
-        attachClickHandlers();
+            categoryList.dataset.boundDelegation = 'true';
+        }
 
-        if (isSearchable && searchInput) {
+        if (searchInput) {
+            let searchRaf = 0;
             searchInput.oninput = () => {
-                const filter = searchInput.value.trim().toLowerCase();
-                categoryList.innerHTML = '';
+                const value = searchInput.value || '';
 
-                if (!filter) {
-                    buildGrouped();
-                } else {
-                    const source = optionsForSearch || allOptions;
-                    source.forEach(opt => {
-                        if (opt.text.toLowerCase().includes(filter)) {
-                            const li = document.createElement('li');
-                            li.className = 'category-item';
-                            li.textContent = opt.text;
-                            li.dataset.value = opt.value;
-                            categoryList.appendChild(li);
-                        }
-                    });
-                }
-
-                attachClickHandlers();
+                if (searchRaf) cancelAnimationFrame(searchRaf);
+                searchRaf = requestAnimationFrame(() => {
+                    render(value);
+                });
             };
         }
 
-        const backdrop = document.getElementById('bottom-sheet-backdrop');
         if (backdrop) backdrop.classList.remove('hidden');
-        else console.warn('Backdrop не найден');
+
+        categorySheet.style.zIndex = '';
         categorySheet.classList.remove('hidden');
-        if (currentSheet) currentSheet.style.zIndex = '1100';
-        categorySheet.style.zIndex = '1101';
+
+        const closeCategory = () => {
+            categorySheet.classList.add('hidden');
+            const anyOpen = document.querySelector('.bottom-sheet:not(.hidden):not(#category-sheet)');
+            if (!anyOpen && backdrop) backdrop.classList.add('hidden');
+        };
+
         const closeBtn = categorySheet.querySelector('.close-category-sheet');
         if (closeBtn) {
             closeBtn.onclick = null;
-            closeBtn.onclick = () => categorySheet.classList.add('hidden');
-        } else console.warn('Кнопка закрытия (.close-category-sheet) не найдена');
+            closeBtn.onclick = closeCategory;
+        }
+
+        if (backdrop) {
+            backdrop.onclick = () => {
+                if (!categorySheet.classList.contains('hidden')) {
+                    closeCategory();
+                }
+            };
+        }
     }
 
     openDebtPaymentModal(id, remainingAmount) {
@@ -2403,9 +2508,12 @@ export class UIManager {
 
                     sheet.classList.remove('show');
                     sheet.classList.add('hidden');
-                    if (!document.querySelector('.bottom-sheet:not(.hidden)') && backdrop) {
-                        backdrop.classList.add('hidden');
-                    }
+                    // Проверяем по .show (не по .hidden) — т.к. CSS делает hidden-sheets display:block
+                    const anySheetOpen = document.querySelector(
+                        '.bottom-sheet.show, ' +
+                        '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                    );
+                    if (!anySheetOpen && backdrop) backdrop.classList.add('hidden');
 
                     this.updateUI();
                 });
@@ -2422,6 +2530,16 @@ export class UIManager {
                 }
             }
 
+            // состояние для "1 год"
+            const yearMonthsBtn = document.getElementById('year-months-btn');
+            if (yearMonthsBtn) {
+                if (this.monthFilter === 'year' && this.yearFilter === this.activeYearForMonthFilter) {
+                    yearMonthsBtn.classList.add('active');
+                } else {
+                    yearMonthsBtn.classList.remove('active');
+                }
+            }
+
             // 🔄 перезапуск анимации сетки
             grid.classList.remove('months-grid-anim');
             // форсим рефлоу, чтобы браузер реально "забыл" анимацию
@@ -2434,6 +2552,10 @@ export class UIManager {
         prevBtn.onclick = () => {
             if (this.yearFilter > this.minYear) {
                 this.yearFilter--;
+                if (this.monthFilter === 'year') {
+                    this.activeYearForMonthFilter = this.yearFilter;
+                    this.updateUI();
+                }
                 render();
                 this.updateMonthPickerButton();
             }
@@ -2442,6 +2564,10 @@ export class UIManager {
         nextBtn.onclick = () => {
             if (this.yearFilter < this.maxYear) {
                 this.yearFilter++;
+                if (this.monthFilter === 'year') {
+                    this.activeYearForMonthFilter = this.yearFilter;
+                    this.updateUI();
+                }
                 render();
                 this.updateMonthPickerButton();
             }
@@ -2456,9 +2582,33 @@ export class UIManager {
 
                 sheet.classList.remove('show');
                 sheet.classList.add('hidden');
-                if (!document.querySelector('.bottom-sheet:not(.hidden)') && backdrop) {
-                    backdrop.classList.add('hidden');
-                }
+                const anySheetOpen2 = document.querySelector(
+                    '.bottom-sheet.show, ' +
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                );
+                if (!anySheetOpen2 && backdrop) backdrop.classList.add('hidden');
+
+                this.updateUI();
+            });
+        }
+
+        // "1 год"
+        const yearMonthsBtn = document.getElementById('year-months-btn');
+        if (yearMonthsBtn && !yearMonthsBtn._bound) {
+            yearMonthsBtn._bound = true;
+            yearMonthsBtn.addEventListener('click', () => {
+                this.monthFilter = 'year';
+                this.activeYearForMonthFilter = this.yearFilter;
+                this.updateMonthPickerButton();
+                render(); // обновить active-состояние кнопок
+
+                sheet.classList.remove('show');
+                sheet.classList.add('hidden');
+                const anySheetOpen3 = document.querySelector(
+                    '.bottom-sheet.show, ' +
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                );
+                if (!anySheetOpen3 && backdrop) backdrop.classList.add('hidden');
 
                 this.updateUI();
             });
@@ -2507,6 +2657,12 @@ export class UIManager {
 
         if (this.monthFilter === 'all') {
             btn.textContent = 'Все месяцы ▾';
+            return;
+        }
+
+        if (this.monthFilter === 'year') {
+            const yearForLabel = this.activeYearForMonthFilter || this.yearFilter || (new Date()).getFullYear();
+            btn.textContent = `${yearForLabel} год ▾`;
             return;
         }
 

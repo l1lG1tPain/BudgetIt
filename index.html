@@ -5,10 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BudgetIt — учёт бюджета и расходов</title>
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./theme.css">
-  <link rel="manifest" href="manifest.json?v=3.0.0">
+    <link rel="stylesheet" href="./theme.css">
+    <link rel="stylesheet" href="./theme-polish-fixes.css">
+    <link rel="stylesheet" href="./excel-import.css">
+  <link rel="stylesheet" href="./analytics-insights.css">
+  <link rel="stylesheet" href="./Search.css">
+  <link rel="stylesheet" href="./export-import-page.css">
+  <link rel="stylesheet" href="./planner.css">
+  <link rel="stylesheet" href="./Achievements.css">
 
-  <!-- <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"></script> -->
+
+
+  <link rel="manifest" href="manifest.json?v=4.0.0">
+
   <script defer
         src="https://cloud.umami.is/script.js"
         data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502"
@@ -25,8 +34,8 @@
   <meta name="mobile-web-app-title" content="BudgetIt">
   <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
   <link rel="icon" href="https://budgetit.app/assets/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
-  
+  <link rel="apple-touch-icon" href="assets/icon-512x512v4.png">
+
   <meta name="description"
         content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями. Акулка позаботится о ваших финансах!">
   <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, расходы, доходы, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
@@ -50,7 +59,7 @@
   <meta name="twitter:title"       content="BudgetIt — Акулка следит за твоим бюджетом">
   <meta name="twitter:description" content="Бесплатная PWA для управления личными финансами. Установи и начни экономить уже сегодня.">
   <meta name="twitter:image"       content="https://budgetit-nine.vercel.app/assets/og-cover.png">
-  
+
 </head>
 <body>
   <!-- Backdrop for bottom-sheets -->
@@ -58,8 +67,42 @@
 
   <!-- Bottom-sheet для переключения между бюджетами -->
   <div id="budget-switch-sheet" class="bottom-sheet hidden">
-    <h2><b>Мои бюджеты</b></h2>
-    <img src="./assets/switch-budget-img.png" alt="switch-budget-img">
+    <h2>
+      <svg class="budgetit-nav-svg budgetit-nav-wallet" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+                d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                fill="currentColor"
+                opacity="0.22"
+        />
+        <path
+                d="M7.25 6.25L13.95 3.95C15.35 3.47 16.8 4.5 16.8 5.98V6.25H7.25Z"
+                fill="currentColor"
+                opacity="0.44"
+        />
+        <path
+                d="M14.55 10.2H20.25C20.9 10.2 21.42 10.72 21.42 11.37V13.35C21.42 14 20.9 14.52 20.25 14.52H14.55C13.35 14.52 12.37 13.55 12.37 12.36C12.37 11.17 13.35 10.2 14.55 10.2Z"
+                fill="currentColor"
+                opacity="0.36"
+        />
+        <circle cx="15.35" cy="12.36" r="1.05" fill="currentColor" />
+        <path
+                d="M7.1 9.25H10.8"
+                stroke="currentColor"
+                stroke-width="1.55"
+                stroke-linecap="round"
+                opacity="0.55"
+        />
+        <path
+                d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V10.2M19.55 14.52V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                stroke="currentColor"
+                stroke-width="1.45"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+        />
+      </svg>
+      <b>Мои бюджеты</b>
+    </h2>
+    <img src="./assets/shark.png" alt="switch-budget-img">
 
       <p class="budget-desc">
           Создавай, удаляй и легко переключайся между своими бюджетами.<br>
@@ -90,15 +133,62 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════ -->
+  <!-- ПОИСК — top-sheet                       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div id="search-sheet" class="search-sheet hidden">
+      <div class="search-sheet-handle"></div>
+
+      <div class="search-header">
+          <div class="search-input-row">
+              <div class="search-input-wrap">
+                  <span class="search-input-icon">🔍</span>
+                  <input
+                      id="search-input"
+                      class="search-input"
+                      type="search"
+                      inputmode="search"
+                      autocomplete="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      placeholder="Категория, сумма, товар..."
+                      maxlength="80"
+                  >
+              </div>
+              <button id="search-close-btn" class="search-close-btn" type="button">✕</button>
+          </div>
+      </div>
+
+      <div class="search-filters">
+          <button class="search-type-chip active" data-type="all" type="button">Все</button>
+          <button class="search-type-chip" data-type="income" type="button">💸 Доходы</button>
+          <button class="search-type-chip" data-type="expense" type="button">🛒 Расходы</button>
+          <button class="search-type-chip" data-type="deposit" type="button">🏦 Вклады</button>
+          <button class="search-type-chip" data-type="debt" type="button">📋 Долги</button>
+      </div>
+
+      <div class="search-divider"></div>
+
+      <div id="search-results" class="search-results">
+          <div class="search-placeholder">
+              <div class="search-placeholder-icon">🔍</div>
+              <div class="search-placeholder-text">Начни вводить запрос</div>
+              <div class="search-placeholder-hint">Категория, сумма, товар или тип</div>
+          </div>
+      </div>
+  </div>
+
   <!-- Хедер -->
   <header>
       <div id="snow-overlay" class="snow-overlay"></div>
     <h1 id="current-budget" title="Нажмите для смены бюджета">BudgetIt</h1>
     <div class="header-button">
+        <button id="search-open-btn" class="search-open-btn" type="button" aria-label="Поиск">🔍</button>
         <button id="month-picker-btn" class="month-picker-btn" type="button">
             Октябрь ▾
         </button>
-      <button id="open-profile-btn" class="avatar-btn"></button>
+        <!-- avatar moved to liquid nav bar -->
+        <button id="open-profile-btn" class="avatar-btn" style="display:none;" aria-hidden="true"></button>
     </div>
       <!-- сюда JS подставит <img> -->
 
@@ -213,7 +303,7 @@
     <!-- Bottom-sheet для добавления транзакции -->
     <div class="transaction-type-chips">
       <button class="chip-btn" data-type="income">💰 Доходы</button>
-      <button class="chip-btn" data-type="expense">💸 Расходы</button>
+      <button class="chip-btn" data-type="expense">🛒 Расходы</button>
       <button class="chip-btn" data-type="debt">📉 Долги</button>
       <button class="chip-btn" data-type="deposit">🏦 Вклады</button>
     </div>
@@ -224,7 +314,7 @@
         <input type="date" id="income-date" required>
         <label for="income-category">Категория:</label>
         <select id="income-category" name="income-category">
-        </select>    
+        </select>
         <label for="income-amount">Сумма:</label>
         <input type="tel" id="income-amount" class="numeric-format" required maxlength="15" inputmode="numeric" placeholder="1 000 денег">
         <button type="submit" class="add-btn">Сохранить</button>
@@ -390,21 +480,28 @@
       <h2>Профиль BudgetIt</h2>
     </div>
 
-    <div class="settings-info" id="user-profile-block">
-      <div class="user-profile-card">
-        <div class="user-emoji" id="user-emoji"></div>
-        <div class="user-level-info">
-          <div class="user-level-text">Lvl: <span id="user-level">1</span></div>
-          <div class="progress-bar-container">
-            <div class="progress-bar" id="user-progress"></div>
+    <div class="sp-hero-wrap wrapper-sm" id="user-profile-block">
+      <div class="sp-hero-card" id="user-profile-card" role="button" style="cursor:pointer" aria-label="Открыть профиль">
+        <div class="sp-hero-glow"></div>
+        <div class="sp-hero-left">
+          <div class="sp-hero-avatar" id="user-emoji"></div>
+          <div class="sp-hero-lvl-badge">Lvl <span id="user-level">1</span></div>
+        </div>
+        <div class="sp-hero-right">
+          <div class="sp-hero-name" id="sp-hero-name">—</div>
+          <div class="sp-hero-id" id="user-id">ID: <span id="user-id-text">…</span></div>
+          <div class="sp-hero-progress-wrap">
+            <div class="sp-hero-progress-bar">
+              <div class="sp-hero-progress-fill" id="user-progress"></div>
+            </div>
+            <div class="sp-hero-pts"><span id="tx-count">0</span> / <span id="tx-next">50</span> pts</div>
           </div>
-          <div class="tx-counter">Points: <span id="tx-count">0</span> / <span id="tx-next">50</span></div>
-          <div id="user-id" class="user-id-display">ID: <span id="user-id-text">🦈abc123</span></div>
+          <div class="sp-hero-cta">Смотреть профиль ›</div>
         </div>
       </div>
     </div>
 
-    <div class="banner-carousel">
+    <div class="banner-carousel wrapper-sm">
       <div class="slides-container">
         <div class="banner-slide">
           <img src="assets/banner8.jpg" alt="Баннер 8"/>
@@ -430,88 +527,288 @@
 
     <hr class="hr-spacing">
 
-      <div class="settings-nav-list">
-          <button class="open-subpage-btn" data-page="region-page">
-              <span class="settings-icon">🌍 </span>
-              <span class="settings-text">Регионы и валюты</span>
-          </button>
+      <div class="sp-nav-list wrapper-sm settings-nav-list">
 
-          <button class="open-subpage-btn" data-page="export-import-page">
-              <span class="settings-icon">🗄️</span>
-              <span class="settings-text">Работа с данными</span>
-          </button>
+          <div class="sp-nav-group">
+            <button class="open-subpage-btn sp-nav-btn" data-page="theme-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">🎨</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">Темы оформления</span>
+                <span class="sp-nav-sub">Цвета, тёмная и светлая тема</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+            <button class="open-subpage-btn sp-nav-btn" data-page="region-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8)">🌍</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">Регионы и валюты</span>
+                <span class="sp-nav-sub">Валюта и формат чисел</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+            <button class="open-subpage-btn sp-nav-btn" data-page="export-import-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#475569,#64748b)">🗄️</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">Работа с данными</span>
+                <span class="sp-nav-sub">Экспорт, импорт, бэкапы</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+            <button class="open-subpage-btn sp-nav-btn" data-page="planner-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8)">📅</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">Планировщик бюджета</span>
+                <span class="sp-nav-sub">Суточный лимит и план по дням</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+          </div>
 
-          <button class="open-subpage-btn" data-page="analytics-page">
-              <span class="settings-icon">📊</span>
-              <span class="settings-text">Аналитика</span>
-          </button>
+          <div class="sp-nav-group">
+            <button class="open-subpage-btn sp-nav-btn" data-page="faq-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">❓</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">Q&amp;A</span>
+                <span class="sp-nav-sub">Частые вопросы и ответы</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+            <button class="open-subpage-btn sp-nav-btn" data-page="about-page">
+              <span class="sp-nav-icon" style="background:linear-gradient(135deg,#10b981,#34d399)">ℹ️</span>
+              <span class="sp-nav-text-wrap">
+                <span class="sp-nav-text">О приложении</span>
+                <span class="sp-nav-sub">Версия, разработчик, контакты</span>
+              </span>
+              <span class="sp-nav-arr">›</span>
+            </button>
+          </div>
 
-          <button class="open-subpage-btn" data-page="theme-page">
-              <span class="settings-icon">🎨</span>
-              <span class="settings-text">Темы оформления</span>
-          </button>
-
-          <button class="open-subpage-btn" data-page="faq-page">
-              <span class="settings-icon">❓</span>
-              <span class="settings-text">Q&A</span>
-          </button>
-
-          <button class="open-subpage-btn" data-page="about-page">
-              <span class="settings-icon">ℹ️</span>
-              <span class="settings-text">О приложении</span>
-          </button>
       </div>
 
-      <button id="close-settings-btn" class="close-settings-btn">Закрыть</button>
+      <hr class="hr-spacing">
+
+      <div class="wrapper-sm akulka-projects">
+
+          <h2 class="company-title">Akulka Projects</h2>
+          <p class="company-subtitle">
+              Инди-экосистема продуктов, которые делают жизнь проще и приятнее
+          </p>
+
+          <div class="products-grid">
+
+              <a href="https://l1lg1tpain.github.io/TrackIt/index.html" class="product-card link">
+                  <img src="assets/icons/trackit-icon.png" class="product-icon">
+                  <h3>TrackIt</h3>
+                  <p>Счётчик очков для настольных игр</p>
+                  <span class="product-version">v3.5</span>
+              </a>
+
+              <div class="product-card">
+                  <img src="assets/icons/budgetit-icon.png" class="product-icon">
+                  <h3>BudgetIt</h3>
+                  <p>Учёт финансов с аналитикой</p>
+                  <span class="product-version">v4.0.0</span>
+              </div>
+
+              <a href="https://migry-bice.vercel.app/" target="_blank" class="product-card link">
+                  <img src="assets/icons/migri-icon.png" class="product-icon">
+                  <h3>Мигри</h3>
+                  <p>Трекер головной боли с аналитикой для врача</p>
+                  <span class="product-version">v1.0</span>
+              </a>
+
+              <a href="https://t.me/LUdomania_app_bot" target="_blank" class="product-card link">
+                  <img src="assets/icons/ludomania-icon.png" class="product-icon">
+                  <h3>Ludomania</h3>
+                  <p>Мини-игра в Telegram</p>
+                  <span class="product-version">beta</span>
+              </a>
+
+          </div>
+      </div>
+
   </div>
 
-  <div id="achievements-page" class="bottom-sheet fullscreen-sheet hidden">
-    <h2>👤 Профиль BudgetIt</h2>
+<!-- Вставить вместо текущего #achievements-page -->
+<div id="achievements-page" class="bottom-sheet fullscreen-sheet hidden">
+  <div class="subpage-header header">
+    <button class="subpage-back-btn close-settings-btn" aria-label="Назад">
+      <span class="subpage-back-icon">‹</span>
+    </button>
+    <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-trophy" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3H17V12C17 15.31 14.76 18 12 18C9.24 18 7 15.31 7 12V3Z" fill="currentColor" opacity="0.18"/><path d="M7 3H17V12C17 15.31 14.76 18 12 18C9.24 18 7 15.31 7 12V3Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M7 5C7 5 3.5 5 3.5 8.5C3.5 11 6 12.5 7 12.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.68"/><path d="M17 5C17 5 20.5 5 20.5 8.5C20.5 11 18 12.5 17 12.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.68"/><path d="M12 18V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.62"/><rect x="8" y="21" width="8" height="2" rx="1" fill="currentColor" opacity="0.52"/><path d="M12 7L12.9 9.6H15.7L13.4 11.2L14.3 13.8L12 12.2L9.7 13.8L10.6 11.2L8.3 9.6H11.1L12 7Z" fill="currentColor" opacity="0.58"/></svg><span>Достижения Акулки</span></h2>
+    <div class="subpage-header-spacer"></div>
+  </div>
 
-    <div class="achievements-summary">
-      <p>🎁 Очков за достижения: <span id="achievement-points">0</span></p>
-      <small class="bonus-explanation">✨ Обычные достижения = +5, секретные = +10</small>
+  <div class="subpage-content">
 
-      <p>🏆 Достижения: <span id="unlocked-count">24</span> из <span id="total-count">58</span> (<span id="percent-count">41%</span>)</p>
-      <div class="progress-container">
-        <div class="progress-bar">
-          <div id="achievement-progress-bar" class="progress-fill"></div>
+    <!-- ── Сводка ── -->
+    <div class="ach-summary-card">
+      <div class="ach-summary-row">
+        <div class="ach-summary-stat">
+          <span class="ach-summary-val" id="unlocked-count">0</span>
+          <span class="ach-summary-key">открыто</span>
+        </div>
+        <div class="ach-summary-divider"></div>
+        <div class="ach-summary-stat">
+          <span class="ach-summary-val" id="total-count">0</span>
+          <span class="ach-summary-key">всего</span>
+        </div>
+        <div class="ach-summary-divider"></div>
+        <div class="ach-summary-stat">
+          <span class="ach-summary-val" id="percent-count">0%</span>
+          <span class="ach-summary-key">прогресс</span>
+        </div>
+        <div class="ach-summary-divider"></div>
+        <div class="ach-summary-stat">
+          <span class="ach-summary-val">✨ <span id="achievement-points">0</span></span>
+          <span class="ach-summary-key">очков</span>
         </div>
       </div>
+      <div class="ach-summary-bar">
+        <div id="achievement-progress-bar" class="ach-summary-fill"></div>
+      </div>
+      <div class="ach-summary-hint">Обычные +5 · Секретные +10</div>
     </div>
 
-    <div id="achievements-container" class="achievement-grid"></div>
+    <!-- ── Грид с фильтрами и группами ── -->
+    <div id="achievements-container"></div>
 
-    <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
   </div>
+</div>
+
 
   <div id="export-import-page" class="bottom-sheet fullscreen-sheet hidden">
-    <h2>🗄️ Данные профиля</h2>
-    <canvas id="chartContainerId" style="max-width: 320px; margin: 0 auto 20px;"></canvas>
-    <div id="budget-info-block">
-      <p>Общее количество транзакций: <strong id="tx-total">0</strong></p>
-      <p>Количество бюджетов: <span id="budget-count">0</span></p>
+
+    <!-- Шапка -->
+    <div class="subpage-header header">
+      <button class="subpage-back-btn close-settings-btn" aria-label="Назад">
+        <span class="subpage-back-icon">‹</span>
+      </button>
+      <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-data" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="3" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.18"/><rect x="2" y="3" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.35" fill="none" opacity="0.85"/><rect x="2" y="10" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.13"/><rect x="2" y="10" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.35" fill="none" opacity="0.68"/><rect x="2" y="17" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.08"/><rect x="2" y="17" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.52"/><circle cx="19" cy="5.5" r="1" fill="currentColor" opacity="0.8"/><circle cx="19" cy="12.5" r="1" fill="currentColor" opacity="0.55"/><circle cx="19" cy="19.5" r="1" fill="currentColor" opacity="0.35"/><path d="M5 5.5L6.5 4L8 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/><path d="M5 12.5L6.5 14L8 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/></svg><span>Данные профиля</span></h2>
+      <div class="subpage-header-spacer"></div>
     </div>
-    <button id="export-btn">📤 Экспорт</button>
-    <label id="import-label">📥 Импорт
-      <input type="file" id="import-file" />
-    </label>
-    <button id="clear-cache-btn">🧹 Очистить кэш</button>
-    <button id="clear-data-btn">🗑️ Очистить данные</button>
-    <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
+    <div class="subpage-content">
+
+    <!-- ── Сводная статистика (4 плитки) ── -->
+    <div class="eip-stats-grid">
+      <div class="eip-stat-card">
+        <span class="eip-stat-icon">💼</span>
+        <span class="eip-stat-value" id="budget-count">0</span>
+        <span class="eip-stat-label">Бюджетов</span>
+      </div>
+      <div class="eip-stat-card">
+        <span class="eip-stat-icon">🔄</span>
+        <span class="eip-stat-value" id="tx-total">0</span>
+        <span class="eip-stat-label">Транзакций</span>
+      </div>
+      <div class="eip-stat-card">
+        <span class="eip-stat-icon">📈</span>
+        <span class="eip-stat-value" id="eip-income-sum">0</span>
+        <span class="eip-stat-label">Доходы</span>
+      </div>
+      <div class="eip-stat-card">
+        <span class="eip-stat-icon">📉</span>
+        <span class="eip-stat-value" id="eip-expense-sum">0</span>
+        <span class="eip-stat-label">Расходы</span>
+      </div>
+    </div>
+
+    <!-- ── График: горизонтальные бары по типам ── -->
+    <div class="eip-chart-block">
+      <div class="eip-chart-header">
+        <span class="eip-chart-title">Распределение транзакций</span>
+        <span class="eip-chart-total" id="eip-chart-total-label"></span>
+      </div>
+      <div class="eip-bars" id="eip-bars-container">
+        <!-- рендерится JS-ом -->
+      </div>
+    </div>
+
+    <!-- ── Активность по месяцам (mini sparkline) ── -->
+    <div class="eip-activity-block">
+      <div class="eip-chart-header">
+        <span class="eip-chart-title">Активность за 6 месяцев</span>
+        <span class="eip-chart-total" id="eip-sparkline-label"></span>
+      </div>
+      <div class="eip-sparkline-wrap">
+        <canvas id="eip-sparkline-canvas" height="64"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Бюджеты: список с прогрессом ── -->
+    <div class="eip-budgets-block" id="eip-budgets-list">
+      <!-- рендерится JS-ом -->
+    </div>
+
+    <!-- ── Кнопки действий (2×2 сетка) ── -->
+    <div class="eip-actions-grid">
+      <button id="export-btn" class="eip-action-btn eip-action-primary">
+        <span class="eip-action-icon">📤</span>
+        <span class="eip-action-text">
+          <b>Экспорт</b>
+          <small>Скачать резервную копию</small>
+        </span>
+      </button>
+
+      <label id="import-label" class="eip-action-btn eip-action-secondary">
+        <span class="eip-action-icon">📥</span>
+        <span class="eip-action-text">
+          <b>Импорт</b>
+          <small>Восстановить из файла</small>
+        </span>
+        <input type="file" id="import-file" accept=".json" />
+      </label>
+
+      <button id="clear-cache-btn" class="eip-action-btn eip-action-muted">
+        <span class="eip-action-icon">🧹</span>
+        <span class="eip-action-text">
+          <b>Очистить кэш</b>
+          <small>Сбросить кэш приложения</small>
+        </span>
+      </button>
+
+      <button id="clear-data-btn" class="eip-action-btn eip-action-danger">
+        <span class="eip-action-icon">🗑️</span>
+        <span class="eip-action-text">
+          <b>Удалить данные</b>
+          <small>Сброс до заводских</small>
+        </span>
+      </button>
+    </div>
+
+
+
+    </div><!-- /subpage-content -->
   </div>
 
   <div id="theme-page" class="bottom-sheet fullscreen-sheet hidden">
-    <h2>Темы оформления</h2>
+    <div class="subpage-header header">
+      <button class="subpage-back-btn close-settings-btn" aria-label="Назад">
+        <span class="subpage-back-icon">‹</span>
+      </button>
+      <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-theme" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C13.1 22 14 21.1 14 20C14 19.45 13.78 18.95 13.42 18.58C13.07 18.22 12.85 17.72 12.85 17.17C12.85 16.21 13.64 15.42 14.6 15.42H17C19.76 15.42 22 13.18 22 10.42C22 5.81 17.52 2 12 2Z" fill="currentColor" opacity="0.18"/><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C13.1 22 14 21.1 14 20C14 19.45 13.78 18.95 13.42 18.58C13.07 18.22 12.85 17.72 12.85 17.17C12.85 16.21 13.64 15.42 14.6 15.42H17C19.76 15.42 22 13.18 22 10.42C22 5.81 17.52 2 12 2Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><circle cx="6.5" cy="11.5" r="1.5" fill="currentColor" opacity="0.7"/><circle cx="9" cy="7" r="1.5" fill="currentColor" opacity="0.55"/><circle cx="14" cy="6" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="18" cy="9" r="1.5" fill="currentColor" opacity="0.65"/><circle cx="17" cy="17" r="1.2" fill="currentColor"/></svg><span>Темы оформления</span></h2>
+      <div class="subpage-header-spacer"></div>
+    </div>
+    <div class="subpage-content">
     <div id="theme-options-container"></div>
-    <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
+    </div><!-- /subpage-content -->
   </div>
 
   <!-- analytics.html -->
   <div id="analytics-page" class="bottom-sheet fullscreen-sheet hidden">
     <!-- фильтр месяцев -->
       <div class="analytics-header-row">
-          <h2>📈 Аналитика бюджета</h2>
+          <h2 class="page-title-with-icon">
+              <svg class="page-title-svg budgetit-nav-chart" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6.2 4.8H17.8C19.48 4.8 20.85 6.17 20.85 7.85V16.15C20.85 17.83 19.48 19.2 17.8 19.2H6.2C4.52 19.2 3.15 17.83 3.15 16.15V7.85C3.15 6.17 4.52 4.8 6.2 4.8Z" fill="currentColor" opacity="0.2"/>
+                  <path d="M7.25 15.25C7.25 14.53 7.83 13.95 8.55 13.95C9.27 13.95 9.85 14.53 9.85 15.25V16.2C9.85 16.92 9.27 17.5 8.55 17.5C7.83 17.5 7.25 16.92 7.25 16.2V15.25Z" fill="currentColor" opacity="0.55"/>
+                  <path d="M10.7 12.35C10.7 11.63 11.28 11.05 12 11.05C12.72 11.05 13.3 11.63 13.3 12.35V16.2C13.3 16.92 12.72 17.5 12 17.5C11.28 17.5 10.7 16.92 10.7 16.2V12.35Z" fill="currentColor" opacity="0.72"/>
+                  <path d="M14.15 9.15C14.15 8.43 14.73 7.85 15.45 7.85C16.17 7.85 16.75 8.43 16.75 9.15V16.2C16.75 16.92 16.17 17.5 15.45 17.5C14.73 17.5 14.15 16.92 14.15 9.15Z" fill="currentColor"/>
+                  <path d="M7.1 10.1L9.65 7.75L12.1 9.75L16.55 5.9" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+                  <circle cx="16.55" cy="5.9" r="1" fill="currentColor"/>
+              </svg>
+              <span>Аналитика бюджета</span>
+          </h2>
           <button id="analytics-month-btn" class="month-picker-btn" type="button">
               <span id="analytics-month-label">Все месяцы</span> ▾
           </button>
@@ -547,60 +844,422 @@
       </section>
 
       <section>
-        <h4>📥 Категории по убыванию</h4>
+        <h4>📥 Все категории расходов</h4>
         <canvas id="categoriesByDescendingChart"></canvas>
       </section>
 
       <section>
-        <h4>🔄 История топ-1 категории</h4>
+        <h4>🔄 История категории</h4>
         <canvas id="categoryHistoryChart"></canvas>
       </section>
 
       <section>
-        <h4>📅 Бар-чарт по дням недели</h4>
+        <h4>📅 Расходы по дням недели</h4>
         <canvas id="spendingByWeekdayChart"></canvas>
       </section>
 
       <section>
-        <h4>💳 Pie-чарт по диапазонам чеков</h4>
-        <canvas id="spendingByAmountRangeChart"></canvas>
+        <h4>💼 Доходы по источникам</h4>
+        <canvas id="incomeBySourceChart"></canvas>
       </section>
 
       <section>
-        <h4>📆 Годовая сводка бюджета</h4>
+        <h4>📆 Сводка по месяцам</h4>
         <canvas id="annualSummaryChart"></canvas>
       </section>
     </div>
 
-    <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
+    <!-- <button class="close-settings-btn">Назад</button> -->
   </div>
 
   <!-- === Q&A page (FAQ) =========================== -->
   <div id="faq-page" class="bottom-sheet fullscreen-sheet hidden">
-    <h2>❓ Вопросы и ответы</h2>
+    <div class="subpage-header header">
+      <button class="subpage-back-btn close-settings-btn" aria-label="Назад">
+        <span class="subpage-back-icon">‹</span>
+      </button>
+      <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-faq" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3H21C21.55 3 22 3.45 22 4V15C22 15.55 21.55 16 21 16H14L10 21V16H3C2.45 16 2 15.55 2 15V4C2 3.45 2.45 3 3 3Z" fill="currentColor" opacity="0.18"/><path d="M3 3H21C21.55 3 22 3.45 22 4V15C22 15.55 21.55 16 21 16H14L10 21V16H3C2.45 16 2 15.55 2 15V4C2 3.45 2.45 3 3 3Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M9.5 6.5C9.5 6.5 9.5 4.8 12 4.8C14.5 4.8 14.5 6.9 14.5 7.7C14.5 9 12 10 12 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.78"/><circle cx="12" cy="13.5" r="1.1" fill="currentColor" opacity="0.78"/></svg><span>Вопросы и ответы</span></h2>
+      <div class="subpage-header-spacer"></div>
+    </div>
+    <div class="subpage-content">
     <div id="faq-container"></div>
-
-    <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
+    </div><!-- /subpage-content -->
   </div>
 
   <div id="about-page" class="bottom-sheet fullscreen-sheet hidden">
-    <div class="about-container">
-      <h2>🐙 О BudgetIt</h2>
-      <img src="assets/BudgetIt ava.png" alt="🦈">
-      <p class="app-description">
-        BudgetIt — это приложение для учёта доходов, расходов, долгов и вкладов. <br>
-        Помогает удобно вести финансы и быстро видеть общую картину вашего бюджета.
-      </p>
+    <div class="subpage-header header">
+      <button class="subpage-back-btn close-settings-btn" aria-label="Назад">
+        <span class="subpage-back-icon">‹</span>
+      </button>
+      <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-about" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><circle cx="12" cy="7" r="1.1" fill="currentColor" opacity="0.78"/><path d="M12 10V17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.72"/><path d="M9.8 10H14.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.42"/><path d="M9.8 17H14.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.42"/></svg><span>BudgetIt</span></h2>
+      <div class="subpage-header-spacer"></div>
+    </div>
+      <div class="subpage-content">
+          <div class="about-container">
 
-      <div class="about-info-block">
-        <p><strong>📦 Версия:</strong> 3.0.1🎄</p>
-        <p><strong>👨‍💻 Автор:</strong> l1lG1tPain</p>
-        <p><strong>📬 Telegram:</strong> <a href="https://t.me/cybersnitch" target="_blank">@Cybersnitch</a></p>
-        <p><strong>🐬 Стикерпак:</strong> <a href="https://t.me/addstickers/Shark_BudgetIt" target="_blank">Акулка BudgetIt</a></p>
+              <!-- 🦈 HERO -->
+              <div class="about-hero">
+                  <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
+                  <div class="about-title">BudgetIt</div>
+                  <div class="about-version">Версия 4.0.0</div>
+                  <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
+              </div>
+
+              <!-- 📊 Статистика -->
+              <div class="about-stats-grid">
+                  <div class="about-stat-card">
+                      <i class="ti ti-category"></i>
+                      <div class="about-stat-value">4 типа</div>
+                      <div class="about-stat-label">финансов</div>
+                  </div>
+                  <div class="about-stat-card">
+                      <i class="ti ti-wifi-off"></i>
+                      <div class="about-stat-value">PWA</div>
+                      <div class="about-stat-label">работает офлайн</div>
+                  </div>
+                  <div class="about-stat-card">
+                      <i class="ti ti-history"></i>
+                      <div class="about-stat-value">v4.0</div>
+                      <div class="about-stat-label">текущая версия</div>
+                  </div>
+                  <div class="about-stat-card">
+                      <i class="ti ti-heart"></i>
+                      <div class="about-stat-value">0$</div>
+                      <div class="about-stat-label">стоимость</div>
+                  </div>
+              </div>
+
+              <!-- 📖 О приложении -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-info-circle about-card-icon"></i>
+                      <span class="about-card-title">О приложении</span>
+                  </div>
+                  <div class="about-card-content">
+                      BudgetIt — это умный трекер финансов, который помогает учитывать
+                      <strong>доходы, расходы, вклады и долги</strong> без лишнего перегруза.<br><br>
+                      Минимум кликов. Максимум контроля.<br>
+                      Всё, что нужно — уже под рукой.
+                  </div>
+              </div>
+
+              <!-- 🚀 Возможности -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-bolt about-card-icon"></i>
+                      <span class="about-card-title">Возможности</span>
+                  </div>
+                  <div class="about-features">
+                      <div class="about-feature-row">
+                          <i class="ti ti-coins"></i>
+                          <span>Учёт всех типов финансов</span>
+                      </div>
+                      <div class="about-feature-row">
+                          <i class="ti ti-chart-bar"></i>
+                          <span>Аналитика и графики</span>
+                      </div>
+                      <div class="about-feature-row">
+                          <i class="ti ti-wifi-off"></i>
+                          <span>Офлайн-режим (PWA)</span>
+                      </div>
+                      <div class="about-feature-row">
+                          <i class="ti ti-bolt"></i>
+                          <span>Быстрые категории и поиск</span>
+                      </div>
+                      <div class="about-feature-row">
+                          <i class="ti ti-sparkles"></i>
+                          <span>Умные подсказки и UX</span>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 📋 История версий -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-git-branch about-card-icon"></i>
+                      <span class="about-card-title">История версий</span>
+                  </div>
+                  <div class="about-changelog">
+                      <div class="about-changelog-row">
+                          <div class="about-changelog-ver">4.0.0</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Большое обновление
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Полный редизайн, новая аналитика, поддержка вкладов и долгов</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
+                          <div class="about-changelog-ver">3.2.1</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">Стабилизация</div>
+                              <div class="about-changelog-desc">Фиксы багов, оптимизация PWA</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
+                          <div class="about-changelog-ver">3.0.0</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">PWA & офлайн</div>
+                              <div class="about-changelog-desc">Добавлен офлайн-режим</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
+                          <div class="about-changelog-ver">2.0.0</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">Графики и аналитика</div>
+                              <div class="about-changelog-desc">Первые дашборды</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 🗺️ Roadmap -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-map about-card-icon"></i>
+                      <span class="about-card-title">Roadmap</span>
+                  </div>
+                  <div class="about-roadmap">
+                      <div class="about-roadmap-row">
+                          <span class="about-roadmap-dot dot-done"></span>
+                          <div class="about-roadmap-info">
+                              <span class="about-roadmap-name">Вклады и долги</span>
+                              <span class="about-roadmap-meta">Готово · v4.0</span>
+                          </div>
+                      </div>
+                      <div class="about-roadmap-row">
+                          <span class="about-roadmap-dot dot-wip"></span>
+                          <div class="about-roadmap-info">
+                              <span class="about-roadmap-name">Экспорт в CSV / PDF</span>
+                              <span class="about-roadmap-meta">В разработке</span>
+                          </div>
+                      </div>
+                      <div class="about-roadmap-row">
+                          <span class="about-roadmap-dot dot-planned"></span>
+                          <div class="about-roadmap-info">
+                              <span class="about-roadmap-name">Виджеты на главный экран</span>
+                              <span class="about-roadmap-meta">Запланировано</span>
+                          </div>
+                      </div>
+                      <div class="about-roadmap-row">
+                          <span class="about-roadmap-dot dot-planned"></span>
+                          <div class="about-roadmap-info">
+                              <span class="about-roadmap-name">Облачная синхронизация</span>
+                              <span class="about-roadmap-meta">Запланировано</span>
+                          </div>
+                      </div>
+                      <div class="about-roadmap-row">
+                          <span class="about-roadmap-dot dot-planned"></span>
+                          <div class="about-roadmap-info">
+                              <span class="about-roadmap-name">Умные лимиты по категориям</span>
+                              <span class="about-roadmap-meta">Запланировано</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- ❓ FAQ -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-help-circle about-card-icon"></i>
+                      <span class="about-card-title">FAQ</span>
+                  </div>
+                  <div class="about-faq">
+                      <div class="about-faq-item">
+                          <div class="about-faq-q">BudgetIt бесплатный?</div>
+                          <div class="about-faq-a">Да, без подписок, рекламы и скрытых платежей.</div>
+                      </div>
+                      <div class="about-faq-item">
+                          <div class="about-faq-q">Данные на сервере?</div>
+                          <div class="about-faq-a">Нет, всё локально. Ваши финансы — только ваши.</div>
+                      </div>
+                      <div class="about-faq-item">
+                          <div class="about-faq-q">Работает без интернета?</div>
+                          <div class="about-faq-a">Да, полноценный офлайн через PWA.</div>
+                      </div>
+                      <div class="about-faq-item">
+                          <div class="about-faq-q">Как связаться?</div>
+                          <div class="about-faq-a">Telegram @cybersnitch.</div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 🧠 Экосистема Akulka Projects -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-topology-star about-card-icon"></i>
+                      <span class="about-card-title">Akulka Projects</span>
+                  </div>
+                  <div class="about-card-content">
+                      BudgetIt — часть экосистемы <strong>Akulka Projects</strong>.<br><br>
+                      Это не просто приложение, а набор продуктов,
+                      которые делают повседневные задачи проще,
+                      быстрее и приятнее.
+                  </div>
+              </div>
+
+              <!-- 👨‍💻 Разработчик -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-code about-card-icon"></i>
+                      <span class="about-card-title">Разработчик</span>
+                  </div>
+                  <div class="about-dev">
+                      <div class="about-dev-avatar"><img src="/assets/icons/LG.png" alt=""></div>
+                      <div class="about-dev-info">
+                          <div class="about-dev-name">l1lG1tPain</div>
+                          <div class="about-dev-sub">UX, скорость, эстетика</div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 🔗 Ссылки -->
+              <div class="about-card">
+                  <div class="about-card-header">
+                      <i class="ti ti-link about-card-icon"></i>
+                      <span class="about-card-title">Ссылки</span>
+                  </div>
+                  <div class="about-links">
+                      <a href="https://t.me/cybersnitch" target="_blank" class="about-link">
+                          <i class="ti ti-brand-telegram about-link-icon"></i>
+                          <span>💎 Telegram</span>
+                          <i class="ti ti-external-link about-link-ext"></i>
+                      </a>
+                      <a href="https://t.me/addstickers/Shark_BudgetIt" target="_blank" class="about-link">
+                          <i class="ti ti-mood-smile about-link-icon"></i>
+                          <span>🐬 Стикерпак Акулки</span>
+                          <i class="ti ti-external-link about-link-ext"></i>
+                      </a>
+                  </div>
+              </div>
+
+          </div>
+      </div><!-- /subpage-content -->
+  </div>
+
+  <div id="planner-page" class="bottom-sheet fullscreen-sheet hidden">
+      <div class="subpage-header header">
+          <button class="subpage-back-btn close-settings-btn" aria-label="Назад" data-close-planner>
+              <span class="subpage-back-icon">‹</span>
+          </button>
+          <h2 class="subpage-title page-title-with-icon">
+              <svg class="page-title-svg budgetit-nav-plan" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z" fill="currentColor" opacity="0.2"/>
+                  <path d="M3.65 10.2H20.35" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" opacity="0.42"/>
+                  <path d="M8.05 4.05V7.25M15.95 4.05V7.25" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                  <rect x="6.7" y="12.35" width="3.05" height="3.05" rx="1" fill="currentColor" opacity="0.45"/>
+                  <rect x="11.05" y="12.35" width="6.25" height="1.15" rx="0.575" fill="currentColor" opacity="0.55"/>
+                  <rect x="11.05" y="15.1" width="4.4" height="1.15" rx="0.575" fill="currentColor" opacity="0.38"/>
+                  <path d="M7.38 13.85L8.05 14.52L9.48 13.05" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" opacity="0.9"/>
+              </svg>
+              <span>Планировщик бюджета</span>
+          </h2>
+          <div class="subpage-header-spacer"></div>
       </div>
 
-      <button class="close-settings-btn" onclick="goBackFromSubPage()">Назад</button>
-    </div>
+      <div class="subpage-content planner-page-content">
+          <div class="wrapper-sm">
+              <div class="planner-topbar">
+                  <div id="planner-dropdown" class="planner-dropdown">
+                      <button id="planner-dropdown-trigger" class="planner-dropdown-trigger" type="button">
+                          <span id="planner-dropdown-label" class="planner-dropdown-label">Выберите план</span>
+                          <span class="planner-dropdown-caret">▾</span>
+                      </button>
+
+                      <div id="planner-dropdown-menu" class="planner-dropdown-menu hidden"></div>
+                  </div>
+
+                  <button id="planner-quick-create-btn" class="add-btn" type="button">Создать</button>
+              </div>
+          </div>
+
+          <div id="planner-empty-state" class="wrapper-sm"></div>
+
+          <div id="planner-content" class="hidden">
+              <div id="planner-summary-cards" class="wrapper-sm planner-cards-grid"></div>
+              <div id="planner-insights" class="wrapper-sm planner-insights-row"></div>
+              <div id="planner-tables" class="wrapper-sm"></div>
+              <div id="planner-rows" class="wrapper-sm"></div>
+
+              <div class="wrapper-sm planner-bottom-actions">
+                  <button id="planner-edit-btn" class="planner-secondary-btn" type="button">Редактировать</button>
+                  <button id="planner-delete-btn" class="delete-btn" type="button">Удалить план</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div id="planner-sheet" class="bottom-sheet hidden">
+      <div class="sheet-header">
+          <div class="sheet-handle"></div>
+          <h2 id="planner-sheet-title">Новый план</h2>
+      </div>
+
+      <form id="planner-form" class="planner-form-sheet">
+          <label for="planner-name">Название плана</label>
+          <input type="text" id="planner-name" class="input" maxlength="40" placeholder="Например: Аванс Май">
+
+          <label for="planner-income-category">Категория дохода</label>
+          <select id="planner-income-category" class="input"></select>
+
+          <label for="planner-income-amount">Сумма дохода</label>
+          <input type="tel" id="planner-income-amount" class="input numeric-format" maxlength="15" inputmode="numeric" placeholder="7 000 000">
+
+          <label for="planner-income-date">Дата дохода</label>
+          <input type="date" id="planner-income-date" class="input">
+
+          <label for="planner-start-date">Дата начала периода</label>
+          <input type="date" id="planner-start-date" class="input">
+
+          <label for="planner-period-days">Период (дни)</label>
+          <input type="number" id="planner-period-days" class="input" min="1" step="1" value="15">
+
+          <div class="planner-period-chips">
+              <button type="button" class="planner-period-chip active" data-days="15">15</button>
+              <button type="button" class="planner-period-chip" data-days="30">30</button>
+              <button type="button" class="planner-period-chip" data-days="45">45</button>
+              <button type="button" class="planner-period-chip" data-days="60">60</button>
+          </div>
+
+          <div class="planner-form-section">
+              <div class="planner-form-section-head">
+                  <h3>🏠 Основные расходы</h3>
+                  <button type="button" id="planner-add-main-expense" class="planner-inline-add">+ Добавить</button>
+              </div>
+              <div id="planner-main-expenses-list" class="planner-form-list"></div>
+          </div>
+
+          <div class="planner-form-section">
+              <div class="planner-form-section-head">
+                  <h3>📆 Ежедневные расходы</h3>
+                  <button type="button" id="planner-add-daily-expense" class="planner-inline-add">+ Добавить</button>
+              </div>
+              <div id="planner-daily-expenses-list" class="planner-form-list"></div>
+          </div>
+
+          <div class="planner-form-section">
+              <div class="planner-form-section-head">
+                  <h3>🔁 Регулярные расходы</h3>
+                  <button type="button" id="planner-add-regular-expense" class="planner-inline-add">+ Добавить</button>
+              </div>
+              <div id="planner-regular-expenses-list" class="planner-form-list"></div>
+          </div>
+
+          <div class="planner-form-section">
+              <div class="planner-form-section-head">
+                  <h3>🏦 Вклады</h3>
+                  <button type="button" id="planner-add-deposit" class="planner-inline-add">+ Добавить</button>
+              </div>
+              <div id="planner-deposits-list" class="planner-form-list"></div>
+          </div>
+
+          <div class="planner-sheet-actions">
+              <button type="submit" class="add-btn">Сохранить план</button>
+              <button type="button" id="planner-sheet-close" class="close-form">Закрыть</button>
+          </div>
+      </form>
   </div>
 
   <div id="delete-budget-modal" class="modal hidden">
@@ -657,11 +1316,15 @@
           <button id="next-year-btn" class="year-nav-btn" type="button">›</button>
       </div>
 
-      
+
       <div id="months-grid" class="months-grid">
         <!-- JS сам вставит сюда 12 кнопок-месяцев -->
       </div>
-      <div class="month-sheet-subheader">
+      <div class="month-sheet-subheader month-range-actions">
+          <button id="year-months-btn" class="all-months-btn" type="button">
+              1 год
+          </button>
+
           <button id="all-months-btn" class="all-months-btn" type="button">
               Все месяцы
           </button>
@@ -714,22 +1377,243 @@
     </div>
   </div>
 
+  <div id="planner-delete-modal" class="modal hidden">
+    <div class="modal-content planner-confirm-modal">
+      <div class="planner-confirm-icon">🗑️</div>
+      <h3 class="planner-confirm-title">Удалить план?</h3>
+      <p class="planner-confirm-text">Все данные этого плана исчезнут навсегда. Это действие нельзя отменить.</p>
+      <div class="planner-confirm-buttons">
+        <button id="planner-delete-cancel" class="planner-confirm-cancel">Отмена</button>
+        <button id="planner-delete-confirm" class="planner-confirm-delete">Удалить</button>
+      </div>
+    </div>
+  </div>
+
   <div id="tweak-container" class="tweak-container hidden"></div>
 
   <!-- Футер: кнопка добавления транзакции -->
-  <footer>
-    <button id="add-btn">
-        <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 3C13 2.44772 12.5523 2 12 2C11.4477 2 11 2.44772 11 3V11H3C2.44772 11 2 11.4477 2 12C2 12.5523 2.44772 13 3 13H11V21C11 21.5523 11.4477 22 12 22C12.5523 22 13 21.5523 13 21V13H21C21.5523 13 22 12.5523 22 12C22 11.4477 21.5523 11 21 11H13V3Z" fill="#0F0F0F"/>
+  <!-- Нижний жидкий бар + FAB -->
+    <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LIQUID GLASS FOOTER                                 -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <footer class="liquid-footer" id="liquid-footer">
+
+      <!-- FAB: круглая кнопка + (только на главной) -->
+      <button id="add-btn" class="fab-btn" aria-label="Добавить транзакцию">
+          <svg class="budgetit-fab-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                      d="M12 5.25V18.75"
+                      stroke="currentColor"
+                      stroke-width="3.4"
+                      stroke-linecap="round"
+              />
+              <path
+                      d="M5.25 12H18.75"
+                      stroke="currentColor"
+                      stroke-width="3.4"
+                      stroke-linecap="round"
+              />
+          </svg>
+      </button>
+
+      <!-- Liquid Glass Nav Bar -->
+      <nav class="liquid-nav" id="liquid-nav">
+
+          <!-- Бюджет -->
+          <button class="lnav-item active" id="lnav-home" data-nav="home">
+      <span class="lnav-icon">
+        <svg class="budgetit-nav-svg budgetit-nav-wallet" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+                  d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                  fill="currentColor"
+                  opacity="0.22"
+          />
+          <path
+                  d="M7.25 6.25L13.95 3.95C15.35 3.47 16.8 4.5 16.8 5.98V6.25H7.25Z"
+                  fill="currentColor"
+                  opacity="0.44"
+          />
+          <path
+                  d="M14.55 10.2H20.25C20.9 10.2 21.42 10.72 21.42 11.37V13.35C21.42 14 20.9 14.52 20.25 14.52H14.55C13.35 14.52 12.37 13.55 12.37 12.36C12.37 11.17 13.35 10.2 14.55 10.2Z"
+                  fill="currentColor"
+                  opacity="0.36"
+          />
+          <circle cx="15.35" cy="12.36" r="1.05" fill="currentColor" />
+          <path
+                  d="M7.1 9.25H10.8"
+                  stroke="currentColor"
+                  stroke-width="1.55"
+                  stroke-linecap="round"
+                  opacity="0.55"
+          />
+          <path
+                  d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V10.2M19.55 14.52V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                  stroke="currentColor"
+                  stroke-width="1.45"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+          />
         </svg>
-        Добавить</button>
+      </span>
+              <span class="lnav-label">Бюджет</span>
+          </button>
+
+          <!-- Аналитика -->
+          <button class="lnav-item" id="lnav-analytics" data-nav="analytics">
+      <span class="lnav-icon">
+        <svg class="budgetit-nav-svg budgetit-nav-chart" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+                  d="M6.2 4.8H17.8C19.48 4.8 20.85 6.17 20.85 7.85V16.15C20.85 17.83 19.48 19.2 17.8 19.2H6.2C4.52 19.2 3.15 17.83 3.15 16.15V7.85C3.15 6.17 4.52 4.8 6.2 4.8Z"
+                  fill="currentColor"
+                  opacity="0.2"
+          />
+          <path
+                  d="M7.25 15.25C7.25 14.53 7.83 13.95 8.55 13.95C9.27 13.95 9.85 14.53 9.85 15.25V16.2C9.85 16.92 9.27 17.5 8.55 17.5C7.83 17.5 7.25 16.92 7.25 16.2V15.25Z"
+                  fill="currentColor"
+                  opacity="0.55"
+          />
+          <path
+                  d="M10.7 12.35C10.7 11.63 11.28 11.05 12 11.05C12.72 11.05 13.3 11.63 13.3 12.35V16.2C13.3 16.92 12.72 17.5 12 17.5C11.28 17.5 10.7 16.92 10.7 16.2V12.35Z"
+                  fill="currentColor"
+                  opacity="0.72"
+          />
+          <path
+                  d="M14.15 9.15C14.15 8.43 14.73 7.85 15.45 7.85C16.17 7.85 16.75 8.43 16.75 9.15V16.2C16.75 16.92 16.17 17.5 15.45 17.5C14.73 17.5 14.15 16.92 14.15 9.15Z"
+                  fill="currentColor"
+          />
+          <path
+                  d="M7.1 10.1L9.65 7.75L12.1 9.75L16.55 5.9"
+                  stroke="currentColor"
+                  stroke-width="1.55"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  opacity="0.8"
+          />
+          <circle cx="16.55" cy="5.9" r="1" fill="currentColor" />
+        </svg>
+      </span>
+              <span class="lnav-label">Аналитика</span>
+          </button>
+
+          <!-- План -->
+          <button class="lnav-item" id="lnav-planner" data-nav="planner">
+      <span class="lnav-icon">
+        <svg class="budgetit-nav-svg budgetit-nav-plan" width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+                  d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z"
+                  fill="currentColor"
+                  opacity="0.2"
+          />
+          <path
+                  d="M3.65 10.2H20.35"
+                  stroke="currentColor"
+                  stroke-width="1.45"
+                  stroke-linecap="round"
+                  opacity="0.42"
+          />
+          <path
+                  d="M8.05 4.05V7.25M15.95 4.05V7.25"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+          />
+          <rect x="6.7" y="12.35" width="3.05" height="3.05" rx="1" fill="currentColor" opacity="0.45"/>
+          <rect x="11.05" y="12.35" width="6.25" height="1.15" rx="0.575" fill="currentColor" opacity="0.55"/>
+          <rect x="11.05" y="15.1" width="4.4" height="1.15" rx="0.575" fill="currentColor" opacity="0.38"/>
+          <path
+                  d="M7.38 13.85L8.05 14.52L9.48 13.05"
+                  stroke="currentColor"
+                  stroke-width="1.25"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+          />
+          <path
+                  d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z"
+                  stroke="currentColor"
+                  stroke-width="1.35"
+                  stroke-linejoin="round"
+                  opacity="0.9"
+          />
+        </svg>
+      </span>
+              <span class="lnav-label">План</span>
+          </button>
+
+          <!-- Профиль -->
+          <button class="lnav-item" id="lnav-profile" data-nav="profile">
+      <span class="lnav-icon lnav-avatar-wrap">
+        <span class="lnav-avatar" id="lnav-avatar-el">
+          <svg class="budgetit-nav-svg budgetit-nav-profile" width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="8.25" r="3.85" fill="currentColor" opacity="0.32"/>
+            <path
+                    d="M4.35 19.3C4.9 16.25 8.05 14.35 12 14.35C15.95 14.35 19.1 16.25 19.65 19.3C19.78 20.02 19.2 20.65 18.47 20.65H5.53C4.8 20.65 4.22 20.02 4.35 19.3Z"
+                    fill="currentColor"
+                    opacity="0.3"
+            />
+            <circle cx="12" cy="8.25" r="3.85" stroke="currentColor" stroke-width="1.45"/>
+            <path
+                    d="M4.35 19.3C4.9 16.25 8.05 14.35 12 14.35C15.95 14.35 19.1 16.25 19.65 19.3"
+                    stroke="currentColor"
+                    stroke-width="1.45"
+                    stroke-linecap="round"
+            />
+          </svg>
+        </span>
+      </span>
+              <span class="lnav-label">Профиль</span>
+          </button>
+
+      </nav>
+
+      <!-- Budget context menu (long-press on Бюджет) -->
+      <div id="ctx-backdrop" class="ctx-backdrop"></div>
+      <div id="budget-context-menu" class="budget-ctx-menu hidden" role="menu">
+          <div class="budget-ctx-header">
+              <span class="budget-ctx-title">
+                <svg class="budgetit-nav-svg budgetit-nav-wallet" width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                          d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                          fill="currentColor"
+                          opacity="0.22"
+                  />
+                  <path
+                          d="M7.25 6.25L13.95 3.95C15.35 3.47 16.8 4.5 16.8 5.98V6.25H7.25Z"
+                          fill="currentColor"
+                          opacity="0.44"
+                  />
+                  <path
+                          d="M14.55 10.2H20.25C20.9 10.2 21.42 10.72 21.42 11.37V13.35C21.42 14 20.9 14.52 20.25 14.52H14.55C13.35 14.52 12.37 13.55 12.37 12.36C12.37 11.17 13.35 10.2 14.55 10.2Z"
+                          fill="currentColor"
+                          opacity="0.36"
+                  />
+                  <circle cx="15.35" cy="12.36" r="1.05" fill="currentColor" />
+                  <path
+                          d="M7.1 9.25H10.8"
+                          stroke="currentColor"
+                          stroke-width="1.55"
+                          stroke-linecap="round"
+                          opacity="0.55"
+                  />
+                  <path
+                          d="M6.7 6.25H16.2C18.05 6.25 19.55 7.75 19.55 9.6V10.2M19.55 14.52V16.05C19.55 17.9 18.05 19.4 16.2 19.4H6.7C4.85 19.4 3.35 17.9 3.35 16.05V9.6C3.35 7.75 4.85 6.25 6.7 6.25Z"
+                          stroke="currentColor"
+                          stroke-width="1.45"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                  />
+                </svg>
+                Мои бюджеты
+              </span>
+          </div>
+          <div id="budget-ctx-list" class="budget-ctx-list"></div>
+      </div>
   </footer>
 
   <!-- PWA Install Button -->
   <button id="install-btn" style="display: none;">Установить приложение</button>
 
   <div id="loading-screen">
-    <img src="assets/BudgetIt ava v2.10-min.png" alt="BudgetItIcon" width="220" height="220">
+    <img src="assets/BudgetIt ava.png" alt="BudgetItIcon" width="220" height="220">
     <div class="loader"></div>
     <p id="loading-text">Загрузка BudgetIt...</p>
   </div>
@@ -742,7 +1626,6 @@
   <script type="module" src="./app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script type="module" src="./src/EditManager.js"></script>
   <!-- charts.js больше НЕ подключаем как обычный скрипт -->
   <script src="src/widgets/currencyChips.js" defer></script>
   <script>
@@ -761,6 +1644,7 @@
   <script defer src="/_vercel/insights/script.js"></script>
   <script type="module" src="./src/utils/analytics.js"></script>
 
+
   <script src="./src/utils/umami-events.js" defer></script>
 
   <script>
@@ -778,5 +1662,439 @@
     });
   </script>
 
+  <div id="profile-page" class="bottom-sheet fullscreen-sheet hidden">
+
+    <!-- Фиксированный хедер -->
+    <div class="subpage-header header">
+        <button class="subpage-back-btn" id="profile-page-back" aria-label="Назад">
+            <span class="subpage-back-icon">‹</span>
+        </button>
+        <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-myprofile" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C9.24 2 7 4.24 7 7C7 9.76 9.24 12 12 12C14.76 12 17 9.76 17 7C17 4.24 14.76 2 12 2Z" fill="currentColor" opacity="0.22"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.45"/><path d="M3.5 20.5C4.2 17.2 7.7 14.8 12 14.8C16.3 14.8 19.8 17.2 20.5 20.5C20.65 21.25 20.05 21.9 19.3 21.9H4.7C3.95 21.9 3.35 21.25 3.5 20.5Z" fill="currentColor" opacity="0.18"/><path d="M3.5 20.5C4.2 17.2 7.7 14.8 12 14.8C16.3 14.8 19.8 17.2 20.5 20.5" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" opacity="0.9"/><path d="M15 7.5L16.5 9L19.5 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/></svg><span>Мой профиль</span></h2>
+        <div class="subpage-header-spacer"></div>
+    </div>
+
+    <div class="subpage-content pp-content">
+
+        <!-- ── Аватар + основная инфа ─────────────────────────────── -->
+        <div class="pp-hero">
+            <div class="pp-avatar-wrap">
+                <div class="pp-avatar" id="pp-avatar">
+                    <!-- JS вставит img -->
+                </div>
+                <div class="pp-level-badge" id="pp-level-badge">1</div>
+            </div>
+
+            <div class="pp-hero-info">
+                <div class="pp-emoji-name" id="pp-emoji-name">Загрузка...</div>
+                <div class="pp-user-id" id="pp-user-id">ID: —</div>
+            </div>
+        </div>
+
+        <!-- ── Прогресс-бар уровня ────────────────────────────────── -->
+        <div class="pp-level-block">
+            <div class="pp-level-top">
+                <span class="pp-level-label">Уровень <span id="pp-level">1</span></span>
+                <span class="pp-level-pts" id="pp-level-pts">0 / 50 pts</span>
+            </div>
+            <div class="pp-level-track">
+                <div class="pp-level-fill" id="pp-level-fill"></div>
+            </div>
+            <div class="pp-level-next">До следующего уровня: <span id="pp-level-remaining">50</span> pts</div>
+        </div>
+
+        <!-- ── Статы (сетка карточек) ─────────────────────────────── -->
+        <div class="pp-stats-grid">
+            <div class="pp-stat-card pp-stat--purple">
+                <div class="pp-stat-icon">🏆</div>
+                <div class="pp-stat-value" id="pp-achievements">0</div>
+                <div class="pp-stat-label">Достижений</div>
+            </div>
+            <div class="pp-stat-card pp-stat--blue">
+                <div class="pp-stat-icon">⚡</div>
+                <div class="pp-stat-value" id="pp-points">0</div>
+                <div class="pp-stat-label">Всего очков</div>
+            </div>
+            <div class="pp-stat-card pp-stat--green">
+                <div class="pp-stat-icon">💼</div>
+                <div class="pp-stat-value" id="pp-budgets">0</div>
+                <div class="pp-stat-label">Бюджетов</div>
+            </div>
+            <div class="pp-stat-card pp-stat--orange">
+                <div class="pp-stat-icon">🔄</div>
+                <div class="pp-stat-value" id="pp-transactions">0</div>
+                <div class="pp-stat-label">Транзакций</div>
+            </div>
+        </div>
+
+        <!-- ── Детальная информация ───────────────────────────────── -->
+        <div class="pp-detail-block">
+            <div class="pp-detail-title">📊 Активность</div>
+
+            <div class="pp-detail-row">
+                <span class="pp-detail-icon">📅</span>
+                <span class="pp-detail-key">В приложении с</span>
+                <span class="pp-detail-val" id="pp-since">—</span>
+            </div>
+
+            <div class="pp-detail-row">
+                <span class="pp-detail-icon">⏱️</span>
+                <span class="pp-detail-key">Дней в приложении</span>
+                <span class="pp-detail-val" id="pp-days">—</span>
+            </div>
+
+            <div class="pp-detail-row">
+                <span class="pp-detail-icon">📈</span>
+                <span class="pp-detail-key">Транзакций в день</span>
+                <span class="pp-detail-val" id="pp-tx-per-day">—</span>
+            </div>
+
+            <div class="pp-detail-row">
+                <span class="pp-detail-icon">🎁</span>
+                <span class="pp-detail-key">Очков за достижения</span>
+                <span class="pp-detail-val" id="pp-ach-pts">0</span>
+            </div>
+
+            <div class="pp-detail-row">
+                <span class="pp-detail-icon">💡</span>
+                <span class="pp-detail-key">Обычные / Секретные</span>
+                <span class="pp-detail-val" id="pp-ach-breakdown">— / —</span>
+            </div>
+        </div>
+
+        <!-- ── Активность по месяцам (мини-бар-чарт) ─────────────── -->
+        <div class="pp-activity-block">
+            <div class="pp-detail-title">📆 Активность за 6 месяцев</div>
+            <div class="pp-activity-bars" id="pp-activity-bars">
+                <!-- JS рендерит -->
+            </div>
+        </div>
+
+        <!-- ── Кнопка к достижениям ───────────────────────────────── -->
+        <button class="pp-achievements-btn" id="pp-goto-achievements">
+            <span>🏆</span>
+            <span>Посмотреть все достижения</span>
+            <span class="pp-btn-arrow">›</span>
+        </button>
+
+        <!-- Отступ снизу -->
+        <div style="height: 24px;"></div>
+    </div>
+</div>
+
+
+</script>
+
+
+
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- LIQUID NAV JS                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── State ──────────────────────────────────────────────────
+    var ACTIVE_TAB     = 'home';
+    var ctxOpen        = false;
+    var longPressTimer = null;
+
+    function qs(sel)  { return document.querySelector(sel); }
+    function qsa(sel) { return document.querySelectorAll(sel); }
+
+    // ── Плавная смена темы ────────────────────────────────────
+    // MutationObserver следит за data-theme и добавляет класс для transition
+    var _themeTimer = null;
+    if (window.MutationObserver) {
+      new MutationObserver(function (muts) {
+        muts.forEach(function (m) {
+          if (m.attributeName === 'data-theme') {
+            clearTimeout(_themeTimer);
+            document.documentElement.classList.add('theme-transitioning');
+            _themeTimer = setTimeout(function () {
+              document.documentElement.classList.remove('theme-transitioning');
+            }, 350);
+          }
+        });
+      }).observe(document.documentElement, { attributes: true });
+    }
+
+    // ── Active tab ────────────────────────────────────────────
+    function setActiveTab(tab) {
+      ACTIVE_TAB = tab;
+      qsa('.lnav-item').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.nav === tab);
+      });
+      var fab = qs('#add-btn');
+      if (fab) fab.classList.toggle('fab-hidden', tab !== 'home');
+    }
+
+    // ── Page open/close ───────────────────────────────────────
+    function openPage(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('hidden');
+      window.dispatchEvent(new CustomEvent('budgetit:page-open', { detail: { id: id } }));
+    }
+
+    function closePage(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add('hidden');
+      window.dispatchEvent(new CustomEvent('budgetit:page-close', { detail: { id: id } }));
+    }
+
+    function closeAllPages() {
+      // Закрываем settings и все его субстраницы
+      qsa('.fullscreen-sheet').forEach(function (el) { el.classList.add('hidden'); });
+      qs('#bottom-sheet-backdrop')?.classList.add('hidden');
+    }
+
+    // ── Context menu backdrop ─────────────────────────────────
+    function openCtxBackdrop() {
+      var bd = qs('#ctx-backdrop');
+      if (bd) { bd.classList.add('ctx-backdrop-visible'); }
+    }
+    function closeCtxBackdrop() {
+      var bd = qs('#ctx-backdrop');
+      if (bd) { bd.classList.remove('ctx-backdrop-visible'); }
+    }
+
+    // ── Budget context menu ───────────────────────────────────
+    function openCtx() {
+      var menu = qs('#budget-context-menu');
+      if (!menu) return;
+      buildCtxList();
+      menu.classList.remove('hidden');
+      openCtxBackdrop();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { menu.classList.add('ctx-open'); });
+      });
+      ctxOpen = true;
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    function closeCtx() {
+      var menu = qs('#budget-context-menu');
+      if (!menu) return;
+      menu.classList.remove('ctx-open');
+      closeCtxBackdrop();
+      var done = false;
+      menu.addEventListener('transitionend', function h() {
+        if (done) return; done = true;
+        menu.removeEventListener('transitionend', h);
+        menu.classList.add('hidden');
+      }, { once: true });
+      setTimeout(function () { if (!done) { done = true; menu.classList.add('hidden'); } }, 350);
+      ctxOpen = false;
+    }
+
+    function buildCtxList() {
+      var list = qs('#budget-ctx-list');
+      if (!list) return;
+      list.innerHTML = '';
+      var budgets = [];
+      var currentIdx = 0;
+      try {
+        budgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+        currentIdx = parseInt(localStorage.getItem('currentBudgetIndex') || '0', 10);
+      } catch (e) { return; }
+
+      budgets.forEach(function (b, idx) {
+        var btn = document.createElement('button');
+        btn.className = 'budget-ctx-item' + (idx === currentIdx ? ' budget-ctx-active' : '');
+        btn.setAttribute('role', 'menuitem');
+        var raw = b.name || '';
+        var emoji = raw.match(/\p{Extended_Pictographic}/u);
+        var emojiStr = emoji ? emoji[0] : (raw.charAt(0).toUpperCase() || '💼');
+        var name = raw.replace(/^\p{Extended_Pictographic}+\s*/u, '') || raw;
+        btn.innerHTML =
+          '<span class="budget-ctx-emoji">' + emojiStr + '</span>' +
+          '<span class="budget-ctx-name">' + name.replace(/</g,'&lt;') + '</span>' +
+          (idx === currentIdx ? '<svg class="budget-ctx-check" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '');
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var ref = window._budgetAppRef;
+          if (ref && ref.budgetManager && ref.uiManager) {
+            ref.budgetManager.switchBudget(idx);
+            ref.uiManager.updateHeader();
+            ref.uiManager.updateUI();
+          } else {
+            localStorage.setItem('currentBudgetIndex', String(idx));
+            location.reload();
+          }
+          closeCtx();
+        });
+        list.appendChild(btn);
+      });
+    }
+
+    // ── Avatar sync ───────────────────────────────────────────
+    function syncAvatar() {
+      var src = qs('.avatar-btn img, #open-profile-btn img');
+      var wrap = qs('#lnav-avatar-el');
+      if (src && wrap) { wrap.innerHTML = ''; wrap.appendChild(src.cloneNode(true)); }
+    }
+
+    // ── Init ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        var navHome      = qs('#lnav-home');
+        var navAnalytics = qs('#lnav-analytics');
+        var navPlanner   = qs('#lnav-planner');
+        var navProfile   = qs('#lnav-profile');
+
+      // ── Глобальная функция goBackFromSubPage ─────────────────
+      // Вызывается кнопками "Назад" внутри субстраниц профиля
+      window.goBackFromSubPage = function () {
+        // Прячем все fullscreen-субстраницы кроме settings-page и analytics-page
+        qsa('.fullscreen-sheet:not(#settings-page):not(#analytics-page)').forEach(function (el) {
+          el.classList.add('hidden');
+        });
+        // settings-page остаётся открытой
+        var sp = qs('#settings-page');
+        if (sp) sp.classList.remove('hidden');
+        // Навбар остаётся на profile
+        setActiveTab('profile');
+      };
+
+      // ── Делегация для кнопок .close-settings-btn ─────────────
+      document.addEventListener('click', function (e) {
+        var closeBtn = e.target.closest('.close-settings-btn');
+        if (!closeBtn) return;
+        // Если кнопка внутри settings-page напрямую (не в субстранице) — закрываем всё
+        var inSettings = closeBtn.closest('#settings-page');
+        var inSubpage  = closeBtn.closest('.fullscreen-sheet:not(#settings-page):not(#analytics-page)');
+        if (inSubpage) {
+          // Назад из субстраницы
+          window.goBackFromSubPage();
+        } else if (inSettings && closeBtn.id === 'close-settings-btn') {
+          // Закрыть настройки совсем
+          closeAllPages();
+          setActiveTab('home');
+        }
+      });
+
+      // Home: tap = go home, long-press = budget menu
+      if (navHome) {
+        navHome.addEventListener('click', function () {
+          if (ctxOpen) { closeCtx(); return; }
+          if (ACTIVE_TAB !== 'home') {
+            setActiveTab('home');
+            closeAllPages();
+          }
+        });
+
+        var lpStartX = 0, lpStartY = 0;
+        navHome.addEventListener('pointerdown', function (e) {
+          try { navHome.setPointerCapture(e.pointerId); } catch(_) {}
+          lpStartX = e.clientX; lpStartY = e.clientY;
+          longPressTimer = setTimeout(function () {
+            longPressTimer = null;
+            openCtx();
+            try { navigator.vibrate && navigator.vibrate(35); } catch(_) {}
+          }, 500);
+        });
+
+        navHome.addEventListener('pointermove', function (e) {
+          if (!longPressTimer) return;
+          var dx = e.clientX - lpStartX, dy = e.clientY - lpStartY;
+          if (Math.sqrt(dx*dx + dy*dy) > 8) { clearTimeout(longPressTimer); longPressTimer = null; }
+        });
+
+        ['pointerup', 'pointercancel'].forEach(function (ev) {
+          navHome.addEventListener(ev, function () {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+          });
+        });
+
+        navHome.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          if (!ctxOpen) openCtx();
+        });
+      }
+
+      if (navAnalytics) {
+        navAnalytics.addEventListener('click', function () {
+          if (ctxOpen) { closeCtx(); return; }
+          if (ACTIVE_TAB === 'analytics') return;
+          // Закрываем settings и все субстраницы
+          qsa('.fullscreen-sheet:not(#analytics-page)').forEach(function(el) {
+            el.classList.add('hidden');
+          });
+          openPage('analytics-page');
+          setActiveTab('analytics');
+          setTimeout(function () {
+            if (typeof window._initCharts === 'function') {
+              var ref = window._budgetAppRef;
+              window._initCharts(ref ? ref.budgetManager : null);
+            }
+            window.dispatchEvent(new CustomEvent('budgetit:analytics-open'));
+          }, 50);
+        });
+      }
+
+        if (navPlanner) {
+            navPlanner.addEventListener('click', function () {
+                if (ctxOpen) { closeCtx(); return; }
+                if (ACTIVE_TAB === 'planner') return;
+
+                closePage('analytics-page');
+
+                qsa('.fullscreen-sheet:not(#planner-page)').forEach(function(el) {
+                    el.classList.add('hidden');
+                });
+
+                var plannerRef = window._budgetPlannerRef;
+                if (plannerRef && plannerRef.plannerPage) {
+                    plannerRef.plannerPage.open();
+                    setActiveTab('planner');
+                    return;
+                }
+
+                openPage('planner-page');
+                setActiveTab('planner');
+            });
+        }
+
+      if (navProfile) {
+        navProfile.addEventListener('click', function () {
+          if (ctxOpen) { closeCtx(); return; }
+          if (ACTIVE_TAB === 'profile') return;
+          // Закрываем analytics-page
+          closePage('analytics-page');
+          openPage('settings-page');
+          setActiveTab('profile');
+        });
+      }
+
+      // Закрытие ctx при тапе вне меню
+      document.addEventListener('click', function (e) {
+        var menu = qs('#budget-context-menu');
+        if (ctxOpen && menu && !menu.contains(e.target) && navHome && !navHome.contains(e.target)) {
+          closeCtx();
+        }
+      });
+
+      // Ctx backdrop click
+      var ctxBd = qs('#ctx-backdrop');
+      if (ctxBd) ctxBd.addEventListener('click', closeCtx);
+
+      // Avatar sync
+      setTimeout(syncAvatar, 800);
+      var pBtn = qs('#open-profile-btn');
+      if (pBtn && window.MutationObserver) {
+        new MutationObserver(syncAvatar).observe(pBtn, { childList: true, subtree: true });
+      }
+
+      // Expose API
+      window._navSetActiveTab = setActiveTab;
+      window._navOpenPage     = openPage;
+      window._navClosePage    = closePage;
+      window._navCloseAll     = closeAllPages;
+    });
+
+  })();
+  </script>
+
 </body>
-</html>

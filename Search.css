@@ -1,0 +1,461 @@
+/* ═══════════════════════════════════════════════════════════════
+   search.css — Top-sheet умного поиска BudgetIt
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Кнопка поиска в хедере ── */
+.search-open-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--accent-color);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 18px;
+    transition: transform 0.15s ease, background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.search-open-btn:active {
+    transform: scale(0.88);
+    background: var(--primary-color);
+}
+
+/* ── Сам top-sheet ── */
+.search-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-index-bottom-sheet);
+    background: var(--tertiary-color);
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    transform: translateY(-110%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* НЕТУ backdrop-filter — специально! */
+}
+
+.search-sheet.show {
+    transform: translateY(0);
+}
+
+.search-sheet.hidden {
+    display: none;
+}
+
+.search-sheet.hidden.show {
+    display: flex;
+    transform: translateY(-110%);
+}
+
+/* Отдельный reset: когда добавляем .show — убираем hidden через JS,
+   но на случай ошибок — пусть работает */
+
+/* ── Ручка для свайпа ── */
+/* .search-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--accent-color);
+    border-radius: 2px;
+    margin: 12px auto 0;
+    flex-shrink: 0;
+    cursor: grab;
+} */
+
+/* ── Шапка с полем поиска ── */
+.search-header {
+    padding: 12px 16px 0;
+    flex-shrink: 0;
+}
+
+.search-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-color);
+    border-radius: var(--border-radius-lg);
+    padding: 10px 14px;
+    border: 1.5px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.search-input-wrap:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.12);
+}
+
+
+.search-input-icon {
+    font-size: 16px;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--secondary-color);
+
+    padding: 0;
+    min-width: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.search-input {
+    /* уже есть, но на всякий случай явно: */
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background-color: transparent !important;
+    /* и если глобальные стили что-то добавляют: */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Снимаем фокус-стили браузера именно с input внутри wrap */
+.search-input-wrap input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.search-input::placeholder {
+    color: var(--secondary-color);
+    opacity: 0.4;
+    font-weight: 500;
+}
+
+.search-close-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--accent-color);
+    border-radius: var(--border-radius-md);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary-color);
+    font-weight: 700;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.search-close-btn:active {
+    transform: scale(0.88);
+}
+
+/* ── Фильтры типов ── */
+.search-filters {
+    padding: 10px 16px 4px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.search-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.search-type-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1.5px solid var(--accent-color);
+    border-radius: 20px;
+    background: var(--accent-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--secondary-color);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+}
+
+.search-type-chip:active {
+    transform: scale(0.92);
+}
+
+.search-type-chip.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.search-type-chip[data-type="income"].active {
+    background: var(--income-color);
+    border-color: var(--income-color);
+}
+
+.search-type-chip[data-type="expense"].active {
+    background: var(--expense-color);
+    border-color: var(--expense-color);
+}
+
+.search-type-chip[data-type="deposit"].active {
+    background: var(--deposit-color);
+    border-color: var(--deposit-color);
+}
+
+.search-type-chip[data-type="debt"].active {
+    background: var(--debt-color);
+    border-color: var(--debt-color);
+    color: #1a1a1a;
+}
+
+/* ── Разделитель ── */
+.search-divider {
+    height: 1px;
+    background: var(--accent-color);
+    margin: 8px 0 0;
+}
+
+/* ── Зона результатов ── */
+.search-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 env(safe-area-inset-bottom, 16px);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.search-tx-income-name {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    /* background: var(--accent-color); */
+    border-radius: 6px;
+    color: var(--secondary-color);
+    opacity: 0.75;
+}
+
+/* ── Пустое состояние / плейсхолдер ── */
+.search-placeholder {
+    padding: 36px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-placeholder-icon {
+    font-size: 40px;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.search-placeholder-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--secondary-color);
+    opacity: 0.7;
+}
+
+.search-placeholder-hint {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--secondary-color);
+    opacity: 0.4;
+}
+
+/* ── Счётчик результатов ── */
+.search-count {
+    padding: 10px 16px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--secondary-color);
+    opacity: 0.45;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Список результатов ── */
+.search-tx-list {
+    list-style: none;
+    padding: 0 12px 12px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ── Карточка транзакции ── */
+.search-tx-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 14px;
+    border-left: 3px solid #ccc;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    animation: searchItemIn 0.18s ease both;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes searchItemIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search-tx-item:active {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+
+.search-tx-left {
+    flex-shrink: 0;
+}
+
+.search-tx-emoji {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.search-tx-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.search-tx-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--secondary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-tx-date {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--secondary-color);
+    opacity: 0.45;
+}
+
+.search-tx-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.search-tx-chevron {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--secondary-color);
+    opacity: 0.25;
+    line-height: 1;
+}
+
+.search-tx-amount {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.search-amount-pos {
+    color: var(--income-color);
+}
+
+.search-amount-neg {
+    color: var(--expense-color);
+}
+
+/* ── Подсветка совпадений ── */
+mark.search-highlight {
+    background: rgba(46, 204, 113, 0.25);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 1px;
+    font-weight: 800;
+}
+
+/* ── Товары ── */
+.search-products {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.search-product-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    background: var(--accent-color);
+    border-radius: 6px;
+    color: var(--secondary-color);
+    opacity: 0.75;
+}
+
+.search-product-more {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    background: var(--accent-color);
+    border-radius: 6px;
+    color: var(--secondary-color);
+    opacity: 0.5;
+}
+
+/* ── Stagger анимация для списка ── */
+.search-tx-item:nth-child(1) { animation-delay: 0ms; }
+.search-tx-item:nth-child(2) { animation-delay: 30ms; }
+.search-tx-item:nth-child(3) { animation-delay: 60ms; }
+.search-tx-item:nth-child(4) { animation-delay: 90ms; }
+.search-tx-item:nth-child(5) { animation-delay: 120ms; }
+.search-tx-item:nth-child(n+6) { animation-delay: 150ms; }
+
+/* ══════════════════════════════
+   Тёмная тема
+   ══════════════════════════════ */
+[data-theme="dark"] .search-sheet {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] mark.search-highlight {
+    background: rgba(46, 204, 113, 0.2);
+}
+
+[data-theme="dark"] .search-type-chip[data-type="debt"].active {
+    color: #111;
+}
+

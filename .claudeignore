@@ -1,0 +1,36 @@
+# IDE и инструменты
+.idea/
+.vscode/
+.vercel/
+.git/
+
+# Зависимости
+node_modules/
+
+# Ассеты (агенту не нужны)
+assets/
+
+# Служебные HTML (не основные)
+404.html
+500.html
+offline.html
+onboarding.html
+google341e8b9072be6ec3.html
+yandex_0966bba6d7bfba91.html
+
+# SEO и конфиги деплоя
+sitemap.xml
+robots.txt
+pwastat.txt
+manifest.json
+vercel.json
+
+# Локи
+package-lock.json
+
+# Сборка
+dist/
+build/
+*.map
+*.min.js
+*.min.css

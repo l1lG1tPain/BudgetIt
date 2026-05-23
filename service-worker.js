@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v3.0.1b'; // ⬅️ новая версия кэша под релиз 3.0.0
+const CACHE_VERSION = 'v4.0.0';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -10,27 +10,30 @@ const STATIC_ASSETS = [
     '/index.html',
     '/onboarding.html',
 
-    // стили
-    '/style.css',
-    '/theme.css',
-
     // системные страницы
     '/404.html',
     '/500.html',
     '/offline.html',
 
+    // стили — корень
+    '/style.css',
+    '/theme.css',
+    '/theme-polish-fixes.css',
+    '/Achievements.css',
+    '/Search.css',
+    '/analytics-insights.css',
+    '/excel-import.css',
+    '/export-import-page.css',
+    '/planner.css',
+
     // точка входа и миграция
     '/app.js',
     '/migration.js',
 
-    // widgets (новая структура внутри src/)
+    // widgets
     '/src/widgets/bannerCarousel.js',
     '/src/widgets/charts.js',
     '/src/widgets/currencyChips.js',
-
-        // Chart.js локально
-    '/vendor/chart.umd.min.js',
-    '/vendor/chartjs-plugin-datalabels.min.js',
 
     // основной функционал
     '/src/BudgetManager.js',
@@ -38,8 +41,18 @@ const STATIC_ASSETS = [
     '/src/ThemeManager.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
+    '/src/profilePage.js',
     '/src/StorageManager.js',
     '/src/EditManager.js',
+    '/src/Searchmanager.js',
+    '/src/Analyticsinsights.js',
+    '/src/Excelimportmanager.js',
+
+    // planner
+    '/src/planner/PlannerManager.js',
+    '/src/planner/PlannerPage.js',
+    '/src/planner/PlannerSheet.js',
+    '/src/planner/plannerUtils.js',
 
     // utils
     '/src/utils/emojiMap.js',
@@ -50,11 +63,12 @@ const STATIC_ASSETS = [
     '/src/utils/achievementUtils.js',
     '/src/utils/analytics.js',
     '/src/utils/umami-events.js',
-    
+
     // constants
     '/constants/achievementList.js',
     '/constants/constants.js',
     '/constants/debtCategories.js',
+    '/constants/depositCategories.js',
     '/constants/expenseCategories.js',
     '/constants/faq-constants.js',
     '/constants/incomeCategories.js',
@@ -64,7 +78,7 @@ const STATIC_ASSETS = [
     // PWA / манифест
     '/manifest.json',
 
-    // assets
+    // assets — баннеры
     '/assets/banner1.jpg',
     '/assets/banner2.jpg',
     '/assets/banner8.jpg',
@@ -72,26 +86,90 @@ const STATIC_ASSETS = [
     '/assets/banner10.jpg',
     '/assets/banner11.jpg',
 
-    '/assets/blackberry-pattern.png',
+    // assets — паттерны
+    '/assets/blackbberry-pattern.png',
     '/assets/Cocacola-pattern.png',
     '/assets/dolphin-pattern.png',
     '/assets/hookah-pattern.png',
     '/assets/shark-pattern.png',
 
-    '/assets/Budgetit ava.png',
-    '/assets/BudgetIt ava v2.10-min.png',
-    '/assets/switch-budget-img.png',
+    // assets — общие
+    '/assets/BudgetIt ava.png',
     '/assets/onbording-img.jpg',
     '/assets/og-cover.png',
     '/assets/favicon.ico',
+    '/assets/akulka-transaction-hero.png',
+    '/assets/planner.png',
+    '/assets/shark-import.png',
 
-    '/assets/icon-192x192v2.10.png',
-    '/assets/icon-512x512v2.10.png',
+    // assets — PWA иконки
+    '/assets/icon-192x192v4.png',
+    '/assets/icon-512x512v4.png',
 
+    // assets — системные
     '/assets/404.png',
     '/assets/500.png',
     '/assets/offline.png',
-    '/assets/shark.png'
+    '/assets/shark.png',
+
+    // assets — аватары профиля
+    '/assets/avatar/active.png',
+    '/assets/avatar/basketball.png',
+    '/assets/avatar/blue-whale.png',
+    '/assets/avatar/boxing.png',
+    '/assets/avatar/calm.png',
+    '/assets/avatar/card.png',
+    '/assets/avatar/cat.png',
+    '/assets/avatar/clown.png',
+    '/assets/avatar/coder.png',
+    '/assets/avatar/crab.png',
+    '/assets/avatar/default.png',
+    '/assets/avatar/dna.png',
+    '/assets/avatar/dog.png',
+    '/assets/avatar/dollar.png',
+    '/assets/avatar/dolphin.png',
+    '/assets/avatar/dolphin1.png',
+    '/assets/avatar/dragon.png',
+    '/assets/avatar/eagle.png',
+    '/assets/avatar/elf.png',
+    '/assets/avatar/explode.png',
+    '/assets/avatar/financial.png',
+    '/assets/avatar/genie.png',
+    '/assets/avatar/ghost.png',
+    '/assets/avatar/headphones.png',
+    '/assets/avatar/hibiscus.png',
+    '/assets/avatar/ice.png',
+    '/assets/avatar/jellyfish.png',
+    '/assets/avatar/juice.png',
+    '/assets/avatar/legendary.png',
+    '/assets/avatar/lobster.png',
+    '/assets/avatar/lock.png',
+    '/assets/avatar/lol.png',
+    '/assets/avatar/low-battery.png',
+    '/assets/avatar/meditate.png',
+    '/assets/avatar/meme.png',
+    '/assets/avatar/moon.png',
+    '/assets/avatar/muscle.png',
+    '/assets/avatar/octopus.png',
+    '/assets/avatar/penguin.png',
+    '/assets/avatar/pig.png',
+    '/assets/avatar/poop.png',
+    '/assets/avatar/robot.png',
+    '/assets/avatar/rocket.png',
+    '/assets/avatar/sakura.png',
+    '/assets/avatar/seal.png',
+    '/assets/avatar/shark.png',
+    '/assets/avatar/squid.png',
+    '/assets/avatar/surf.png',
+    '/assets/avatar/target.png',
+    '/assets/avatar/tech.png',
+    '/assets/avatar/trophy.png',
+    '/assets/avatar/tropical.png',
+    '/assets/avatar/turtle.png',
+    '/assets/avatar/unicorn.png',
+    '/assets/avatar/vampire.png',
+    '/assets/avatar/wave.png',
+    '/assets/avatar/zombie.png',
 ];
 
 /* === INSTALL ======================================================== */
