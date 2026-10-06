@@ -578,7 +578,7 @@ export class PlannerManager {
         }
 
         if (safeExtraIncome > 0 && status !== 'over_limit') {
-            text += ` · доп. доход ${formatNumber(safeExtraIncome)}`;
+            text += ` · доп. поступление ${formatNumber(safeExtraIncome)}`;
         }
 
         return {

@@ -41,7 +41,7 @@ export class ExcelImportManager {
         const btn = document.createElement('button');
         btn.className    = 'chip-btn';
         btn.dataset.type = 'excel-import';
-        btn.textContent  = '⚡ Залётом';
+        btn.innerHTML    = '<img class="zl-img" src="assets/akulka-transaction-hero.png" alt=""><span class="zl-text"><b>⚡ Залётом</b><small>Загрузить выписку: CSV, Excel, PDF</small></span>';
         btn.title        = 'Быстрый импорт из Excel / CSV / PDF';
 
         chips.prepend(btn);
@@ -83,7 +83,7 @@ export class ExcelImportManager {
             <div class="ei-feature-text">
               <div class="ei-feature-title">⚡ Залётом</div>
               <div class="ei-feature-desc">
-                Закинь выписку — Акулка распарсит платежи, определит доходы/расходы и подготовит транзакции.
+                Закинь выписку — Акулка распарсит платежи, определит поступления/траты и подготовит транзакции.
               </div>
 
               <div class="ei-feature-tags">
@@ -92,6 +92,10 @@ export class ExcelImportManager {
                 <span>PDF</span>
               </div>
             </div>
+          </div>
+
+          <div class="ei-banks" aria-label="Поддерживаемые банки">
+            ${['Payme', 'Click', 'Uzum Bank', 'Humo', 'Uzcard', 'TBC', 'Kapitalbank', 'Сбер', 'Т-Банк'].map(b => `<span>${b}</span>`).join('')}
           </div>
 
           <div class="ei-instructions">
@@ -138,7 +142,8 @@ export class ExcelImportManager {
         <!-- Шаг 2: маппинг колонок + превью -->
         <div id="ei-step-map" class="ei-step hidden">
           <div id="ei-detected-source" class="ei-detected-source" style="display:none"></div>
-          <div class="ei-section-title">Настрой колонки</div>
+          <details class="ei-cols">
+          <summary class="ei-section-title ei-cols-sum">Колонки <span>изменить</span></summary>
           <div class="ei-map-grid">
             <label class="ei-map-label">Дата</label>
             <select id="ei-col-date" class="ei-select"></select>
@@ -148,10 +153,10 @@ export class ExcelImportManager {
 
             <label class="ei-map-label">Тип транзакции</label>
             <select id="ei-col-type" class="ei-select">
-              <option value="__sign" selected>Авто по знаку суммы (– расход / + доход)</option>
+              <option value="__sign" selected>Авто по знаку суммы (– трата / + поступление)</option>
               <option value="__plusminus">Из колонки «+» / «–»</option>
-              <option value="__income">Всё — Доходы</option>
-              <option value="__expense">Всё — Расходы</option>
+              <option value="__income">Всё — Поступления</option>
+              <option value="__expense">Всё — Траты</option>
               <option value="__col">Из колонки (текст)</option>
             </select>
 
@@ -168,20 +173,20 @@ export class ExcelImportManager {
               <option value="__none">— не использовать —</option>
             </select>
           </div>
-          <div class="ei-desc-hint">💡 Описание будет показано в списке доходов как название поступления</div>
+          <div class="ei-desc-hint">💡 Описание будет показано в списке поступлений как название</div>
+          </details>
 
           <div class="ei-section-title" style="margin-top:14px">
-            Превью <span id="ei-preview-count"></span>
+            Операции <span id="ei-preview-count"></span>
+            <button type="button" id="ei-toggle-all" class="ei-toggle-all">Снять все</button>
           </div>
-          <div id="ei-preview-table-wrap" class="ei-preview-wrap">
-            <table id="ei-preview-table" class="ei-preview-table"></table>
-          </div>
+          <div id="ei-preview-list" class="ei-preview-list"></div>
 
           <div id="ei-map-error" class="ei-error hidden"></div>
 
           <div class="ei-actions">
             <button type="button" id="ei-btn-back" class="ei-btn-secondary">← Назад</button>
-            <button type="button" id="ei-btn-import" class="ei-btn-primary">⚡ Импортировать</button>
+            <button type="button" id="ei-btn-import" class="ei-btn-primary">⚡ Добавить</button>
           </div>
           <button type="button" id="ei-btn-cancel-map" class="ei-btn-close-link">✕ Отмена</button>
         </div>
@@ -813,7 +818,7 @@ export class ExcelImportManager {
         if (doneText) {
             doneText.innerHTML = `
               <strong>Импортировано: ${imported}</strong><br>
-              💚 Доходов: ${incomeCount} &nbsp; 🔴 Расходов: ${expenseCount}<br>
+              💚 Поступлений: ${incomeCount} &nbsp; 🔴 Трат: ${expenseCount}<br>
               <small>
                 Пачка: ${this._currentImportSource || 'PDF'}
                 ${this._currentImportFileName ? ` · ${this._currentImportFileName}` : ''}
@@ -986,7 +991,8 @@ export class ExcelImportManager {
                 let wb;
                 if (ext === '.csv') {
                     const text = new TextDecoder('utf-8').decode(ev.target.result);
-                    wb = XLSX.read(text, { type: 'string' });
+                    // raw: true — ячейки остаются текстом, иначе SheetJS читает 05.10.2026 как «месяц.день»
+                    wb = XLSX.read(text, { type: 'string', raw: true });
                 } else {
                     wb = XLSX.read(ev.target.result, { type: 'array' });
                 }
@@ -1143,34 +1149,67 @@ export class ExcelImportManager {
        16. Превью таблицы
     ──────────────────────────────────────────────── */
     _renderPreview() {
-        const table = document.getElementById('ei-preview-table');
+        const list = document.getElementById('ei-preview-list');
         const countEl = document.getElementById('ei-preview-count');
-        if (!table) return;
+        if (!list) return;
 
         const parsed = this._parseRows();
-        if (countEl) countEl.textContent = `(${parsed.length} транзакций)`;
+        // новый файл — выбраны все операции; смена колонок сохраняет снятые галочки
+        if (this._excludedFor !== this._rows) { this._excluded = new Set(); this._catOverride = new Map(); this._excludedFor = this._rows; }
+        const total = parsed.length;
+        const MAX = 300;
+        const rows = parsed.slice(0, MAX);
 
-        const preview = parsed.slice(0, 10);
+        list.innerHTML = rows.map((r, i) => {
+            const off = this._excluded.has(i);
+            const cat = String(r.category || '');
+            const m = /^(\S+)\s+(.*)$/.exec(cat);
+            const emoji = m ? m[1] : '🗿';
+            const label = m ? m[2] : cat;
+            const unknown = /Прочее|Загадочное|Прочие/.test(cat);
+            return `<label class="ei-op ${off ? 'is-off' : ''} ei-type-${this._escapeHTML(r.type)}">
+                <input type="checkbox" data-i="${i}" ${off ? '' : 'checked'}>
+                <span class="ei-op-emoji">${this._escapeHTML(emoji)}</span>
+                <span class="ei-op-main"><b>${this._escapeHTML(label)}${unknown ? ' <i>не распознана</i>' : ''}</b>
+                    <button type="button" class="ei-op-pick" data-pick="${i}" aria-label="Выбрать категорию">выбрать ›</button>
+                    <small>${this._escapeHTML(r.date || '?')}${r.description ? ' · ' + this._escapeHTML(r.description) : ''}</small></span>
+                <span class="ei-op-sum">${r.type === 'income' ? '+' : '−'}${this._fmtNum(r.amount)}</span>
+            </label>`;
+        }).join('') + (total > MAX ? `<div class="ei-more-rows">… и ещё ${total - MAX} (будут добавлены все отмеченные)</div>` : '');
 
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>Дата</th><th>Тип</th><th>Категория</th><th>Сумма</th><th>Описание</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${preview.map(r => `
-              <tr class="ei-preview-row ei-type-${this._escapeHTML(r.type)}">
-                <td>${this._escapeHTML(r.date || '?')}</td>
-                <td>${r.type === 'income' ? '💚 Доход' : '🔴 Расход'}</td>
-                <td>${this._escapeHTML(r.category)}</td>
-                <td>${this._fmtNum(r.amount)}</td>
-                <td class="ei-desc-cell">${this._escapeHTML(r.description || '—')}</td>
-              </tr>
-            `).join('')}
-            ${parsed.length > 10 ? `<tr><td colspan="5" class="ei-more-rows">... и ещё ${parsed.length - 10} строк</td></tr>` : ''}
-          </tbody>
-        `;
+        if (!list._bound) {
+            list._bound = true;
+            list.addEventListener('click', e => {
+                const pick = e.target.closest('.ei-op-pick');
+                if (!pick) return;
+                e.preventDefault(); e.stopPropagation();
+                this._pickCategory(Number(pick.dataset.pick));
+            });
+            list.addEventListener('change', e => {
+                const cb = e.target.closest('input[type="checkbox"][data-i]');
+                if (!cb) return;
+                const idx = Number(cb.dataset.i);
+                if (cb.checked) this._excluded.delete(idx); else this._excluded.add(idx);
+                cb.closest('.ei-op')?.classList.toggle('is-off', !cb.checked);
+                this._updateImportCounter(total);
+            });
+            document.getElementById('ei-toggle-all')?.addEventListener('click', () => {
+                const all = this._parseRows().length;
+                const anyOn = this._excluded.size < all;
+                this._excluded = anyOn ? new Set(Array.from({ length: all }, (_, k) => k)) : new Set();
+                this._renderPreview();
+            });
+        }
+        if (countEl) countEl.textContent = `(${total})`;
+        this._updateImportCounter(total);
+    }
+
+    _updateImportCounter(total) {
+        const sel = Math.max(0, total - (this._excluded?.size || 0));
+        const btn = document.getElementById('ei-btn-import');
+        if (btn) { btn.textContent = `⚡ Добавить ${sel} из ${total}`; btn.disabled = sel === 0; }
+        const all = document.getElementById('ei-toggle-all');
+        if (all) all.textContent = sel === 0 ? 'Выбрать все' : 'Снять все';
     }
 
     /* ────────────────────────────────────────────────
@@ -1243,20 +1282,80 @@ export class ExcelImportManager {
                     || (type === 'income' ? '💰 Прочие доходы' : '🗿 Прочее');
             }
 
-            result.push({ date, type, category, amount: absAmount, description });
+            // запомненные пользователем правила и ручной выбор для строки
+            const idx = result.length;
+            const ruled = this._getCatRule(description, type);
+            if (ruled) category = ruled;
+            if (this._catOverride?.has(idx)) category = this._catOverride.get(idx);
+
+            result.push({ date, type, category, amount: absAmount, description, idx });
         }
 
         return result;
     }
 
     /* ────────────────────────────────────────────────
+       Выбор категории в предпросмотре + запоминание правил
+    ──────────────────────────────────────────────── */
+    _ruleKey(desc, type) {
+        const k = String(desc || '').toUpperCase().replace(/\d{4,}/g, '').replace(/\s+/g, ' ').trim();
+        return k ? `${type}|${k}` : '';
+    }
+    _loadCatRules() {
+        try { return JSON.parse(localStorage.getItem('budgetit:import:cat-rules') || '{}') || {}; } catch (e) { return {}; }
+    }
+    _getCatRule(desc, type) {
+        const key = this._ruleKey(desc, type);
+        return key ? (this._loadCatRules()[key] || null) : null;
+    }
+    _saveCatRule(desc, type, category) {
+        const key = this._ruleKey(desc, type);
+        if (!key) return false;
+        const rules = this._loadCatRules();
+        rules[key] = category;
+        const keys = Object.keys(rules);
+        if (keys.length > 500) delete rules[keys[0]];
+        try { localStorage.setItem('budgetit:import:cat-rules', JSON.stringify(rules)); } catch (e) { return false; }
+        return true;
+    }
+    _pickCategory(idx) {
+        const row = this._parseRows()[idx];
+        if (!row || !this.uiManager?.openCategorySheet) return;
+        let sel = document.getElementById('ei-cat-select');
+        if (!sel) {
+            sel = document.createElement('select');
+            sel.id = 'ei-cat-select';
+            sel.style.display = 'none';
+            document.body.appendChild(sel);
+        }
+        sel.dataset.categoryType = row.type;
+        const src = document.getElementById(row.type === 'income' ? 'income-category' : 'expense-category');
+        sel.innerHTML = src ? src.innerHTML : '';
+        if (row.category && ![...sel.options].some(o => o.value === row.category)) {
+            const o = document.createElement('option'); o.value = row.category; o.textContent = row.category; sel.insertBefore(o, sel.firstChild);
+        }
+        sel.value = row.category || '';
+        sel.onchange = () => {
+            const cat = sel.value;
+            if (!cat) return;
+            const remembered = this._saveCatRule(row.description, row.type, cat);
+            if (!remembered) {
+                this._catOverride = this._catOverride || new Map();
+                this._catOverride.set(idx, cat);
+            }
+            this._renderPreview();
+        };
+        this.uiManager.openCategorySheet(null, sel);
+    }
+
+    /* ────────────────────────────────────────────────
        18. Непосредственный импорт транзакций
     ──────────────────────────────────────────────── */
     _doImport() {
-        const parsed = this._parseRows();
+        const parsed = this._parseRows().filter(r => !this._excluded?.has(r.idx));
 
         if (!parsed.length) {
-            this._showError('map', 'Нет строк для импорта — проверь настройки колонок');
+            this._showError('map', 'Нет отмеченных операций — отметь хотя бы одну или проверь колонки');
             return;
         }
 
@@ -1415,8 +1514,18 @@ export class ExcelImportManager {
             .replace(/\s/g, '')
             .replace(/[₽$€₸]/g, '')
             .replace(/UZS|RUB|KZT|USD|EUR|сум|so'm|sum/gi, '')
-            .replace(',', '.')
             .trim();
+
+        // Разделители: «271,860.00» (запятая — тысячи), «271 860,00» (запятая — копейки), «1.234.567,89»
+        const lc = raw.lastIndexOf(','), ld = raw.lastIndexOf('.');
+        if (lc >= 0 && ld >= 0) {
+            if (lc > ld) raw = raw.replace(/\./g, '').replace(',', '.');
+            else raw = raw.replace(/,/g, '');
+        } else if (lc >= 0) {
+            raw = /^[-+]?\d{1,3}(,\d{3})+$/.test(raw) ? raw.replace(/,/g, '') : raw.replace(',', '.');
+        } else if ((raw.match(/\./g) || []).length > 1) {
+            raw = raw.replace(/\./g, '');
+        }
 
         const isWrappedNegative = /^\(.+\)$/.test(raw);
         raw = raw.replace(/[()]/g, '');
@@ -1516,6 +1625,14 @@ export class ExcelImportManager {
     _mapExpenseCategory(text) {
         if (!text) return '🗿 Прочее';
         const t = text.toUpperCase();
+
+        // ── Точные названия мест (раньше общих правил) ──
+        if (/\bK\d{3}\b/.test(t))                                         return '🛒 Korzinka';          // K057, K112 … — номера магазинов Korzinka
+        if (/МК ДУЭСТИ|MK DUESTI|DUESTI|ДУЭСТИ/.test(t))                   return '💄 M Cosmetics';
+        if (/\bATTO\b|\bATTO[ .\-_]/.test(t))                              return '💳 Atto';              // карта метро
+        if (/HOOKAH/.test(t))                                              return '💨 Кальян';
+        if (/\bGROSS\b/.test(t))                                           return '🚙 Страховка авто';
+        if (/FEED\s?UP/.test(t))                                           return '🍱 FeedUp';
 
         // ── Переводы / P2P / банковские операции ──
         if (/HUMO2VISA|VISA2HUMO|HUMO.*VISA|VISA.*HUMO|TBC.*P2P|TBC.*HUMO|TBC.*VISA|XAZNA|ALLIANCE*PAY|P2P|PEREVOD|ПЕРЕВОД|UB H2H|H2H|PAYME|CLICK|UZCARD|HUMODR|UZUM.*BANK|UZUMB/i.test(t))
@@ -1900,8 +2017,9 @@ export class ExcelImportManager {
         if (/BONUS|БОНУС|ПРЕМИЯ|GIFT|ПОДАРОК|ДАРЕНИЕ/.test(t))                 return '🎁 Подарок / бонус';
 
         // ── Проценты / вклады ──
-        if (/PERCENT|ПРОЦЕНТ|INTEREST|ВКЛАД|ДЕПОЗИТ|ALLIANCE PAY.*ONLINE/.test(t))                  return '🏦 Проценты от вклада';
-        if (/DEPOSIT|DEPOZIT|ВКЛАД|NAKOPDEPOZIT|VKLAD|ALLIANCE PAY VKLAD|VCLAD|ALLIANCE PAY.*VKLA/i.test(t))             return '🏦 Депозит';
+        // «Проценты от вклада» — только если в описании есть слово про проценты; возврат самого вклада процентами не считаем
+        if (/PERCENT|PROCENT|ПРОЦЕНТ|PROTSENT|INTEREST|FOIZ|ALLIANCE PAY.*ONLINE/.test(t))                  return '🏦 Проценты от вклада';
+        if (/DEPOSIT|DEPOZIT|ВКЛАД|ДЕПОЗИТ|NAKOPDEPOZIT|VKLAD|VCLAD|ALLIANCE PAY.*VKLA/i.test(t))             return '🏦 Депозит';
 
         // ── Аренда ──
         if (/RENT|АРЕНДА/.test(t))                                              return '🏠 Доход от аренды';

@@ -1240,3 +1240,7 @@
         transform: translateY(0) scale(1);
     }
 }
+
+/* выбор категории в предпросмотре */
+.ei-op-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ei-op-pick{align-self:flex-start;margin:2px 0 0;padding:2px 9px;border:0;border-radius:999px;background:var(--chip, rgba(255,255,255,.1));color:var(--accent, #3dffa0);font-size:11px;font-weight:700;cursor:pointer;min-height:0;width:auto}

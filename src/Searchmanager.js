@@ -356,9 +356,9 @@ export class SearchManager {
 
     _typeToRu(type) {
         const map = {
-            income: 'доход доходы',
-            expense: 'расход расходы',
-            deposit: 'вклад вклады',
+            income: 'доход доходы поступление поступления',
+            expense: 'расход расходы трата траты',
+            deposit: 'вклад вклады накопление накопления',
             debt: 'долг долги'
         };
         return map[type] || '';
@@ -374,7 +374,7 @@ export class SearchManager {
             <div class="search-placeholder">
                 <div class="search-placeholder-icon">🔍</div>
                 <div class="search-placeholder-text">Начни вводить запрос</div>
-                <div class="search-placeholder-hint">Категория, сумма, товар, тип или дата</div>
+                <div class="search-placeholder-hint">Категория, сумма, позиция, тип или дата</div>
             </div>
         `;
     }
@@ -521,7 +521,7 @@ export class SearchManager {
     }
 
     _typeToRuSingle(type) {
-        const map = { income: 'Доход', expense: 'Расход', deposit: 'Вклад', debt: 'Долг' };
+        const map = { income: 'Поступление', expense: 'Трата', deposit: 'Накопление', debt: 'Долг' };
         return map[type] || type;
     }
 

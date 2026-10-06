@@ -169,10 +169,10 @@ export function validatePlannerPayload(payload = {}) {
     if (!name) errors.name = 'Введите название планирования';
 
     const incomeAmount = Number(payload?.incomePlan?.amount) || 0;
-    if (incomeAmount <= 0) errors.incomeAmount = 'Введите сумму дохода';
+    if (incomeAmount <= 0) errors.incomeAmount = 'Введите сумму поступления';
 
     const incomeDate = normalizeISODate(payload?.incomePlan?.incomeDate);
-    if (!incomeDate) errors.incomeDate = 'Выберите дату дохода';
+    if (!incomeDate) errors.incomeDate = 'Выберите дату поступления';
 
     const startDate = normalizeISODate(payload.startDate);
     if (!startDate) errors.startDate = 'Выберите дату начала периода';

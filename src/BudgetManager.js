@@ -1,4 +1,6 @@
 // BudgetManager.js — финальная версия с planner support
+import { normalizeCustomCategories } from './utils/customCategories.js';
+
 export class BudgetManager {
     constructor(storageManager = null) {
         this.storageManager = storageManager;
@@ -39,6 +41,10 @@ export class BudgetManager {
                 try { localStorage.setItem('planners', JSON.stringify(parsed.planners)); } catch {}
             }
 
+            if (parsed.customCategories && typeof parsed.customCategories === 'object') {
+                try { localStorage.setItem('customCategories', JSON.stringify(normalizeCustomCategories(parsed.customCategories))); } catch {}
+            }
+
             if (parsed.userId) {
                 try { localStorage.setItem('budgetit-user-id', parsed.userId); } catch {}
             }
@@ -64,6 +70,10 @@ export class BudgetManager {
             planners = [];
         }
         this.planners = Array.isArray(planners) ? planners : [];
+
+        let cc = null;
+        try { cc = JSON.parse(localStorage.getItem('customCategories') || 'null'); } catch { cc = null; }
+        this.customCategories = normalizeCustomCategories(cc);
 
         let needsSave = false;
 
@@ -99,7 +109,8 @@ export class BudgetManager {
             budgets: this.budgets,
             currentBudgetIndex: this.currentBudgetIndex,
             productNames: this.productNames,
-            planners: this.planners
+            planners: this.planners,
+            customCategories: this.customCategories
         };
 
         if (this.storageManager && typeof this.storageManager.saveState === 'function') {
@@ -111,6 +122,7 @@ export class BudgetManager {
             try { localStorage.setItem('currentBudgetIndex', String(this.currentBudgetIndex)); } catch {}
             try { localStorage.setItem('productNames', JSON.stringify(this.productNames)); } catch {}
             try { localStorage.setItem('planners', JSON.stringify(this.planners)); } catch {}
+            try { localStorage.setItem('customCategories', JSON.stringify(this.customCategories)); } catch {}
         }
     }
 
@@ -179,6 +191,13 @@ export class BudgetManager {
         });
 
         this.saveToStorage();
+
+        // Акулка и другие подписчики реагируют на новую операцию
+        try {
+            if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('budgetit:tx-added', { detail: { tx } }));
+            }
+        } catch (e) { /* реакция не должна ломать сохранение */ }
     }
 
     deleteTransaction(id) {
@@ -200,6 +219,14 @@ export class BudgetManager {
         if (idx === -1) return false;
 
         const tx = budget.transactions[idx];
+
+        // Смена типа Трата ↔ Поступление (долги и накопления не переключаются)
+        const swappable = ['income', 'expense'];
+        if (updatedData.type && updatedData.type !== tx.type
+            && swappable.includes(updatedData.type) && swappable.includes(tx.type)) {
+            tx.type = updatedData.type;
+            if (tx.type === 'income') delete tx.products;
+        }
 
         tx.date = updatedData.date ?? tx.date;
         tx.category = updatedData.category ?? tx.category;

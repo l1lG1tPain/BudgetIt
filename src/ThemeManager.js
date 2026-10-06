@@ -1,4 +1,6 @@
 // === ThemeManager.js v4.0 — плиточный грид тем с CSS-превью ===
+import { applyThemeTokens, getThemeTokens, THEME_SOURCE } from './theme/themeTokens.js';
+
 const THEME_KEY = 'appTheme';
 
 let _switchTimer = null;
@@ -18,11 +20,12 @@ function _applyTheme(theme) {
         root.style.setProperty('--theme-transition-duration', '0.22s');
         const transition = document.startViewTransition(() => {
             root.setAttribute('data-theme', theme);
+            applyThemeTokens(theme, root);
             localStorage.setItem(THEME_KEY, theme);
         });
         transition.finished.then(() => {
             root.style.removeProperty('--theme-transition-duration');
-            _rechartIfNeeded();
+            _announceThemeChange(theme);
         });
         return;
     }
@@ -33,6 +36,7 @@ function _applyTheme(theme) {
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             root.setAttribute('data-theme', theme);
+            applyThemeTokens(theme, root);
             localStorage.setItem(THEME_KEY, theme);
             root.style.opacity = '1';
 
@@ -40,12 +44,18 @@ function _applyTheme(theme) {
                 if (e.propertyName !== 'opacity') return;
                 root.style.transition = '';
                 root.removeEventListener('transitionend', cleanup);
-                _rechartIfNeeded();
+                _announceThemeChange(theme);
             });
         });
     });
 }
 
+// charts.js и Analyticsinsights.js слушают 'themechange' (раньше его никто не диспатчил)
+function _announceThemeChange(theme) {
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
+}
+
+// Мёртвый код (глобалов destroyAllCharts/renderCharts нет) — оставлен для совместимости
 function _rechartIfNeeded() {
     if (typeof destroyAllCharts === 'function' && typeof renderCharts === 'function') {
         const analyticsPage = document.getElementById('analytics-page');
@@ -74,7 +84,7 @@ export function getSavedTheme() {
    preview: { bg, card, accent, text, bar }
    Цвета берём напрямую из theme.css каждой темы
 ───────────────────────────────────────────────────────────── */
-const THEMES = [
+export const THEMES = [
     {
         value: 'light',
         emoji: '💡',
@@ -336,28 +346,17 @@ const THEMES = [
 /* ─────────────────────────────────────────────────────────────
    РЕНДЕР ПРЕВЬЮ-МИНИАТЮРЫ
 ───────────────────────────────────────────────────────────── */
-function renderPreview({ bg, card, accent, text, bar, income, expense }) {
-    // Мини-UI: хедер + 2 транзакции + прогресс-бар
+function renderPreview(theme) {
+    // Мини-превью как в макете: фон темы, блик, две «карточки» и акцентная точка
+    const t = getThemeTokens(theme.value);
+    const light = !!THEME_SOURCE[theme.value]?.[6];
+    const card = light ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,.12)';
     return `
-        <div class="tp-preview" style="background:${bg}">
-            <div class="tp-header" style="background:${card}">
-                <div class="tp-dot" style="background:${accent}"></div>
-                <div class="tp-dot" style="background:${accent};opacity:.5"></div>
-                <div class="tp-dot" style="background:${accent};opacity:.25"></div>
-            </div>
-            <div class="tp-body">
-                <div class="tp-row">
-                    <div class="tp-line" style="background:${text};opacity:.7;width:55%"></div>
-                    <div class="tp-amount" style="color:${income}">+</div>
-                </div>
-                <div class="tp-row">
-                    <div class="tp-line" style="background:${text};opacity:.5;width:40%"></div>
-                    <div class="tp-amount" style="color:${expense}">−</div>
-                </div>
-                <div class="tp-bar-track" style="background:${text};opacity:.12">
-                    <div class="tp-bar-fill" style="background:${bar};width:62%"></div>
-                </div>
-            </div>
+        <div class="tp-preview tp-glass" style="background:${t.bg}">
+            <i class="tp-orb" style="background:${t.orb1}"></i>
+            <i class="tp-c1" style="background:${card}"></i>
+            <i class="tp-c2" style="background:${card}"></i>
+            <i class="tp-dot2" style="background:${t.accent}"></i>
         </div>
     `;
 }
@@ -369,6 +368,7 @@ export function initThemeSelector() {
     const currentTheme = getSavedTheme();
 
     document.documentElement.setAttribute('data-theme', currentTheme);
+    applyThemeTokens(currentTheme);
     localStorage.setItem(THEME_KEY, currentTheme);
 
     const container = document.getElementById('theme-options-container');
@@ -573,7 +573,10 @@ export function initThemeSelector() {
 
     const fragment = document.createDocumentFragment();
 
-    THEMES.forEach(theme => {
+    // порядок как в макете: Акулка, Onyx, Бордо, Мята, Светлая, Дельфин, затем остальные
+    const ORDER = ['shark', 'onyx', 'burgundy', 'mint', 'light', 'dolphin'];
+    const rank = v => { const i = ORDER.indexOf(v); return i === -1 ? ORDER.length : i; };
+    [...THEMES].sort((a, b) => rank(a.value) - rank(b.value)).forEach(theme => {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'theme-card';
@@ -588,7 +591,7 @@ export function initThemeSelector() {
         }
 
         card.innerHTML = `
-            ${renderPreview(theme.preview)}
+            ${renderPreview(theme)}
             <div class="tc-info">
                 <div class="tc-left">
                     <div class="tc-name">${theme.emoji} ${theme.name}</div>

@@ -17,6 +17,9 @@ export class EditManager {
         this.formIncome  = document.getElementById('edit-income-form');
         this.formExpense = document.getElementById('edit-expense-form');
 
+        this.pendingType = null;
+        this.typeSwitch = document.getElementById('edit-type-switch');
+
         this.setupCloseButton();
         this.bindEvents();
 
@@ -38,6 +41,10 @@ export class EditManager {
     }
 
     bindEvents() {
+        this.typeSwitch?.querySelectorAll('button[data-type]').forEach(btn => {
+            btn.addEventListener('click', () => this.switchType(btn.dataset.type));
+        });
+
         if (this.formIncome) {
             this.formIncome.addEventListener('submit', e => {
                 e.preventDefault();
@@ -64,11 +71,64 @@ export class EditManager {
         this.formIncome.classList.add('hidden');
         this.formExpense.classList.add('hidden');
 
+        this.pendingType = null;
+        if (this.typeSwitch) {
+            const swappable = transaction.type === 'income' || transaction.type === 'expense';
+            this.typeSwitch.classList.toggle('hidden', !swappable);
+            this.syncTypeSwitch(transaction.type);
+        }
+
         if (transaction.type === 'income') {
             this.openIncome(transaction);
         } else if (transaction.type === 'expense') {
             this.openExpense(transaction);
         }
+    }
+
+    syncTypeSwitch(type) {
+        this.typeSwitch?.querySelectorAll('button[data-type]').forEach(b => {
+            b.classList.toggle('active', b.dataset.type === type);
+        });
+    }
+
+    // Переключение Трата ↔ Поступление: форма пересобирается под новый тип,
+    // категорию нужно выбрать заново; сумма и дата сохраняются.
+    switchType(newType) {
+        const cur = this.transaction;
+        if (!cur || cur.type === newType || (newType !== 'income' && newType !== 'expense')) return;
+        if (cur.type !== 'income' && cur.type !== 'expense') return;
+
+        const converted = { ...cur, type: newType, category: '' };
+        if (newType === 'expense') {
+            converted.products = [{ name: cur.name || 'Позиция', quantity: 1, price: Number(cur.amount) || 0 }];
+        } else {
+            delete converted.products;
+        }
+
+        const original = this.original?.type;
+        this.formIncome.classList.add('hidden');
+        this.formExpense.classList.add('hidden');
+        if (newType === 'income') this.openIncome(converted);
+        else this.openExpense(converted);
+        this.transaction = converted;
+
+        this.pendingType = newType === original ? null : newType;
+        this.syncTypeSwitch(newType);
+        this.markChanged();
+        if (typeof window.trackSafe === 'function') trackSafe('edit-type-switch', { to: newType });
+    }
+
+    // Выставляет категорию редактируемой операции; если её уже нет в списках (удалённая своя) — добавляет пункт
+    applyCategoryValue(select, value) {
+        this.uiManager.applyCustomCategories?.();
+        if (!value) return;
+        if (![...select.options].some(o => o.value === value)) {
+            const o = document.createElement('option');
+            o.value = value;
+            o.textContent = value;
+            select.appendChild(o);
+        }
+        select.value = value;
     }
 
     close() {
@@ -101,7 +161,7 @@ export class EditManager {
        РЕДАКТИРОВАНИЕ ДОХОДА
     -------------------------- */
     openIncome(tx) {
-        document.getElementById('edit-title').textContent = '✏️ Редактирование дохода';
+        document.getElementById('edit-title').textContent = 'Изменить поступление';
 
         const date   = document.getElementById('edit-income-date');
         const cat    = document.getElementById('edit-income-category');
@@ -112,6 +172,7 @@ export class EditManager {
 
         // дата
         date.value = tx.date;
+        this.uiManager.attachDateField?.(date);
 
         // категории
         cat.innerHTML = '';
@@ -127,6 +188,8 @@ export class EditManager {
             if (tx.category === c) opt.selected = true;
             cat.appendChild(opt);
         });
+
+        this.applyCategoryValue(cat, tx.category);
 
         // сумма
         amount.value = formatNumber(tx.amount);
@@ -180,6 +243,7 @@ export class EditManager {
             category: catSelect.value,
             amount
         };
+        if (this.pendingType) updated.type = this.pendingType;
 
         this.budgetManager.updateTransaction(this.transaction.id, updated);
 
@@ -191,7 +255,7 @@ export class EditManager {
        РЕДАКТИРОВАНИЕ РАСХОДА
     -------------------------- */
     openExpense(tx) {
-        document.getElementById('edit-title').textContent = '🖍️ Редактирование расхода';
+        document.getElementById('edit-title').textContent = 'Изменить трату';
 
         const date   = document.getElementById('edit-expense-date');
         const cat    = document.getElementById('edit-expense-category');
@@ -204,6 +268,7 @@ export class EditManager {
 
         // дата
         date.value = tx.date || '';
+        this.uiManager.attachDateField?.(date);
 
         // --- КАТЕГОРИИ: как в форме создания расхода ---
         cat.innerHTML = '';
@@ -244,6 +309,8 @@ export class EditManager {
             cat.appendChild(optgroup);
         });
 
+        this.applyCategoryValue(cat, tx.category);
+
         // --------- бинды изменений ----------
         const mark = () => this.markChanged();
         date.oninput = mark;
@@ -257,7 +324,10 @@ export class EditManager {
 
         // --------- товары ----------
         list.innerHTML = '';
-        (tx.products || []).forEach(p => this.addProductRow(list, p));
+        const prods = (tx.products && tx.products.length)
+            ? tx.products
+            : [{ name: 'Трата', quantity: 1, price: tx.amount || 0 }]; // трата «одной суммой» открывается как одна позиция
+        prods.forEach(p => this.addProductRow(list, p));
 
         addBtn.onclick = () => {
             this.addProductRow(list, { name: '', quantity: '', price: '' });
@@ -350,7 +420,7 @@ export class EditManager {
         }
 
         if (!rows.length) {
-            this.uiManager.showInlineError(saveBtn, 'Добавь хотя бы один товар');
+            this.uiManager.showInlineError(saveBtn, 'Добавь хотя бы одну позицию');
             return;
         }
 
@@ -367,7 +437,7 @@ export class EditManager {
             if (!name || quantity <= 0 || price <= 0) {
                 this.uiManager.showInlineError(
                     name ? (quantity <= 0 ? qtyInput : priceInput) : nameInput,
-                    'Заполни все поля товара'
+                    'Заполни все поля позиции'
                 );
                 return;
             }
@@ -383,6 +453,7 @@ export class EditManager {
             products,
             amount
         };
+        if (this.pendingType) updated.type = this.pendingType;
 
         this.budgetManager.updateTransaction(this.transaction.id, updated);
 
@@ -468,7 +539,7 @@ export class EditManager {
         }
 
         if (!rows.length) {
-            this.uiManager.showInlineError(saveBtn, 'Добавь хотя бы один товар');
+            this.uiManager.showInlineError(saveBtn, 'Добавь хотя бы одну позицию');
             return;
         }
 
@@ -486,7 +557,7 @@ export class EditManager {
                 // если хоть что-то пустое — ругаемся и не даём сохранить
                 this.uiManager.showInlineError(
                     name ? (quantity <= 0 ? qtyInput : priceInput) : nameInput,
-                    'Заполни все поля товара'
+                    'Заполни все поля позиции'
                 );
                 return;
             }
@@ -502,6 +573,7 @@ export class EditManager {
             products,
             amount
         };
+        if (this.pendingType) updated.type = this.pendingType;
 
         this.budgetManager.updateTransaction(this.transaction.id, updated);
 

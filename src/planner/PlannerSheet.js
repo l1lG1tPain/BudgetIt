@@ -193,6 +193,14 @@ export class PlannerSheet {
         }).join('');
     }
 
+    // Поля дат формы плана — тот же шторочный пикер, что и в новой операции
+    refreshDateFields() {
+        this.sheet?.querySelectorAll('input[type="date"]').forEach(el => {
+            this.uiManager?.attachDateField?.(el);
+            el._syncDateField?.();
+        });
+    }
+
     makePlannerSelectInteractive(select, placeholderText = 'Выберите') {
         if (!select) return;
         if (select.previousElementSibling?.classList.contains('category-select-container')) return;
@@ -274,6 +282,7 @@ export class PlannerSheet {
         this.incomeDate.value = planner.incomePlan?.incomeDate || '';
         this.startDate.value = planner.startDate || '';
         this.periodDays.value = planner.periodDays || 15;
+        this.refreshDateFields();
 
         this.sheet.querySelectorAll('.planner-period-chip').forEach(chip => {
             chip.classList.toggle('active', Number(chip.dataset.days) === Number(planner.periodDays));
@@ -361,7 +370,7 @@ export class PlannerSheet {
             // Общая ошибка если поле не найдено
             const errEl = document.createElement('div');
             errEl.className = 'planner-field-error planner-field-error-global';
-            errEl.textContent = Object.values(errors)[0] || 'Проверь поля планировщика';
+            errEl.textContent = Object.values(errors)[0] || 'Проверь поля плана';
             this.form.prepend(errEl);
         }
     }
@@ -370,7 +379,7 @@ export class PlannerSheet {
         this.sheet.classList.add('hidden');
 
         const anyVisibleBottomSheet = document.querySelector(
-            '.bottom-sheet:not(.hidden):not(#planner-sheet)'
+            '.bottom-sheet:not(.hidden):not(#planner-sheet):not(#planner-page)'
         );
         if (!anyVisibleBottomSheet) {
             this.backdrop?.classList.add('hidden');
@@ -390,6 +399,7 @@ export class PlannerSheet {
         const today = this.getLocalISODate(new Date());
         if (this.incomeDate) this.incomeDate.value = today;
         if (this.startDate) this.startDate.value = today;
+        this.refreshDateFields();
 
         this.sheet.querySelectorAll('.planner-period-chip').forEach((chip, index) => {
             chip.classList.toggle('active', index === 0);
@@ -421,6 +431,7 @@ export class PlannerSheet {
             <button type="button" class="planner-row-remove" data-remove-row>✕</button>
         `;
         this.mainList.appendChild(row);
+        this.refreshDateFields();
         this.enhancePlannerCategorySelects();
     }
 
@@ -467,7 +478,7 @@ export class PlannerSheet {
             <input class="planner-deposit-rate numeric-format planner-rate-input" type="text" inputmode="decimal" maxlength="6" placeholder="% годовых" value="${data.annualRate ?? ''}">
             <input class="planner-deposit-start" type="date" value="${depositStart}" title="Дата открытия вклада">
             <select class="planner-deposit-term">
-                <option value="0" ${Number(data.termDays) === 0 ? 'selected' : ''}>Б/С</option>
+                <option value="0" ${Number(data.termDays) === 0 ? 'selected' : ''}>Бессрочно</option>
                 <option value="365" ${Number(data.termDays) === 365 ? 'selected' : ''}>12 мес</option>
                 <option value="730" ${Number(data.termDays) === 730 ? 'selected' : ''}>24 мес</option>
                 <option value="1095" ${Number(data.termDays) === 1095 ? 'selected' : ''}>36 мес</option>
@@ -477,6 +488,7 @@ export class PlannerSheet {
             <button type="button" class="planner-row-remove" data-remove-row>✕</button>
         `;
         this.depositsList.appendChild(row);
+        this.refreshDateFields();
     }
 
     collectMainExpenses() {

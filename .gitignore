@@ -1,3 +1,13 @@
 .vercel
 node_modules/
 .claudeignore
+
+# Рабочие файлы Claude (не в репозиторий)
+architecture.md
+redesign-plan.md
+progress-notes.md
+analytics-2.0.md
+CLAUDE.md
+.claudeignore
+.claude/
+design_handoff_budgetit_redesign/

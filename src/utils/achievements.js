@@ -74,12 +74,12 @@ const ACHIEVEMENT_GROUPS = [
     },
     {
         id: 'budgets',
-        label: '📦 Бюджеты и вклады',
+        label: '📦 Бюджеты и накопления',
         ids: ['multi-budget','budget-5','budget-10','saver','saver-10','debt-1','debt-5','debt-10','debt-20','debt-50']
     },
     {
         id: 'planner',
-        label: '📅 Планировщик',
+        label: '📅 План месяца',
         ids: ['planner-first','planner-5','planner-20','planner-done']
     },
     {

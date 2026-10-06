@@ -8,20 +8,9 @@
 
 let _bm = null;
 
-// ──────────────────────────────────────────────────────────────
-// Категории, которые не должны участвовать в бытовой аналитике
-// ──────────────────────────────────────────────────────────────
-const FINANCIAL_CATEGORY_KEYWORDS = [
-    'вклад', 'депозит', 'кредит', 'ипотек', 'займ', 'заём',
-    'погашен', 'рефинанс', 'накопл', 'пополнен', 'инвести',
-    'брокер', 'акци', 'облигац', 'пенсион', 'страхов',
-    'p2p', 'перевод', 'transfer', 'пополнение',
-];
+import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 
-const SYSTEM_EXCLUDED_CATEGORIES = [
-    'Не знаю на что потратил (без учёта)',
-    'Другая категория (без учёта)',
-];
+// Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
 
 const USER_EXCLUDED_CATS_KEY = 'budgetit:excluded_anomaly_cats';
 const USER_CONFIRMED_ANOMALY_KEY = 'budgetit:confirmed_anomalies';
@@ -177,29 +166,6 @@ function _confirmAnomaly(txId) {
     }
 }
 
-function _isSystemExcludedCategory(cat) {
-    if (!cat) return false;
-    return SYSTEM_EXCLUDED_CATEGORIES.includes(String(cat).trim());
-}
-
-function _isFinancialCategory(cat) {
-    if (!cat) return false;
-    const lower = String(cat).toLowerCase();
-    return FINANCIAL_CATEGORY_KEYWORDS.some(kw => lower.includes(kw));
-}
-
-function _isCategoryExcluded(cat) {
-    return (
-        _isFinancialCategory(cat) ||
-        _isSystemExcludedCategory(cat) ||
-        _getUserExcludedCats().includes(cat)
-    );
-}
-
-function _realExpenses(expArr) {
-    return expArr.filter(t => !_isCategoryExcluded(t.category));
-}
-
 // ──────────────────────────────────────────────────────────────
 // Public API
 // ──────────────────────────────────────────────────────────────
@@ -279,28 +245,29 @@ function _injectHTML() {
 }
 
 function _addSubtitles() {
-    const subs = [
-        null,
-        'Что занимает больше всего денег',
-        'Соотношение за выбранный период',
-        'Помесячная динамика доходов и расходов',
-        'Топ трат по конкретным позициям',
-        'Как менялся остаток со временем',
-        'Все категории расходов по сумме',
-        'Тренд выбранной категории по месяцам',
-        'В какой день недели тратишь больше',
-        'Доходы по источникам',
-        'Полная картина: доходы, расходы, баланс',
-    ];
+    // подписи привязаны к id графика (а не к порядку секций — порядок менялся)
+    const subs = {
+        expensesByCategoryChart   : 'Что занимает больше всего денег',
+        incomeVsExpensesChart     : 'Соотношение за выбранный период',
+        monthlyExpensesChart      : 'Помесячная динамика доходов и расходов',
+        topExpensesChart          : 'Топ трат по конкретным позициям',
+        balanceDynamicsChart      : 'Как менялся остаток со временем',
+        categoriesByDescendingChart: 'Все категории расходов по сумме',
+        categoryHistoryChart      : 'Тренд выбранной категории по месяцам',
+        spendingByWeekdayChart    : 'В какой день недели тратишь больше',
+        incomeBySourceChart       : 'Доходы по источникам',
+        annualSummaryChart        : 'Полная картина: доходы, расходы, баланс',
+    };
 
-    document.querySelectorAll('#analytics-page .analytics-scroll section').forEach((sec, i) => {
-        if (!subs[i] || sec.querySelector('.bi-sec-sub')) return;
+    document.querySelectorAll('#analytics-page .analytics-scroll section').forEach(sec => {
+        const sub = subs[sec.dataset.chart || sec.querySelector('canvas')?.id];
+        if (!sub || sec.querySelector('.bi-sec-sub')) return;
         const h4 = sec.querySelector('h4');
         if (!h4) return;
 
         const p = document.createElement('p');
         p.className = 'bi-sec-sub';
-        p.textContent = subs[i];
+        p.textContent = sub;
         h4.insertAdjacentElement('afterend', p);
     });
 }
@@ -338,132 +305,41 @@ function _render() {
         return;
     }
 
-    const incomeTx = allTx.filter(t => t.type === 'income');
-    const expenseTx = allTx.filter(t => t.type === 'expense');
     const depositTx = allTx.filter(t => t.type === 'deposit');
     const debtTx = allTx.filter(t => t.type === 'debt');
 
-    const realExp = _realExpenses(expenseTx);
-    const excludedExp = expenseTx.filter(t => _isCategoryExcluded(t.category));
-
-    const totI = _sum(incomeTx);
-    const totE = _sum(realExp);
-    const totExcluded = _sum(excludedExp);
-    const bal = totI - totE;
-    const sav = totI > 0 ? (bal / totI * 100) : 0;
-
-    const monthsSet = new Set();
-    allTx.forEach(t => {
-        if (t.date) monthsSet.add(t.date.slice(0, 7));
+    const M = computeMetrics(allTx, {
+        today: localToday(),
+        userExcluded: _getUserExcludedCats(),
+        confirmed: _getConfirmedAnomalies(),
     });
-    const months = [...monthsSet].sort();
-
-    const expenseCatMap = {};
-    realExp.forEach(t => {
-        const c = t.category || '🗿 Прочее';
-        expenseCatMap[c] = (expenseCatMap[c] || 0) + (t.amount || 0);
-    });
-    const cats = Object.entries(expenseCatMap).sort((a, b) => b[1] - a[1]);
-
-    const incomeCatMap = {};
-    incomeTx.forEach(t => {
-        const c = t.category || '💰 Прочие доходы';
-        incomeCatMap[c] = (incomeCatMap[c] || 0) + (t.amount || 0);
-    });
-    const incCats = Object.entries(incomeCatMap).sort((a, b) => b[1] - a[1]);
-
-    const mMap = {};
-    months.forEach(m => {
-        mMap[m] = { i: 0, e: 0, txCount: 0 };
-    });
-
-    allTx.forEach(t => {
-        if (!t.date) return;
-        const m = t.date.slice(0, 7);
-        if (!mMap[m]) mMap[m] = { i: 0, e: 0, txCount: 0 };
-
-        if (t.type === 'income') {
-            mMap[m].i += t.amount || 0;
-        }
-
-        if (t.type === 'expense' && !_isCategoryExcluded(t.category)) {
-            mMap[m].e += t.amount || 0;
-            mMap[m].txCount += 1;
-        }
-    });
-
-    const lastM = mMap[months.at(-1)] || { i: 0, e: 0, txCount: 0 };
-    const prevM = mMap[months.at(-2)] || { i: 0, e: 0, txCount: 0 };
+    const {
+        incomeTx, realExp, totI, totE, totExcluded, bal, sav,
+        months, closedMonths, partialMonth, lastM, trend, freqTrend, growth,
+        dW, hotD, busyD, pricey, avg, med, tpd,
+        lifeCostAvg, regularCats, mandatoryShare, worst, best,
+        cats, incCats, anomaly, leaking, forecast,
+    } = M;
 
     const DN = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    const dW = Array(7).fill(0);
-    const dWCount = Array(7).fill(0);
-
-    realExp.forEach(t => {
-        if (!t.date) return;
-        const idx = new Date(t.date).getDay();
-        dW[idx] += t.amount || 0;
-        dWCount[idx] += 1;
-    });
-
-    const hotD = dW.indexOf(Math.max(...dW));
-    const busyD = dWCount.indexOf(Math.max(...dWCount));
-
-    const dMap = {};
-    realExp.forEach(t => {
-        if (!t.date) return;
-        const d = t.date.slice(0, 10);
-        dMap[d] = (dMap[d] || 0) + (t.amount || 0);
-    });
-    const pricey = Object.entries(dMap).sort((a, b) => b[1] - a[1])[0];
-
-    const amounts = [...realExp]
-        .map(t => Number(t.amount) || 0)
-        .filter(v => v > 0)
-        .sort((a, b) => a - b);
-
-    const avg = amounts.length ? amounts.reduce((s, v) => s + v, 0) / amounts.length : 0;
-    const med = _median(amounts);
-    const p90 = _percentile(amounts, 0.9);
-
-    const trend = prevM.e > 0 ? ((lastM.e - prevM.e) / prevM.e * 100) : null;
-    const worst = Object.entries(mMap).sort((a, b) => b[1].e - a[1].e)[0];
-    const best = Object.entries(mMap)
-        .filter(([, v]) => v.e > 0)
-        .sort((a, b) => a[1].e - b[1].e)[0];
-
-    const tpd = realExp.length && months.length
-        ? (realExp.length / (months.length * 30)).toFixed(1)
-        : '0.0';
-
-    const lifeCostAvg = months.length ? totE / months.length : 0;
-    const mandatoryShare = totE > 0
-        ? (_findRegularExpenses(realExp, months).reduce((s, r) => s + r.avg, 0) / Math.max(lifeCostAvg, 1)) * 100
-        : 0;
-
-    const regularCats = _findRegularExpenses(realExp, months);
-    const anomaly = _findAnomaly(realExp, { avg, med, p90, months });
-    const forecast = _calcForecast(mMap, months);
-    const leaking = _findLeakingCategory(realExp, months);
-    const growth = _findGrowthCategory(realExp, months);
 
     _kpi([
         {
             ico: '💸',
-            lbl: 'Расходы',
-            val: _f(totE),
+            lbl: 'Бытовые траты',
+            val: _fk(totE),
             sub: `${realExp.length} бытовых операций`
         },
         {
             ico: '💚',
-            lbl: 'Доходы',
-            val: _f(totI),
-            sub: `${incomeTx.length} поступлений`
+            lbl: 'Поступления',
+            val: _fk(totI),
+            sub: `${incomeTx.length} поступлений без переводов`
         },
         {
             ico: '🏦',
             lbl: 'Остаток',
-            val: _f(bal),
+            val: _fk(bal),
             sub: bal >= 0 ? 'В плюсе' : 'Дефицит',
             neg: bal < 0
         },
@@ -476,7 +352,7 @@ function _render() {
         {
             ico: '🧾',
             lbl: 'Средний чек',
-            val: _f(avg),
+            val: _fk(avg),
             sub: `медиана ${_f(med)}`
         },
         {
@@ -496,7 +372,7 @@ function _render() {
 
         const catItems = realExp
             .filter(t => (t.category || '🗿 Прочее') === c)
-            .sort((a1, b1) => (b1.amount || 0) - (a1.amount || 0))
+            .sort((a1, b1) => num(b1.amount) - num(a1.amount))
             .slice(0, 3);
 
         const itemList = catItems.map(t => {
@@ -560,7 +436,9 @@ function _render() {
             e: '👍',
             t: 'На правильном пути',
             tip: true,
-            b: `Сбережений ${sav.toFixed(1)}%. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
+            b: sav >= 20
+                ? `Сбережений ${sav.toFixed(1)}% — выше комфортных 20%. Так держать`
+                : `Сбережений ${sav.toFixed(1)}%. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
             col: '#22d3ee',
             priority: 97
         });
@@ -606,7 +484,7 @@ function _render() {
         cards.push({
             e: growth.delta > 0 ? '📈' : '📉',
             t: 'Самая изменившаяся категория',
-            b: `<b>${growth.cat}</b><br><span style="opacity:.72;font-size:11px">${_mn(growth.prevMonth)} → ${_mn(growth.lastMonth)}</span><br>${growth.delta > 0 ? 'Рост' : 'Снижение'} на <b>${Math.abs(growth.delta).toFixed(1)}%</b>`,
+            b: `<b>${growth.cat}</b><br><span style="opacity:.72;font-size:11px">${_mn(growth.prevMonth)} → ${_mn(growth.lastMonth)}</span>${partialMonth ? ' (на то же число)' : ''}<br>${growth.delta > 0 ? 'Рост' : 'Снижение'} на <b>${Math.abs(growth.delta).toFixed(1)}%</b>`,
             badge: `${growth.delta > 0 ? '+' : ''}${growth.delta.toFixed(1)}%`,
             col: growth.delta > 0 ? '#f43f5e' : '#22d3ee',
             priority: 94
@@ -616,9 +494,9 @@ function _render() {
         cards.push({
             e: up ? '📈' : '📉',
             t: 'Тренд расходов',
-            b: `Общие расходы ${up
+            b: `Бытовые расходы ${up
                 ? '<b style="color:#f43f5e">выросли</b>'
-                : '<b style="color:#22d3ee">снизились</b>'} на ${Math.abs(trend).toFixed(1)}% vs ${months.at(-2) ? _mn(months.at(-2)) : 'пред. мес.'}`,
+                : '<b style="color:#22d3ee">снизились</b>'} на ${Math.abs(trend).toFixed(1)}% vs ${_mn(M.prevKey)}${partialMonth ? ' (на то же число)' : ''}`,
             badge: `${up ? '+' : ''}${trend.toFixed(1)}%`,
             col: up ? '#f43f5e' : '#22d3ee',
             priority: 93
@@ -654,8 +532,8 @@ function _render() {
         cards.push({
             e: '🧱',
             t: 'Обязательная нагрузка',
-            b: `Регулярные траты занимают около <b>${Math.min(999, mandatoryShare).toFixed(0)}%</b> среднемесячных расходов`,
-            badge: `${Math.min(999, mandatoryShare).toFixed(0)}%`,
+            b: `Регулярные траты занимают около <b>${mandatoryShare.toFixed(0)}%</b> среднемесячных расходов`,
+            badge: `${mandatoryShare.toFixed(0)}%`,
             col: '#06b6d4',
             priority: 90
         });
@@ -663,7 +541,7 @@ function _render() {
 
     // 10
     const maxTx = realExp.length
-        ? [...realExp].sort((a, b) => (b.amount || 0) - (a.amount || 0))[0]
+        ? [...realExp].sort((a, b) => num(b.amount) - num(a.amount))[0]
         : null;
 
     if (maxTx) {
@@ -680,7 +558,7 @@ function _render() {
 
     // Резервные, если чего-то не хватило
     if (dW[hotD] > 0) {
-        const hotDayTx = realExp.filter(t => t.date && new Date(t.date).getDay() === hotD);
+        const hotDayTx = realExp.filter(t => weekdayOf(t.date) === hotD);
         const hotCatMap = {};
 
         hotDayTx.forEach(t => {
@@ -702,11 +580,6 @@ function _render() {
 
     if (+tpd > 0) {
         const lastMKey = months.at(-1);
-        const prevMKey = months.at(-2);
-
-        const lastCount = lastMKey ? realExp.filter(t => t.date?.startsWith(lastMKey)).length : 0;
-        const prevCount = prevMKey ? realExp.filter(t => t.date?.startsWith(prevMKey)).length : 0;
-        const freqTrend = prevCount > 0 ? Math.round((lastCount - prevCount) / prevCount * 100) : null;
 
         let tpdNote = '';
         if (+tpd <= 1) {
@@ -739,7 +612,7 @@ function _render() {
     if (pricey) {
         const priceyTx = realExp
             .filter(t => t.date?.slice(0, 10) === pricey[0])
-            .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+            .sort((a, b) => num(b.amount) - num(a.amount))
             .slice(0, 3);
 
         const items = priceyTx.map(t => {
@@ -769,7 +642,7 @@ function _render() {
         });
     }
 
-    if (best && months.length > 1) {
+    if (best && closedMonths.length > 1) {
         const [ym, d] = best;
         cards.push({
             e: '🌟',
@@ -781,7 +654,7 @@ function _render() {
         });
     }
 
-    if (forecast && months.length >= 3) {
+    if (forecast) {
         const sign = forecast.delta >= 0 ? '+' : '';
         cards.push({
             e: '🔮',
@@ -810,7 +683,7 @@ function _render() {
     }
 
     _cards(_finalizeCards(cards));
-    _health(_scoreHealth(sav, bal, totE, totI));
+    _health(M.health);
 
     const al = [];
 
@@ -833,7 +706,7 @@ function _render() {
     if (!incomeTx.length && realExp.length) {
         al.push({
             ico: '📥',
-            txt: 'Нет доходов. Добавь поступления, чтобы инсайты были точнее',
+            txt: 'Нет поступлений. Добавь поступления, чтобы инсайты были точнее',
             t: 'info'
         });
     }
@@ -863,201 +736,6 @@ function _render() {
     }
 
     _alerts(al);
-}
-
-// ──────────────────────────────────────────────────────────────
-// Smart insights helpers
-// ──────────────────────────────────────────────────────────────
-function _findRegularExpenses(exp, months) {
-    if (months.length < 2 || !exp.length) return [];
-
-    const catMonths = {};
-
-    exp.forEach(t => {
-        if (!t.date) return;
-        const m = t.date.slice(0, 7);
-        const c = t.category || '🗿 Прочее';
-
-        if (!catMonths[c]) catMonths[c] = {};
-        catMonths[c][m] = (catMonths[c][m] || 0) + (t.amount || 0);
-    });
-
-    const threshold = Math.max(2, Math.ceil(months.length * 0.6));
-    const result = [];
-
-    Object.entries(catMonths).forEach(([cat, mths]) => {
-        const values = Object.values(mths);
-        const presentMonths = Object.keys(mths).length;
-
-        if (presentMonths < threshold) return;
-
-        const avg = values.reduce((s, v) => s + v, 0) / values.length;
-        const max = Math.max(...values);
-        const min = Math.min(...values);
-        const stability = avg > 0 ? 1 - ((max - min) / avg) * 0.35 : 0;
-
-        result.push({
-            cat,
-            avg,
-            months: presentMonths,
-            stability: Math.max(0, Math.min(1, stability))
-        });
-    });
-
-    return result
-        .filter(r => r.avg > 0)
-        .sort((a, b) => {
-            if (b.months !== a.months) return b.months - a.months;
-            if (b.stability !== a.stability) return b.stability - a.stability;
-            return b.avg - a.avg;
-        })
-        .slice(0, 5);
-}
-
-function _findAnomaly(realExp, stats) {
-    if (!realExp.length || realExp.length < 6) return null;
-
-    const confirmed = _getConfirmedAnomalies();
-    const byCategoryMonths = {};
-
-    realExp.forEach(t => {
-        if (!t.date) return;
-        const cat = t.category || '🗿 Прочее';
-        const m = t.date.slice(0, 7);
-        if (!byCategoryMonths[cat]) byCategoryMonths[cat] = new Set();
-        byCategoryMonths[cat].add(m);
-    });
-
-    const candidates = [...realExp]
-        .filter(t => !confirmed.includes(String(t.id)))
-        .filter(t => (t.amount || 0) > 0)
-        .map(t => {
-            const cat = t.category || '🗿 Прочее';
-            const monthCount = byCategoryMonths[cat]?.size || 0;
-            const amount = t.amount || 0;
-
-            const overMedian = stats.med > 0 ? amount / stats.med : 0;
-            const overAvg = stats.avg > 0 ? amount / stats.avg : 0;
-            const overP90 = stats.p90 > 0 ? amount / stats.p90 : 0;
-
-            const repeatedCategory = monthCount >= 2;
-
-            return {
-                ...t,
-                monthCount,
-                overMedian,
-                overAvg,
-                overP90,
-                repeatedCategory,
-                score:
-                    overMedian * 1.5 +
-                    overAvg * 1.2 +
-                    overP90 * 1.1 -
-                    (repeatedCategory ? 3 : 0)
-            };
-        })
-        .filter(t =>
-            t.overMedian >= 2.8 &&
-            t.overAvg >= 2.2 &&
-            !t.repeatedCategory
-        )
-        .sort((a, b) => b.score - a.score);
-
-    const top = candidates[0];
-    if (!top) return null;
-
-    return {
-        id: String(top.id),
-        category: top.category || '—',
-        amount: top.amount || 0,
-        date: top.date || '',
-        timesAvg: Math.round(top.overAvg * 10) / 10,
-        timesMedian: Math.round(top.overMedian * 10) / 10,
-    };
-}
-
-function _findLeakingCategory(realExp, months) {
-    if (!realExp.length || months.length < 1) return null;
-
-    const map = {};
-    realExp.forEach(t => {
-        const cat = t.category || '🗿 Прочее';
-        if (!map[cat]) {
-            map[cat] = { total: 0, count: 0 };
-        }
-        map[cat].total += t.amount || 0;
-        map[cat].count += 1;
-    });
-
-    const candidates = Object.entries(map)
-        .map(([cat, v]) => ({
-            cat,
-            total: v.total,
-            count: v.count,
-            avg: v.count ? v.total / v.count : 0,
-            score: (v.count >= 4 ? 1 : 0) * (v.total / Math.max(v.count, 1))
-        }))
-        .filter(v => v.count >= 4 && v.avg <= (_sum(realExp) / Math.max(realExp.length, 1)) * 1.15)
-        .sort((a, b) => {
-            if (b.count !== a.count) return b.count - a.count;
-            return b.total - a.total;
-        });
-
-    return candidates[0] || null;
-}
-
-function _findGrowthCategory(realExp, months) {
-    if (months.length < 2) return null;
-
-    const lastMonth = months.at(-1);
-    const prevMonth = months.at(-2);
-    const map = {};
-
-    realExp.forEach(t => {
-        if (!t.date) return;
-        const m = t.date.slice(0, 7);
-        if (m !== lastMonth && m !== prevMonth) return;
-
-        const cat = t.category || '🗿 Прочее';
-        if (!map[cat]) map[cat] = { prev: 0, last: 0 };
-
-        if (m === prevMonth) map[cat].prev += t.amount || 0;
-        if (m === lastMonth) map[cat].last += t.amount || 0;
-    });
-
-    const candidates = Object.entries(map)
-        .map(([cat, v]) => {
-            if (v.prev <= 0 || v.last <= 0) return null;
-            return {
-                cat,
-                prevMonth,
-                lastMonth,
-                prev: v.prev,
-                last: v.last,
-                delta: ((v.last - v.prev) / v.prev) * 100
-            };
-        })
-        .filter(Boolean)
-        .filter(v => Math.abs(v.delta) >= 15)
-        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-
-    return candidates[0] || null;
-}
-
-function _calcForecast(mMap, months) {
-    if (months.length < 3) return null;
-
-    const last3 = months.slice(-3).map(m => mMap[m]?.e || 0);
-    const avg3 = last3.reduce((s, v) => s + v, 0) / last3.length;
-
-    const trend1 = last3[1] > 0 ? (last3[2] - last3[1]) / last3[1] : 0;
-    const trend2 = last3[0] > 0 ? (last3[1] - last3[0]) / last3[0] : 0;
-    const blendedTrend = ((trend1 * 0.65) + (trend2 * 0.35)) * 0.45;
-
-    const predicted = Math.max(0, avg3 * (1 + blendedTrend));
-    const delta = avg3 > 0 ? ((predicted - avg3) / avg3 * 100) : 0;
-
-    return { predicted, delta };
 }
 
 function _finalizeCards(cards) {
@@ -1217,7 +895,6 @@ function _alerts(list) {
 const _MN = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
 const _el = id => document.getElementById(id);
-const _sum = arr => arr.reduce((s, t) => s + (t.amount || 0), 0);
 
 const _mn = ym => {
     if (!ym) return '—';
@@ -1239,25 +916,11 @@ function _f(n) {
     return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Math.round(n || 0)) + '\u00a0' + cur;
 }
 
-function _median(arr) {
-    if (!arr.length) return 0;
-    const mid = Math.floor(arr.length / 2);
-    return arr.length % 2 === 0
-        ? (arr[mid - 1] + arr[mid]) / 2
-        : arr[mid];
-}
-
-function _percentile(arr, p = 0.9) {
-    if (!arr.length) return 0;
-    const idx = Math.min(arr.length - 1, Math.max(0, Math.floor((arr.length - 1) * p)));
-    return arr[idx];
-}
-
-function _scoreHealth(sav, bal, exp, inc) {
-    let s = 40;
-    s += Math.min(35, sav * 1.4);
-    if (bal >= 0) s += 15;
-    else s -= 25;
-    if (inc > 0 && exp > 0) s += 10;
-    return Math.max(0, Math.min(100, s));
+// компактный формат для узких KPI-плиток: 248 466 353 сум → 248,5 млн сум
+function _fk(n) {
+    const a = Math.abs(n || 0);
+    if (a < 1e8) return _f(n);
+    const cur = { RU: 'руб', KZ: 'тенге', KG: 'сом' }[localStorage.getItem('region')] ?? 'сум';
+    const [v, u] = a >= 1e9 ? [n / 1e9, 'млрд'] : [n / 1e6, 'млн'];
+    return v.toFixed(1).replace('.', ',') + '\u00a0' + u + '\u00a0' + cur;
 }

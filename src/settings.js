@@ -1,19 +1,25 @@
 // settings.js  —  ESM-модуль
-import { initThemeSelector }   from './ThemeManager.js';
+import { initThemeSelector, THEMES, getSavedTheme } from './ThemeManager.js';
+import { getSharkSettings, CHARACTER_LABELS, findActivePlanner, isoDay } from './shark/SharkMood.js';
+import { ALL_ACHIEVEMENTS } from '../constants/achievementList.js';
 import { initializeAnalytics } from './widgets/charts.js';
 import { FAQ_ITEMS }           from '../constants/faq-constants.js';
 import { renderAchievementsList, getUnlockedAchievements } from './utils/achievements.js';
 import { showTweak } from './utils/tweakSystem.js';
-import { calculateAchievementContext } from './utils/achievementUtils.js';
+import { normalizeCustomCategories } from './utils/customCategories.js';
+import { calculateAchievementContext, calculateAchievementPoints } from './utils/achievementUtils.js';
 import { refreshUserProfile } from './profileAnalytics.js';
 import { openProfilePage, refreshHeroName } from './profilePage.js';
+import { getNumberFormat, NUMBER_FORMAT_KEY } from './utils/utils.js';
 
 let localBudgetManager = null;
 let localUI = null;
 
 const DATA_TOOLS_ROOT_ID = 'eip-data-tools-root';
 const BACKUP_KEY = 'budgetit_auto_backups_v1';
-const MAX_BACKUPS = 5;
+const MAX_BACKUPS = 10;
+const DAILY_BACKUP_ON_KEY = 'budgetit:dailyBackup:on';
+const DAILY_BACKUP_LAST_KEY = 'budgetit:dailyBackup:last';
 
 /* ========================= FAQ ========================= */
 
@@ -165,6 +171,7 @@ export function initSettings(budgetManager, ui) {
                 budgetManager.budgets = normalized.budgets;
                 budgetManager.currentBudgetIndex = normalized.currentBudgetIndex;
                 budgetManager.productNames = normalized.productNames;
+                if (normalized.customCategories) budgetManager.customCategories = normalized.customCategories;
 
                 if (Array.isArray(normalized.planners)) {
                     budgetManager.planners = normalized.planners;
@@ -294,6 +301,7 @@ export function initSettings(budgetManager, ui) {
     // Работа с данными
     ensureDataToolsUI();
     initDataTools(budgetManager, ui);
+    initDailyBackup();
 
     // Порядок меню
     reorderSettingsMenu();
@@ -303,6 +311,7 @@ export function initSettings(budgetManager, ui) {
 
     document.querySelectorAll('.open-subpage-btn[data-page]')
         .forEach(btn => {
+            if (btn.dataset.page === '__import') return; // обрабатывается в renderSettingsList
             btn.onclick = () => openSubPage(btn.dataset.page);
         });
 }
@@ -344,9 +353,9 @@ export function refreshExportAnalytics(budgetManager) {
 
     if (barsContainer) {
         const barDefs = [
-            { key: 'income',  label: 'Доходы',  color: '#27AE60' },
-            { key: 'expense', label: 'Расходы', color: '#ff4b5c' },
-            { key: 'deposit', label: 'Вклады',  color: '#9B59B6' },
+            { key: 'income',  label: 'Поступления',  color: '#27AE60' },
+            { key: 'expense', label: 'Траты', color: '#ff4b5c' },
+            { key: 'deposit', label: 'Накопления',  color: '#9B59B6' },
             { key: 'debt',    label: 'Долги',   color: '#F1C40F' },
         ];
 
@@ -422,7 +431,7 @@ function ensureDataToolsUI() {
     root.innerHTML = `
         <div class="eip-tools-head">
             <div>
-                <h3>Работа с данными</h3>
+                <h3>Данные и бэкапы</h3>
                 <p>Месяцы, импорты, дубли, бэкапы и чистка текущего бюджета</p>
             </div>
             <button id="eip-refresh-tools-btn" class="eip-mini-icon-btn" type="button" aria-label="Обновить">↻</button>
@@ -443,9 +452,9 @@ function ensureDataToolsUI() {
                     <label class="eip-tool-label" for="eip-type-filter">Тип для удаления</label>
                     <select id="eip-type-filter" class="eip-type-select">
                         <option value="all">Все типы</option>
-                        <option value="income">Доходы</option>
-                        <option value="expense">Расходы</option>
-                        <option value="deposit">Вклады</option>
+                        <option value="income">Поступления</option>
+                        <option value="expense">Траты</option>
+                        <option value="deposit">Накопления</option>
                         <option value="debt">Долги</option>
                     </select>
                 </div>
@@ -487,8 +496,8 @@ function ensureDataToolsUI() {
         <div class="eip-maintenance-grid">
             <button id="eip-rebuild-products-btn" class="eip-maintenance-btn" type="button">
                 <span>🧩</span>
-                <b>Пересобрать товары</b>
-                <small>Подсказки из реальных расходов</small>
+                <b>Пересобрать позиции</b>
+                <small>Подсказки из реальных трат</small>
             </button>
 
             <button id="eip-clean-broken-btn" class="eip-maintenance-btn" type="button">
@@ -529,6 +538,8 @@ function ensureDataToolsUI() {
                     <p>Создаются перед опасными действиями</p>
                 </div>
             </div>
+            <label class="eip-daily-row"><span>Ежедневный снимок<small>Один раз в день при открытии приложения</small></span><input type="checkbox" id="eip-daily-backup"></label>
+            <button type="button" id="eip-backup-now" class="eip-backup-now">+ Снимок сейчас</button>
             <div id="eip-backups-list" class="eip-backups-list"></div>
         </div>
     `;
@@ -582,7 +593,7 @@ function initDataTools(budgetManager, ui) {
         refreshDataToolsUI(budgetManager);
         ui?.updateUI?.();
 
-        showTweak(`🧩 Подсказки товаров пересобраны: ${count}`, 'success', 2200);
+        showTweak(`🧩 Подсказки позиций пересобраны: ${count}`, 'success', 2200);
     };
 
     document.getElementById('eip-clean-broken-btn').onclick = () => {
@@ -677,8 +688,8 @@ function updateMonthSummary(budgetManager) {
     summaryEl.innerHTML = `
         <b>${escapeHTML(monthKey)}</b> · ${escapeHTML(typeLabel)}<br>
         Операций: <b>${counts.total}</b><br>
-        Доходы: ${counts.income || 0}, расходы: ${counts.expense || 0},
-        вклады: ${counts.deposit || 0}, долги: ${counts.debt || 0}<br>
+        Поступления: ${counts.income || 0}, траты: ${counts.expense || 0},
+        накопления: ${counts.deposit || 0}, долги: ${counts.debt || 0}<br>
         Оборот по суммам: <b>${formatDataToolNumber(totalAmount)}</b>
     `;
 }
@@ -1119,7 +1130,7 @@ function renderImportBatches(budgetManager) {
                 <div class="eip-import-batch-main">
                     <b>${escapeHTML(batch.title)}</b>
                     <span>${escapeHTML(batch.confidence)} · ${txs.length} операций</span>
-                    <small>${firstDate} — ${lastDate} · доходы ${income}, расходы ${expense} · ${formatDataToolNumber(total)}</small>
+                    <small>${firstDate} — ${lastDate} · поступления ${income}, траты ${expense} · ${formatDataToolNumber(total)}</small>
                 </div>
                 <div class="eip-import-batch-actions">
                     <button class="eip-batch-export" data-batch-index="${index}" type="button">Экспорт</button>
@@ -1214,7 +1225,7 @@ async function rollbackImportBatch(batch, budgetManager, ui) {
 
 /* ================= Автобэкапы ================= */
 
-function createAutoBackup(reason = 'manual') {
+export function createAutoBackup(reason = 'manual') {
     if (!localBudgetManager) return null;
 
     const backup = {
@@ -1355,6 +1366,7 @@ async function restoreAutoBackup(backup) {
     localBudgetManager.budgets = normalized.budgets;
     localBudgetManager.currentBudgetIndex = normalized.currentBudgetIndex;
     localBudgetManager.productNames = normalized.productNames;
+    if (normalized.customCategories) localBudgetManager.customCategories = normalized.customCategories;
 
     if (Array.isArray(normalized.planners)) {
         localBudgetManager.planners = normalized.planners;
@@ -1494,6 +1506,7 @@ function buildFullExportPayload(budgetManager) {
         planners: Array.isArray(budgetManager?.planners)
             ? budgetManager.planners
             : [],
+        customCategories: normalizeCustomCategories(budgetManager?.customCategories),
         userId: localStorage.getItem('budgetit-user-id') || null
     };
 }
@@ -1504,6 +1517,7 @@ function normalizeImportedData(parsed, budgetManager) {
     let currentBudgetIndex = 0;
     let productNames = [];
     let planners = [];
+    let customCategories = null; // null = в файле нет, оставить текущие
 
     if (Array.isArray(parsed)) {
         budgets = parsed;
@@ -1539,6 +1553,9 @@ function normalizeImportedData(parsed, budgetManager) {
                 : 0;
             productNames = Array.isArray(parsed.productNames) ? parsed.productNames : [];
             planners = Array.isArray(parsed.planners) ? parsed.planners : [];
+            if (parsed.customCategories && typeof parsed.customCategories === 'object') {
+                customCategories = normalizeCustomCategories(parsed.customCategories);
+            }
             importedUserId = typeof parsed.userId === 'string' && parsed.userId.trim()
                 ? parsed.userId.trim()
                 : null;
@@ -1557,6 +1574,7 @@ function normalizeImportedData(parsed, budgetManager) {
         currentBudgetIndex,
         productNames,
         planners,
+        customCategories,
         userId: importedUserId
     };
 }
@@ -1638,14 +1656,14 @@ function _renderSparkline(allTx) {
             labels: months.map(m => m.label),
             datasets: [
                 {
-                    label: 'Доходы',
+                    label: 'Поступления',
                     data: months.map(m => m.income),
                     backgroundColor: 'rgba(39, 174, 96, 0.75)',
                     borderRadius: 5,
                     borderSkipped: false,
                 },
                 {
-                    label: 'Расходы',
+                    label: 'Траты',
                     data: months.map(m => m.expense),
                     backgroundColor: 'rgba(255, 75, 92, 0.65)',
                     borderRadius: 5,
@@ -1715,9 +1733,9 @@ function formatDataToolNumber(value) {
 function getTypeLabel(type) {
     const map = {
         all: 'Все типы',
-        income: 'Доходы',
-        expense: 'Расходы',
-        deposit: 'Вклады',
+        income: 'Поступления',
+        expense: 'Траты',
+        deposit: 'Накопления',
         debt: 'Долги'
     };
 
@@ -1793,16 +1811,12 @@ function ensureRegionPage() {
             <button class="subpage-back-btn close-settings-btn" aria-label="Назад" data-close-region>
                 <span class="subpage-back-icon">‹</span>
             </button>
-            <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-region" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M2.5 12H21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/><path d="M3.8 8H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><path d="M3.8 16H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.52"/><circle cx="12" cy="9.5" r="1.7" fill="currentColor" opacity="0.8"/><path d="M12 11.2V13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/></svg><span>Регионы и валюты</span></h2>
+            <h2 class="subpage-title page-title-with-icon"><svg class="budgetit-nav-svg budgetit-nav-region" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M2.5 12H21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/><path d="M3.8 8H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><path d="M3.8 16H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.52"/><circle cx="12" cy="9.5" r="1.7" fill="currentColor" opacity="0.8"/><path d="M12 11.2V13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/></svg><span>Валюта и регион</span></h2>
             <div class="subpage-header-spacer"></div>
         </div>
 
         <div class="subpage-content">
-            <p style="margin: 0 0 16px; color: var(--muted-color); font-size: 0.9em; line-height: 1.4;">
-                Выберите страну — базовая валюта приложения, расчёты и подписи на карточках
-                будут автоматически переключены под выбранный регион.
-            </p>
-            <div id="region-grid" class="budget-list-grid"></div>
+            <div id="region-grid" class="rg-wrap"></div>
         </div>
     `;
 
@@ -1826,79 +1840,69 @@ function renderRegionCards() {
 
     const current = getRegion();
 
-    const regionsHtml = REGIONS_LIST.map(r => {
+    const CUR = { UZ: 'сум', RU: '₽', KZ: '₸', KG: 'сом' };
+    const regionsHtml = `<div class="rg-label">Страна и валюта</div><div class="rg-card">` + REGIONS_LIST.map(r => {
         const active = r.code === current;
-
         return `
-            <div class="budget-item" data-region="${r.code}" style="
-                display:flex;align-items:center;justify-content:space-between;
-                padding:10px 12px;margin:8px 0;border-radius:12px;
-                background:${active ? 'var(--primary-color)' : 'var(--main-ground)'};
-                color:${active ? '#000' : 'var(--secondary-color)'};">
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <span style="font-size:1.4rem">${r.flag}</span>
-                    <div>
-                        <b>${r.name}</b>
-                        <div style="font-size:.85em;opacity:.7">Базовая валюта: ${r.base}</div>
-                    </div>
-                </div>
+            <button type="button" class="rg-row region-row ${active ? 'is-active' : ''}" data-region="${r.code}">
+                <span class="rg-main"><b>${r.flag} ${r.name}</b><small>${r.base} · ${CUR[r.code] || ''}</small></span>
+                ${active ? '<span class="rg-check">✓</span>' : ''}
+            </button>`;
+    }).join('') + `</div>`;
 
-                <button class="choose-btn" style="
-                    width:auto;padding:8px 12px;font-size:.95rem;border-radius:12px;margin-top:0;
-                    border:0;background:${active ? 'rgba(0,0,0,.15)' : 'rgba(255,255,255,.06)'};
-                    color:inherit;">
-                    ${active ? 'Выбрано' : 'Выбрать'}
-                </button>
-            </div>
-        `;
-    }).join('');
-
+    const fx = window.BudgetItFx;
+    const pairs = fx?.pairsFor?.(current) || [];
     const toggleHtml = `
-        <div class="budget-item" data-toggle-chips style="
-            display:flex;align-items:center;justify-content:space-between;
-            padding:10px 12px;margin:12px 0 4px;border-radius:12px;
-            background:var(--main-ground);color:var(--secondary-color);">
-            <div style="display:flex;gap:10px;align-items:center;">
-                <span>💱</span>
-                <div>
-                    <b>Курс валют</b>
-                    <div style="font-size:.85em;opacity:.7">Показывать/скрывать виджет с курсами</div>
-                </div>
-            </div>
-
-            <button class="chips-toggle-btn" style="
-                width:auto;padding:8px 12px;font-size:.95rem;border-radius:10px;
-                border:1px solid var(--border-color, rgba(255,255,255,.15));
-                background:transparent;color:var(--secondary-color);
-                backdrop-filter:saturate(120%);">
-                ${areChipsHidden() ? 'Показать курс валют' : 'Скрыть курс валют'}
-            </button>
-        </div>
+        <label class="rg-card rg-single">
+            <span class="rg-ico">💱</span>
+            <span class="rg-main"><b>Курс валют на главной</b><small>Чипы «≈ 381 $» под балансом</small></span>
+            <span class="sw"><input type="checkbox" id="fx-main-toggle" ${areChipsHidden() ? '' : 'checked'}><span></span></span>
+        </label>
+        ${pairs.length ? `<div class="rg-label">Какие валюты показывать</div><div class="rg-card">
+            ${pairs.map(code => `
+            <label class="rg-row">
+                <span class="rg-main"><b>${fx.flagOf(code)} ${code}</b><small>Показывать чипом на главной</small></span>
+                <span class="sw"><input type="checkbox" data-fx-code="${code}" ${fx.isOn(current, code) ? 'checked' : ''}><span></span></span>
+            </label>`).join('')}
+        </div>` : ''}
     `;
 
-    grid.innerHTML = regionsHtml + toggleHtml;
+    const nf = getNumberFormat();
+    const numFmtHtml = `
+        <div class="rg-label">Формат чисел</div>
+        <div class="numfmt-seg" role="group">
+            <button type="button" data-nf="space" class="${nf === 'space' ? 'active' : ''}">1 000 000</button>
+            <button type="button" data-nf="comma" class="${nf === 'comma' ? 'active' : ''}">1,000,000</button>
+            <button type="button" data-nf="dot" class="${nf === 'dot' ? 'active' : ''}">1.000.000</button>
+        </div>
+        <div class="rg-note">Меняется сразу во всём приложении — проверь баланс на главной.</div>`;
 
-    grid.querySelectorAll('.choose-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml;
+
+    grid.querySelectorAll('.numfmt-seg button').forEach(b => {
+        b.addEventListener('click', e => {
             e.stopPropagation();
-
-            const code = btn.closest('.budget-item').getAttribute('data-region');
-
-            setRegion(code);
+            try { localStorage.setItem(NUMBER_FORMAT_KEY, b.dataset.nf); } catch {}
             renderRegionCards();
-
-            try {
-                showTweak('Регион: ' + code, 'success', 1200);
-            } catch {}
+            try { localUI?.updateUI?.(); } catch {}
         });
     });
 
-    grid.querySelector('.chips-toggle-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
+    grid.querySelectorAll('.region-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setRegion(btn.getAttribute('data-region'));
+            renderRegionCards();
+        });
+    });
 
-        setChipsHidden(!areChipsHidden());
+    grid.querySelector('#fx-main-toggle')?.addEventListener('change', (e) => {
+        setChipsHidden(!e.target.checked);
         applyChipsVisibility();
-        renderRegionCards();
+    });
+
+    grid.querySelectorAll('input[data-fx-code]').forEach(inp => {
+        inp.addEventListener('change', () => fx?.setOn?.(current, inp.dataset.fxCode, inp.checked));
     });
 }
 
@@ -1908,36 +1912,37 @@ function renderSettingsList() {
     const settingsList = document.querySelector('.settings-nav-list');
     if (!settingsList) return;
 
-    const SVG_ICONS = {
-        'theme-page':         `<svg class="budgetit-nav-svg budgetit-nav-theme" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C13.1 22 14 21.1 14 20C14 19.45 13.78 18.95 13.42 18.58C13.07 18.22 12.85 17.72 12.85 17.17C12.85 16.21 13.64 15.42 14.6 15.42H17C19.76 15.42 22 13.18 22 10.42C22 5.81 17.52 2 12 2Z" fill="currentColor" opacity="0.18"/><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C13.1 22 14 21.1 14 20C14 19.45 13.78 18.95 13.42 18.58C13.07 18.22 12.85 17.72 12.85 17.17C12.85 16.21 13.64 15.42 14.6 15.42H17C19.76 15.42 22 13.18 22 10.42C22 5.81 17.52 2 12 2Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><circle cx="6.5" cy="11.5" r="1.5" fill="currentColor" opacity="0.7"/><circle cx="9" cy="7" r="1.5" fill="currentColor" opacity="0.55"/><circle cx="14" cy="6" r="1.5" fill="currentColor" opacity="0.4"/><circle cx="18" cy="9" r="1.5" fill="currentColor" opacity="0.65"/><circle cx="17" cy="17" r="1.2" fill="currentColor"/></svg>`,
-        'region-page':        `<svg class="budgetit-nav-svg budgetit-nav-region" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M2.5 12H21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/><path d="M3.8 8H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><path d="M3.8 16H20.2" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.28"/><ellipse cx="12" cy="12" rx="4.2" ry="9.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.52"/><circle cx="12" cy="9.5" r="1.7" fill="currentColor" opacity="0.8"/><path d="M12 11.2V13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/></svg>`,
-        'export-import-page': `<svg class="budgetit-nav-svg budgetit-nav-data" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="3" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.18"/><rect x="2" y="3" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.35" fill="none" opacity="0.85"/><rect x="2" y="10" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.13"/><rect x="2" y="10" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.35" fill="none" opacity="0.68"/><rect x="2" y="17" width="20" height="5" rx="1.5" fill="currentColor" opacity="0.08"/><rect x="2" y="17" width="20" height="5" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity="0.52"/><circle cx="19" cy="5.5" r="1" fill="currentColor" opacity="0.8"/><circle cx="19" cy="12.5" r="1" fill="currentColor" opacity="0.55"/><circle cx="19" cy="19.5" r="1" fill="currentColor" opacity="0.35"/><path d="M5 5.5L6.5 4L8 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/><path d="M5 12.5L6.5 14L8 12.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.7"/></svg>`,
-        'planner-page': `<svg class="budgetit-nav-svg budgetit-nav-plan" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-  <path d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z" fill="currentColor" opacity="0.2"/>
-  <path d="M3.65 10.2H20.35" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" opacity="0.42"/>
-  <path d="M8.05 4.05V7.25M15.95 4.05V7.25" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
-  <rect x="6.7" y="12.35" width="3.05" height="3.05" rx="1" fill="currentColor" opacity="0.45"/>
-  <rect x="11.05" y="12.35" width="6.25" height="1.15" rx="0.575" fill="currentColor" opacity="0.55"/>
-  <rect x="11.05" y="15.1" width="4.4" height="1.15" rx="0.575" fill="currentColor" opacity="0.38"/>
-  <path d="M7.38 13.85L8.05 14.52L9.48 13.05" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M6.35 5.85H17.65C19.25 5.85 20.55 7.15 20.55 8.75V17.05C20.55 18.65 19.25 19.95 17.65 19.95H6.35C4.75 19.95 3.45 18.65 3.45 17.05V8.75C3.45 7.15 4.75 5.85 6.35 5.85Z" stroke="currentColor" stroke-width="1.35" stroke-linejoin="round" opacity="0.9"/>
-</svg>`,
-        'achievements-page':  `<svg class="budgetit-nav-svg budgetit-nav-trophy" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3H17V12C17 15.31 14.76 18 12 18C9.24 18 7 15.31 7 12V3Z" fill="currentColor" opacity="0.18"/><path d="M7 3H17V12C17 15.31 14.76 18 12 18C9.24 18 7 15.31 7 12V3Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M7 5C7 5 3.5 5 3.5 8.5C3.5 11 6 12.5 7 12.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.68"/><path d="M17 5C17 5 20.5 5 20.5 8.5C20.5 11 18 12.5 17 12.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.68"/><path d="M12 18V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.62"/><rect x="8" y="21" width="8" height="2" rx="1" fill="currentColor" opacity="0.52"/><path d="M12 7L12.9 9.6H15.7L13.4 11.2L14.3 13.8L12 12.2L9.7 13.8L10.6 11.2L8.3 9.6H11.1L12 7Z" fill="currentColor" opacity="0.58"/></svg>`,
-        'faq-page':           `<svg class="budgetit-nav-svg budgetit-nav-faq" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3H21C21.55 3 22 3.45 22 4V15C22 15.55 21.55 16 21 16H14L10 21V16H3C2.45 16 2 15.55 2 15V4C2 3.45 2.45 3 3 3Z" fill="currentColor" opacity="0.18"/><path d="M3 3H21C21.55 3 22 3.45 22 4V15C22 15.55 21.55 16 21 16H14L10 21V16H3C2.45 16 2 15.55 2 15V4C2 3.45 2.45 3 3 3Z" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><path d="M9.5 6.5C9.5 6.5 9.5 4.8 12 4.8C14.5 4.8 14.5 6.9 14.5 7.7C14.5 9 12 10 12 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.78"/><circle cx="12" cy="13.5" r="1.1" fill="currentColor" opacity="0.78"/></svg>`,
-        'about-page':         `<svg class="budgetit-nav-svg budgetit-nav-about" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor" opacity="0.18"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.4" fill="none" opacity="0.9"/><circle cx="12" cy="7" r="1.1" fill="currentColor" opacity="0.78"/><path d="M12 10V17" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity="0.72"/><path d="M9.8 10H14.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.42"/><path d="M9.8 17H14.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity="0.42"/></svg>`,
-    };
+    // ── данные для подписей ──
+    const theme = THEMES.find(t => t.value === getSavedTheme()) || THEMES[0];
+    const region = REGIONS_LIST.find(r => r.code === getRegion()) || REGIONS_LIST[0];
+    const shark = getSharkSettings();
+    const unlocked = (() => { try { return JSON.parse(localStorage.getItem('unlockedAchievements') || '[]'); } catch { return []; } })();
+    const planner = (() => {
+        try {
+            const ref = window._budgetPlannerRef?.plannerManager;
+            const bid = localBudgetManager?.getCurrentBudget?.()?.id;
+            return findActivePlanner(ref?.getAllPlanners?.() || [], bid || ref?.getCurrentBudgetId?.(), isoDay());
+        } catch { return null; }
+    })();
 
+    const row = (page, e, text, sub, extra = '') =>
+        ({ page, e, text, sub, extra });
     const groups = [
         [
-            { page: 'theme-page',         text: 'Темы оформления',    sub: 'Цвета, тёмная и светлая тема',    color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
-            { page: 'region-page',        text: 'Регионы и валюты',    sub: 'Валюта и формат чисел',           color: 'linear-gradient(135deg,#0ea5e9,#38bdf8)' },
-            { page: 'export-import-page', text: 'Работа с данными',    sub: 'Экспорт, импорт, бэкапы',        color: 'linear-gradient(135deg,#475569,#64748b)' },
-            { page: 'planner-page',       text: 'Планировщик бюджета', sub: 'Суточный лимит и план по дням',   color: 'linear-gradient(135deg,#6366f1,#818cf8)' },
+            row('theme-page',         '🎨', 'Темы оформления', `${theme.name} · ${THEMES.length} тем`),
+            row('region-page',        '🌍', 'Валюта и регион', `${region.flag} ${region.name} · ${region.base}`),
+            row('export-import-page', '🗄️', 'Данные и бэкапы', 'Экспорт, импорт, дубли, откат'),
+            row('planner-page',       '📅', 'План месяца', planner?.name || 'Нет активного плана'),
+            row('__import',           '⚡', 'Залётом', 'Импорт выписки из банка'),
         ],
         [
-            { page: 'achievements-page',  text: 'Достижения',          sub: 'Твои награды и прогресс',         color: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
-            { page: 'faq-page',           text: 'Q&A',                  sub: 'Частые вопросы и ответы',         color: 'linear-gradient(135deg,#ec4899,#f472b6)' },
-            { page: 'about-page',         text: 'О приложении',         sub: 'Версия, разработчик, контакты',  color: 'linear-gradient(135deg,#10b981,#34d399)' },
+            row('shark-page',         '🦈', 'Акулка', `${CHARACTER_LABELS[shark.character] || 'Обычная'} · реакции ${shark.reactions ? 'вкл' : 'выкл'}`),
+            row('achievements-page',  '🏆', 'Достижения', `${unlocked.length} из ${ALL_ACHIEVEMENTS.length} открыто`),
+            row('profile-page',       '👤', 'Мой профиль', 'Статистика и активность'),
+        ],
+        [
+            row('faq-page',           '💬', 'Вопросы и ответы', 'Частые вопросы'),
+            row('about-page',         'ℹ️', 'О приложении', 'Версия, разработчик, контакты'),
         ],
     ];
 
@@ -1945,7 +1950,7 @@ function renderSettingsList() {
         <div class="sp-nav-group">
             ${group.map(item => `
                 <button class="open-subpage-btn sp-nav-btn" data-page="${item.page}">
-                    <span class="sp-nav-icon" style="background:${item.color}">${SVG_ICONS[item.page] ?? ''}</span>
+                    <span class="sp-nav-icon">${item.e}</span>
                     <span class="sp-nav-text-wrap">
                         <span class="sp-nav-text">${item.text}</span>
                         <span class="sp-nav-sub">${item.sub}</span>
@@ -1957,12 +1962,73 @@ function renderSettingsList() {
     `).join('');
 
     settingsList.querySelectorAll('.open-subpage-btn[data-page]').forEach(btn => {
-        btn.addEventListener('click', () => openSubPage(btn.dataset.page));
+        btn.addEventListener('click', () => {
+            if (btn.dataset.page === '__import') { btn.onclick = null; openImportSheet(); return; }
+            openSubPage(btn.dataset.page);
+        });
     });
+
+    // мини-статистика над меню
+    const stats = document.getElementById('sp-stats');
+    if (stats) {
+        const txCount = localBudgetManager?.getTotalTransactions?.() ?? 0;
+        const bonus = calculateAchievementPoints(unlocked, ALL_ACHIEVEMENTS);
+        const budgets = localBudgetManager?.budgets?.length ?? 0;
+        stats.innerHTML = [['🏆', unlocked.length, 'Достижений'], ['⚡', txCount + bonus, 'Всего очков'], ['💼', budgets, 'Бюджетов'], ['🔄', txCount, 'Операций']]
+            .map(([e, v, l]) => `<div class="sp-stat"><div class="sp-stat-e">${e}</div><div class="sp-stat-v">${v}</div><div class="sp-stat-l">${l}</div></div>`).join('');
+    }
+}
+
+function openImportSheet() {
+    document.getElementById('add-btn')?.click();
+    setTimeout(() => document.querySelector('#transaction-sheet .chip-btn[data-type="excel-import"]')?.click(), 120);
 }
 
 function reorderSettingsMenu() {
+    window._renderSettingsList = renderSettingsList;
     renderSettingsList();
 }
 
 export { openSubPage, goBackFromSubPage };
+
+/* ============== Ежедневный автобэкап и ручной снимок ============== */
+
+function isDailyBackupOn() {
+    try { return localStorage.getItem(DAILY_BACKUP_ON_KEY) === '1'; } catch { return false; }
+}
+
+function localDayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function initDailyBackup() {
+    const toggle = document.getElementById('eip-daily-backup');
+    if (toggle && !toggle.dataset.bound) {
+        toggle.dataset.bound = '1';
+        toggle.checked = isDailyBackupOn();
+        toggle.addEventListener('change', () => {
+            try { localStorage.setItem(DAILY_BACKUP_ON_KEY, toggle.checked ? '1' : '0'); } catch {}
+            if (toggle.checked) runDailyBackupIfNeeded();
+        });
+    }
+    const now = document.getElementById('eip-backup-now');
+    if (now && !now.dataset.bound) {
+        now.dataset.bound = '1';
+        now.addEventListener('click', () => {
+            createAutoBackup('manual');
+            showTweak('Снимок сохранён', 'success', 1500);
+        });
+    }
+    runDailyBackupIfNeeded();
+}
+
+function runDailyBackupIfNeeded() {
+    if (!isDailyBackupOn() || !localBudgetManager) return;
+    const today = localDayKey();
+    try {
+        if (localStorage.getItem(DAILY_BACKUP_LAST_KEY) === today) return;
+        createAutoBackup('daily');
+        localStorage.setItem(DAILY_BACKUP_LAST_KEY, today);
+    } catch (e) { console.warn('[DataTools] daily backup', e); }
+}

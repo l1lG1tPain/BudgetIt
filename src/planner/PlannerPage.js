@@ -244,7 +244,7 @@ export class PlannerPage {
                 <div class="planner-ob-text">
                     <h2 class="planner-ob-title">Планируй — не уходи в минус</h2>
                     <p class="planner-ob-sub">
-                        Задай доход и расходы на период,<br>
+                        Задай поступление и траты на период,<br>
                         Акулка сама посчитает суточный лимит
                     </p>
                 </div>
@@ -253,14 +253,14 @@ export class PlannerPage {
                     <div class="planner-ob-step">
                         <div class="planner-ob-step-num">1</div>
                         <div class="planner-ob-step-body">
-                            <div class="planner-ob-step-title">Укажи доход и период</div>
+                            <div class="planner-ob-step-title">Укажи поступление и период</div>
                             <div class="planner-ob-step-sub">Зарплата, дата, сколько дней до следующей</div>
                         </div>
                     </div>
                     <div class="planner-ob-step">
                         <div class="planner-ob-step-num">2</div>
                         <div class="planner-ob-step-body">
-                            <div class="planner-ob-step-title">Добавь плановые расходы</div>
+                            <div class="planner-ob-step-title">Добавь плановые траты</div>
                             <div class="planner-ob-step-sub">Аренда, ежедневные траты, регулярные платежи</div>
                         </div>
                     </div>
@@ -315,24 +315,50 @@ export class PlannerPage {
                 </div>`;
         }
 
+        const rows = (projection.rows || []).filter(r => !r.isStartDay);
+        const sumPlanned = key => rows.reduce((a, r) => a + (Number(r.planned?.[key]) || 0), 0);
+        const mandatory = sumPlanned('main') + sumPlanned('regular');
+        const limit = Math.floor(s.dailyLimit || 0);
+
+        // полоса дней: зелёный — в лимите, красный — перерасход, акцент — сегодня, остальное — впереди
+        const strip = rows.map(r => {
+            let cls = 'future';
+            if (r.date < todayIso) cls = (Number(r.totalExpenseDay) || 0) > limit && limit > 0 ? 'over' : 'ok';
+            else if (r.date === todayIso) cls = 'today';
+            return `<i class="planner-strip-day ${cls}" title="${this.fmtDate(r.date)}"></i>`;
+        }).join('');
+
+        const remDays = s.remainingDays || 0;
+        const left = Math.floor(s.remainingBudget || 0);
+        const tip = remDays > 0
+            ? `Осталось ${formatNumber(Math.max(0, left))} на ${remDays} ${this.pluralDays(remDays)}.`
+            : '';
+
         this.cards.innerHTML = `${statusBanner}
+            <div class="planner-hero">
+                <div class="planner-hero-label">Средний лимит в день</div>
+                <div class="planner-hero-value">${formatNumber(limit)}</div>
+                <div class="planner-hero-note">Со 2 дня периода · ${s.periodDays} дн.</div>
+                <div class="planner-strip">${strip}</div>
+            </div>
+
             <div class="planner-summary-grid planner-summary-grid-main">
                 <div class="planner-stat-card planner-stat-card-budget">
-                    <div class="planner-stat-label">Бюджет</div>
+                    <div class="planner-stat-label">Поступление</div>
                     <div class="planner-stat-value">${formatNumber(Math.floor(s.incomeAmount || 0))}</div>
-                    <div class="planner-stat-note">Основной доход периода</div>
+                    <div class="planner-stat-note">Основное поступление периода</div>
                 </div>
 
                 <div class="planner-stat-card planner-stat-card-start">
-                    <div class="planner-stat-label">Стартовый остаток</div>
-                    <div class="planner-stat-value">${formatNumber(Math.floor(s.openingBalance || 0))}</div>
-                    <div class="planner-stat-note">После стартового дня</div>
+                    <div class="planner-stat-label">Обязательные</div>
+                    <div class="planner-stat-value">${formatNumber(Math.floor(mandatory))}</div>
+                    <div class="planner-stat-note">Основные и регулярные</div>
                 </div>
 
                 <div class="planner-stat-card planner-stat-card-limit">
-                    <div class="planner-stat-label">Средний лимит в день</div>
-                    <div class="planner-stat-value">${formatNumber(Math.floor(s.dailyLimit || 0))}</div>
-                    <div class="planner-stat-note">Со 2 дня периода</div>
+                    <div class="planner-stat-label">Во вклады</div>
+                    <div class="planner-stat-value">${formatNumber(Math.floor(s.totalPlannedDeposits || 0))}</div>
+                    <div class="planner-stat-note">Плановые накопления</div>
                 </div>
 
                 <div class="planner-stat-card planner-stat-card-balance">
@@ -344,20 +370,21 @@ export class PlannerPage {
 
             <div class="planner-summary-grid planner-summary-grid-mini">
                 <div class="planner-mini-card">
-                    <div class="planner-mini-label">План расходов</div>
+                    <div class="planner-mini-label">План трат</div>
                     <div class="planner-mini-value">${formatNumber(Math.floor(s.totalPlannedExpense || 0))}</div>
                 </div>
 
                 <div class="planner-mini-card">
-                    <div class="planner-mini-label">Факт расходов</div>
+                    <div class="planner-mini-label">Факт трат</div>
                     <div class="planner-mini-value">${formatNumber(Math.floor(s.totalFactExpense || 0))}</div>
                 </div>
 
                 <div class="planner-mini-card">
-                    <div class="planner-mini-label">Во вклады</div>
-                    <div class="planner-mini-value">${formatNumber(Math.floor(s.totalPlannedDeposits || 0))}</div>
+                    <div class="planner-mini-label">Стартовый остаток</div>
+                    <div class="planner-mini-value">${formatNumber(Math.floor(s.openingBalance || 0))}</div>
                 </div>
             </div>
+            ${tip ? `<div class="planner-shark-tip"><img src="assets/shark.png" alt=""><span>${tip}</span></div>` : ''}
         `;
     }
 
@@ -379,7 +406,7 @@ export class PlannerPage {
         `;
 
         this.tables.innerHTML = `
-            ${renderList('Основные расходы', '🏠', planner.mainExpenses || [], item => `
+            ${renderList('Основные траты', '🏠', planner.mainExpenses || [], item => `
                 <div class="planner-list-row">
                     <div class="planner-list-main">
                         <div class="planner-list-name">${item.category}</div>
@@ -389,7 +416,7 @@ export class PlannerPage {
                 </div>
             `)}
 
-            ${renderList('Ежедневные расходы', '📆', planner.dailyExpenses || [], item => `
+            ${renderList('Ежедневные траты', '📆', planner.dailyExpenses || [], item => `
                 <div class="planner-list-row">
                     <div class="planner-list-main">
                         <div class="planner-list-name">${item.category}</div>
@@ -399,7 +426,7 @@ export class PlannerPage {
                 </div>
             `)}
 
-            ${renderList('Регулярные расходы', '🔁', planner.regularExpenses || [], item => {
+            ${renderList('Регулярные траты', '🔁', planner.regularExpenses || [], item => {
             const count = Math.max(
                 0,
                 Math.floor((planner.periodDays - 1 - item.startOffsetDay) / item.everyNDays) + 1
@@ -586,12 +613,12 @@ export class PlannerPage {
 
                 <div class="planner-day-grid">
                     <div class="planner-day-metric">
-                        <span class="planner-day-label">Доходы</span>
+                        <span class="planner-day-label">Поступления</span>
                         <span class="planner-day-value planner-day-plus">${formatNumber(Math.floor(row.totalIncomeDay || 0))}</span>
                     </div>
 
                     <div class="planner-day-metric">
-                        <span class="planner-day-label">Расходы</span>
+                        <span class="planner-day-label">Траты</span>
                         <span class="planner-day-value planner-day-minus">${formatNumber(Math.floor(row.totalExpenseDay || 0))}</span>
                     </div>
 
@@ -611,24 +638,38 @@ export class PlannerPage {
     renderRows(projection) {
         if (!this.rowsWrap) return;
 
-        const visibleRows = projection.rows;
+        const rows = projection.rows || [];
+        const todayIdx = Math.max(0, rows.findIndex(r => r.isToday));
+        const from = Math.max(0, Math.min(todayIdx - 1, rows.length - 7));
+        const showAll = !!this._showAllDays;
+        const visible = showAll ? rows : rows.slice(from, from + 7);
+        const f = v => formatNumber(Math.floor(v || 0));
+
+        const tr = row => `
+            <div class="pl-tr ${row.isToday ? 'is-today' : ''}">
+                <div class="pl-day"><b>${row.date}</b><small>${row.isToday ? 'Сегодня' : 'день ' + row.dayIndex}</small></div>
+                <div class="pl-in">${row.totalIncomeDay > 0 ? '+' + f(row.totalIncomeDay) : '—'}</div>
+                <div class="pl-out">${row.totalExpenseDay > 0 ? '−' + f(row.totalExpenseDay) : '—'}</div>
+                <div class="pl-bal ${row.balanceEndOfDay < 0 ? 'neg' : ''}">${f(row.balanceEndOfDay)}</div>
+            </div>`;
 
         this.rowsWrap.innerHTML = `
             <div class="planner-days-block">
                 <div class="planner-days-head">
                     <div class="planner-days-title">📅 График по дням</div>
-                    <div class="planner-days-subtitle">Компактный план и факт по каждому дню периода</div>
+                    <div class="planner-days-subtitle">План и факт по дням периода</div>
                 </div>
-
-                <div class="planner-days-list">
-                    ${visibleRows.map((row, index) => (
-            row.isStartDay
-                ? this.renderStartDayCard(row, index)
-                : this.renderActionDayCard(row, index)
-        )).join('')}
+                <div class="pl-table">
+                    <div class="pl-tr pl-th"><div>День</div><div>Приход</div><div>Траты</div><div>Остаток</div></div>
+                    ${visible.map(tr).join('')}
                 </div>
+                ${rows.length > 7 ? `<button type="button" class="pl-more">${showAll ? 'Свернуть' : `Показать все (${rows.length})`}</button>` : ''}
             </div>
         `;
+        this.rowsWrap.querySelector('.pl-more')?.addEventListener('click', () => {
+            this._showAllDays = !this._showAllDays;
+            this.renderRows(projection);
+        });
     }
 
     pluralDays(n) {

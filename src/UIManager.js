@@ -1,5 +1,5 @@
 // UIManager.js
-import { formatNumber, formatDate, getTypeColor, getTypeName } from './utils/utils.js';
+import { formatNumber, formatDate, getTypeColor, getTypeName, getNumberFormat } from './utils/utils.js';
 import {
     getBudgetEmoji,
     getIncomeEmoji,
@@ -16,7 +16,9 @@ import {
 } from '../constants/index.js';
 
 import { monthNames } from '../constants/constants.js';
-import { refreshExportAnalytics } from './settings.js';
+import { addCustomCategory, removeCustomCategory } from './utils/customCategories.js';
+import { openDateSheet, formatDateLabel } from './ui/DateSheet.js';
+import { refreshExportAnalytics, createAutoBackup } from './settings.js';
 import { refreshUserProfile, normalizeEmoji, getFirstGraphemeCluster } from './profileAnalytics.js';
 import { initBannerCarousel } from './widgets/bannerCarousel.js';
 import { EditManager } from './EditManager.js';
@@ -124,6 +126,7 @@ export class UIManager {
         this.attachEventListeners();
         this.excelImportManager.init();
         this.bindNumericFormats();
+        try { this.setupAddSheet(); } catch (e) { console.warn('setupAddSheet:', e); }
         this.bannerCleanup = initBannerCarousel('.banner-carousel .slides-container');
         refreshUserProfile(this.budgetManager);
         if (document.getElementById('analytics-page')) {  // Проверка, чтобы не ломалось без страницы
@@ -223,6 +226,9 @@ export class UIManager {
             }
         });
 
+        this.updateAkulkaCard(totals, carryOver, isSingleMonth);
+        this.desktopWidgets?.refresh();
+
         // ⬇️ И тут уже твой существующий код: allTx, filtered, renderEmptyState / updateTransactionList и т.д.
         const allTx = this.budgetManager.getCurrentBudget().transactions || [];
         const mf = this.monthFilter;
@@ -283,10 +289,38 @@ export class UIManager {
 
         if (filtered.length === 0) {
             this.renderEmptyState(this.transactionFilter === 'all' ? 'all' : this.transactionFilter);
+            this.syncFilterUI();
             return;
         }
 
         this.updateTransactionList(filtered);
+        this.syncFilterUI();
+    }
+
+    // Подсветка активной карточки-фильтра и чип «Все операции ✕»
+    syncFilterUI() {
+        const active = this.transactionFilter;
+        ['income', 'expense', 'deposit', 'debt'].forEach(type => {
+            document.getElementById(`block-${type}`)?.classList.toggle('is-active-filter', active === type);
+        });
+
+        const header = document.getElementById('transactions-header');
+        if (!header) return;
+        let chip = document.getElementById('clear-filter-chip');
+        if (active === 'all') { chip?.remove(); return; }
+        if (!chip) {
+            chip = document.createElement('button');
+            chip.id = 'clear-filter-chip';
+            chip.type = 'button';
+            chip.className = 'clear-filter-chip';
+            chip.addEventListener('click', () => {
+                this.transactionFilter = 'all';
+                this.updateUI();
+            });
+            header.appendChild(chip);
+        }
+        chip.textContent = 'Все операции ✕';
+        header.classList.remove('hidden');
     }
 
 
@@ -296,135 +330,166 @@ export class UIManager {
 
         if (!list) return;
 
+        // Длинные списки (тысячи операций) рисуем порциями по мере прокрутки — иначе главный поток замирает.
+        const mf = this.monthFilter;
+        const listKey = `${mf}|${this.activeYearForMonthFilter || this.yearFilter}|${this.transactionFilter}`;
+        const keep = this._txListKey === listKey ? Math.min(Math.max(this._txRendered || 0, 0), 600) : 0;
+        this._txListKey = listKey;
+        this._txObserver?.disconnect();
+        this._txObserver = null;
+
         list.innerHTML = '';
+        this._bindTxListEvents(list);
 
         if (header) {
             header.classList.toggle('hidden', !transactions || transactions.length === 0);
         }
 
-        const mf = this.monthFilter;
         const isAllMonth = mf === 'all' || mf === 'year';
 
-        transactions
-            .sort((a, b) => {
-                const dateDiff = new Date(b.date) - new Date(a.date);
-                if (dateDiff !== 0) return dateDiff;
-                return b.id - a.id;
-            })
-            .forEach(t => {
-                const li = document.createElement('li');
-                li.classList.add('tx-item');
-                li.style.borderLeftColor = this.getTypeColor(t.type);
+        // даты — ISO-строки, сравниваем как строки (без new Date на каждое сравнение)
+        transactions.sort((a, b) => {
+            const da = a.date || '', db = b.date || '';
+            if (da !== db) return da < db ? 1 : -1;
+            return b.id - a.id;
+        });
 
-                let debtTag = '';
-                if (t.type === 'debt') {
-                    debtTag = t.direction === 'owe'
-                        ? ' <span class="tx-debt-tag tx-debt-tag-owe">#Я должен</span>'
-                        : ' <span class="tx-debt-tag tx-debt-tag-lent">#Мне должны</span>';
+        // Итог дня: поступления и снятия со вклада +, траты и пополнения вклада −, долги не считаем
+        const dayParts = {};
+        transactions.forEach(t => {
+            const amt = Number(t.amount) || 0;
+            const dd = dayParts[t.date] || (dayParts[t.date] = { inc: 0, spent: 0 });
+            if (t.type === 'income') dd.inc += amt;
+            else if (t.type === 'expense') dd.spent += amt;
+        });
+
+        // плоский список строк: заголовок дня | операция (с признаками первой/последней в дне)
+        const rows = [];
+        let lastDay = null;
+        transactions.forEach(t => {
+            if (t.date !== lastDay) { lastDay = t.date; rows.push({ head: t.date }); }
+            rows.push({ t });
+        });
+        rows.forEach((r, i) => {
+            if (!r.t) return;
+            r.first = !rows[i - 1] || !!rows[i - 1].head;
+            r.last  = !rows[i + 1] || !!rows[i + 1].head;
+        });
+
+        // кэши на одну отрисовку: цвета темы, формат чисел, группы вкладов
+        const colors = {};
+        ['income', 'expense', 'debt', 'deposit'].forEach(k => { colors[k] = this.getTypeColor(k); });
+        const fmtKey = getNumberFormat();
+        const fmt = n => this.formatNumber(n, fmtKey);
+        const groupCache = new Map();
+        const groupOf = t => {
+            const k = t.depositId || t.id;
+            let g = groupCache.get(k);
+            if (!g) { g = this.getDepositGroup(t); groupCache.set(k, g); }
+            return g;
+        };
+        const schedCache = new Map();
+        const filterYear = this.activeYearForMonthFilter || this.yearFilter;
+
+        const buildRow = (r) => {
+            if (r.head !== undefined) {
+                const head = document.createElement('li');
+                head.className = 'tx-day-head';
+                const dp = dayParts[r.head] || { inc: 0, spent: 0 };
+                const hp = this.formatDayParts(r.head);
+                head.innerHTML = `<span class="tx-day-label"><b>${escapeHtml(hp.title)}</b><small>${escapeHtml(hp.sub)}</small></span>` +
+                    `<span class="tx-day-total">${dp.inc > 0 ? `<i class="tx-day-inc">+${fmt(dp.inc)}</i>` : ''}${dp.spent > 0 ? `<b class="tx-day-spent">−${fmt(dp.spent)}</b>` : ''}</span>`;
+                return head;
+            }
+            const t = r.t;
+            const li = document.createElement('li');
+            li.className = 'tx-item' + (r.first ? ' tx-first' : '') + (r.last ? ' tx-last' : '');
+            li._tx = t;
+            li.style.borderLeftColor = colors[t.type] || 'black';
+
+            let debtTag = '';
+            if (t.type === 'debt') {
+                debtTag = t.direction === 'owe'
+                    ? ' <span class="tx-debt-tag tx-debt-tag-owe">#Я должен</span>'
+                    : ' <span class="tx-debt-tag tx-debt-tag-lent">#Мне должны</span>';
+            }
+
+            // 💎 бриллиант для корневого НОВОГО вклада
+            let titleName = t.category || t.name || '';
+            let depRoot = null, depIsRoot = false, depLegacy = true;
+            if (t.type === 'deposit') {
+                const group = groupOf(t);
+                depRoot = group[0] || t;
+                depIsRoot = t.id === depRoot.id;
+                depLegacy = !this.isNewDepositRoot(depRoot);
+                if (!depLegacy && depIsRoot) titleName = `💎 ${titleName || 'Накопление'}`;
+            }
+
+            // 🧿 Эмодзи категории слева + очищенный заголовок
+            let emoji = '';
+            let cleanTitle = titleName || this.getTypeName(t.type);
+
+            const emojiMatch = (titleName || '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}️?)\s*(.*)$/u);
+            if (emojiMatch) {
+                emoji = emojiMatch[1];
+                cleanTitle = emojiMatch[2] || cleanTitle;
+            } else {
+                switch (t.type) {
+                    case 'income':  emoji = '💸'; break;
+                    case 'expense': emoji = '🛒'; break;
+                    case 'debt':    emoji = t.direction === 'owe' ? '📉' : '📈'; break;
+                    case 'deposit': emoji = '🏦'; break;
+                    default:        emoji = '💠';
                 }
+            }
 
-                // 💎 бриллиант для корневого НОВОГО вклада
-                let titleName = t.category || t.name || '';
-                if (t.type === 'deposit') {
-                    const group = this.getDepositGroup(t);
-                    const root  = group[0] || t;
-                    const isRoot = t.id === root.id;
-                    const isLegacy = !this.isNewDepositRoot(root);
+            let amountSign = '';
+            if (t.type === 'deposit') {
+                amountSign = t.status?.trim() === '➖ Снятие' ? '-' : '+';
+            } else if (t.type === 'debt') {
+                amountSign = t.direction === 'owe' ? '-' : '+';
+            } else if (t.type === 'expense') {
+                amountSign = '-';
+            } else if (t.type === 'income') {
+                amountSign = '+';
+            }
 
-                    if (!isLegacy && isRoot) {
-                        titleName = `💎 ${titleName || 'Вклад'}`;
+            let displayAmount;
+            if (t.type === 'debt') {
+                displayAmount = (t.direction === 'owe' ? '-' : '+') + fmt(t.remainingAmount || t.initialAmount);
+            } else {
+                displayAmount = amountSign + fmt(t.amount);
+            }
+
+            // 📊 Для корневого НОВОГО вклада в месячном режиме — показываем СТАРТ месяца
+            if (t.type === 'deposit' && !depLegacy && depIsRoot && !isAllMonth && mf !== 'all') {
+                const rootDateStr = depRoot.date || '';
+                const rootMonth   = parseInt(rootDateStr.slice(5, 7), 10);
+                const rootYear    = parseInt(rootDateStr.slice(0, 4), 10);
+                const filterMonth = parseInt(mf, 10);
+                const term        = depRoot.termMonths || 0;
+                const maxMonths   = term > 0 ? term : 12;
+
+                if (rootMonth && rootYear && !isNaN(filterMonth) && !isNaN(filterYear)) {
+                    const offsetMonths = (filterYear - rootYear) * 12 + (filterMonth - rootMonth);
+                    if (offsetMonths >= 0 && offsetMonths < maxMonths) {
+                        let sch = schedCache.get(depRoot.id);
+                        if (!sch) { sch = this.buildDepositSchedule(depRoot); schedCache.set(depRoot.id, sch); }
+                        const row = sch.rows[offsetMonths];
+                        if (row) displayAmount = (amountSign || '+') + fmt(row.startBalance);
                     }
                 }
+            }
 
-                // 🧿 Эмодзи категории слева + очищенный заголовок
-                let emoji = '';
-                let cleanTitle = titleName || this.getTypeName(t.type);
+            const displayDate = this.formatDate(t.date);
+            let subText = '';
+            if (t.type === 'expense' && Array.isArray(t.products) && t.products.length) {
+                const first = (t.products[0]?.name || '').trim();
+                subText = t.products.length > 1 ? `${first ? first + ' · ' : ''}${t.products.length} поз.` : first;
+                if (subText && subText.toLowerCase() === String(cleanTitle).toLowerCase()) subText = '';
+            }
 
-                const emojiMatch = (titleName || '').match(/^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\ufe0f?)\s*(.*)$/u);
-                if (emojiMatch) {
-                    emoji = emojiMatch[1];
-                    cleanTitle = emojiMatch[2] || cleanTitle;
-                } else {
-                    switch (t.type) {
-                        case 'income':
-                            emoji = '💸';
-                            break;
-                        case 'expense':
-                            emoji = '🛒';
-                            break;
-                        case 'debt':
-                            emoji = t.direction === 'owe' ? '📉' : '📈';
-                            break;
-                        case 'deposit':
-                            emoji = '🏦';
-                            break;
-                        default:
-                            emoji = '💠';
-                    }
-                }
-
-                let amountSign = '';
-                if (t.type === 'deposit') {
-                    const status = t.status?.trim();
-                    if (status === '➖ Снятие') {
-                        amountSign = '-';
-                    } else {
-                        amountSign = '+';
-                    }
-                } else if (t.type === 'debt') {
-                    amountSign = t.direction === 'owe' ? '-' : '+';
-                } else if (t.type === 'expense') {
-                    amountSign = '-';
-                } else if (t.type === 'income') {
-                    amountSign = '+';
-                }
-
-                let displayAmount;
-                if (t.type === 'debt') {
-                    displayAmount = (t.direction === 'owe' ? '-' : '+') +
-                        this.formatNumber(t.remainingAmount || t.initialAmount);
-                } else {
-                    displayAmount = amountSign + this.formatNumber(t.amount);
-                }
-
-                // 📊 Для корневого НОВОГО вклада в месячном режиме — показываем СТАРТ месяца
-                if (t.type === 'deposit') {
-                    const group = this.getDepositGroup(t);
-                    const root  = group[0] || t;
-                    const isRoot = t.id === root.id;
-                    const isLegacy = !this.isNewDepositRoot(root);
-
-                    if (!isLegacy && isRoot && !isAllMonth && mf !== 'all') {
-                        const rootDateStr = root.date || '';
-                        const rootMonth   = parseInt(rootDateStr.slice(5, 7), 10);
-                        const rootYear    = parseInt(rootDateStr.slice(0, 4), 10);
-                        const filterMonth = parseInt(mf, 10);
-                        const filterYear  = this.activeYearForMonthFilter || this.yearFilter;
-                        const term        = root.termMonths || 0;
-                        const maxMonths   = term > 0 ? term : 12;
-
-                        if (
-                            rootMonth && rootYear &&
-                            !isNaN(filterMonth) && !isNaN(filterYear)
-                        ) {
-                            const offsetMonths =
-                                (filterYear - rootYear) * 12 +
-                                (filterMonth - rootMonth);
-
-                            if (offsetMonths >= 0 && offsetMonths < maxMonths) {
-                                const { rows } = this.buildDepositSchedule(root);
-                                if (rows[offsetMonths]) {
-                                    const base = rows[offsetMonths].startBalance;
-                                    displayAmount = (amountSign || '+') + this.formatNumber(base);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                const displayDate = this.formatDate(t.date);
-
-                li.innerHTML = `
+            li.innerHTML = `
           <div class="tx-card-inner">
             <div class="tx-emoji">${emoji}</div>
             <div class="tx-main">
@@ -439,6 +504,7 @@ export class UIManager {
                   <span class="tx-title">${escapeHtml(cleanTitle)}</span>
                   ${debtTag || ''}
                 </div>
+                ${subText ? `<div class="tx-sub">${escapeHtml(subText)}</div>` : ''}
                 ${t.type === 'income' && t.name ? `<div class="tx-income-name">${escapeHtml(t.name)}</div>` : ''}
                 ${t.type === 'debt' ? `
                   ${t.paid
@@ -449,22 +515,163 @@ export class UIManager {
             </div>
           </div>
         `;
+            return li;
+        };
 
-                li.addEventListener('click', () => this.openTransactionDetail(t));
+        let pos = 0;
+        const FIRST = 40, STEP = 60;
+        const sentinel = document.createElement('li');
+        sentinel.className = 'tx-sentinel';
+        sentinel.setAttribute('aria-hidden', 'true');
 
-                list.appendChild(li);
-            });
+        const renderMore = (n) => {
+            const frag = document.createDocumentFragment();
+            const end = Math.min(rows.length, pos + n);
+            let i = pos;
+            for (; i < end; i++) frag.appendChild(buildRow(rows[i]));
+            // не обрываем группу «заголовок дня» без операций
+            if (i < rows.length && rows[i - 1] && rows[i - 1].head !== undefined) frag.appendChild(buildRow(rows[i++]));
+            pos = i;
+            sentinel.remove();
+            list.appendChild(frag);
+            this._txRendered = pos;
+            if (pos < rows.length) {
+                list.appendChild(sentinel);
+                if (this._txObserver) { this._txObserver.unobserve(sentinel); this._txObserver.observe(sentinel); }
+            } else if (this._txObserver) {
+                this._txObserver.disconnect();
+                this._txObserver = null;
+            }
+        };
 
-        list.querySelectorAll('.pay-debt').forEach(btn => {
-            btn.addEventListener('click', e => {
+        if (typeof IntersectionObserver === 'function') {
+            this._txObserver = new IntersectionObserver((entries) => {
+                if (entries.some(e => e.isIntersecting)) renderMore(STEP);
+            }, { rootMargin: '1800px 0px 1800px 0px' });
+        }
+        renderMore(Math.max(FIRST, keep));
+        // без IntersectionObserver (очень старые браузеры) — дорисовываем остальное сразу
+        if (!this._txObserver && pos < rows.length) renderMore(rows.length);
+    }
+
+    // Заголовок дня, который сейчас прилип к верху, получает класс is-stuck (ему включается подложка/размытие),
+    // а все заголовки выше него — is-past (скрыты: иначе при прозрачном фоне они громоздились бы друг на друга)
+    _bindStuckDayHead(list) {
+        let raf = 0, current = null, heads = null;
+        const scroller = () => {
+            let e = list.parentElement;
+            while (e && e !== document.body) {
+                const o = getComputedStyle(e).overflowY;
+                if ((o === 'auto' || o === 'scroll') && e.scrollHeight > e.clientHeight) return e;
+                e = e.parentElement;
+            }
+            return null;
+        };
+        const clearAll = () => list.querySelectorAll('li.tx-day-head.is-stuck, li.tx-day-head.is-past')
+            .forEach(h => h.classList.remove('is-stuck', 'is-past'));
+        const update = () => {
+            raf = 0;
+            if (!list.isConnected || !list.offsetParent) return;
+            const first = list.querySelector('li.tx-day-head');
+            if (!first) return;
+            const sc = scroller();
+            const top = parseFloat(getComputedStyle(first).top);
+            const stickyY = (sc ? sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(sc).paddingTop) || 0) : 0) + (isNaN(top) ? 0 : top);
+            // заголовки идут в порядке DOM, их top не убывает: ищем двоичным поиском последний, дошедший до липкой линии
+            if (!heads) heads = Array.from(list.querySelectorAll('li.tx-day-head'));
+            let lo = 0, hi = heads.length - 1, found = -1;
+            while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (heads[mid].getBoundingClientRect().top <= stickyY + 1.5) { found = mid; lo = mid + 1; } else hi = mid - 1;
+            }
+            const stuck = found >= 0 ? heads[found] : null;
+            if (stuck === current) return;
+            clearAll();
+            current = stuck;
+            if (!stuck) return;
+            stuck.classList.add('is-stuck');
+            for (let h = stuck.previousElementSibling; h; h = h.previousElementSibling) {
+                if (h.classList.contains('tx-day-head')) h.classList.add('is-past');
+            }
+        };
+        const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+        document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        // после перерисовки списка состояние сбрасывается
+        new MutationObserver(() => { current = null; heads = null; onScroll(); }).observe(list, { childList: true });
+    }
+
+    // Один набор обработчиков на весь список (а не по слушателю на каждую строку)
+    _bindTxListEvents(list) {
+        if (list._txBound) return;
+        list._txBound = true;
+        this._bindStuckDayHead(list);
+        list.addEventListener('click', e => {
+            const pay = e.target.closest?.('.pay-debt');
+            if (pay && list.contains(pay)) {
                 e.stopPropagation();
-                const id = +btn.dataset.id;
+                const id = +pay.dataset.id;
                 const tx = this.budgetManager.getCurrentBudget().transactions.find(t => t.id === id);
                 if (!tx) return;
                 const remaining = tx.remainingAmount || tx.initialAmount || tx.amount;
                 this.openDebtPaymentModal(id, remaining);
-            });
+                return;
+            }
+            const li = e.target.closest?.('li.tx-item');
+            if (li && li._tx) this.openTransactionDetail(li._tx);
         });
+    }
+
+    // Карточка Акулки на главной. Этап 3 — простой статический вариант по доле трат;
+    // полноценные настроения/лимит дня приедут в SharkMood (этап 6).
+    updateAkulkaCard(totals, carryOver, isSingleMonth) {
+        // новая логика (дневной лимит) — в src/shark; старый расчёт по месяцу остаётся запасным
+        try { this.accountsHook?.refresh(); } catch (e) { /* строка «Счета» не критична */ }
+        if (this.sharkHook) { this.sharkHook.refreshCard(); return; }
+        const bar = document.getElementById('akulka-bar');
+        if (!bar) return;
+        const income = Number(totals.monthlyIncome) || 0;
+        const expense = Number(totals.monthlyExpense) || 0;
+        const base = income + (isSingleMonth ? Math.max(carryOver, 0) : 0);
+        const ratio = base > 0 ? expense / base : (expense > 0 ? 1 : 0);
+
+        let mood = ['ok', 'Акулка спокойна', 'Траты в норме. Так держать.'];
+        if (ratio >= 0.9) mood = ['bad', 'Акулка встревожена', 'Почти всё потрачено. Пора притормозить.'];
+        else if (ratio >= 0.8) mood = ['warn', 'Акулка напряглась', 'Трат уже много — следи за расходами.'];
+        else if (ratio >= 0.7) mood = ['note', 'Акулка присматривается', 'Больше двух третей бюджета уже потрачено.'];
+        else if (base === 0 && expense === 0) mood = ['ok', 'Акулка на посту', 'Добавь первую операцию — и я начну следить.'];
+
+        const card = document.getElementById('akulka-card');
+        if (card) card.dataset.mood = mood[0];
+        const t = document.getElementById('akulka-title');
+        const x = document.getElementById('akulka-text');
+        if (t) t.textContent = mood[1];
+        if (x) x.textContent = mood[2];
+        bar.style.width = Math.min(100, Math.round(ratio * 100)) + '%';
+    }
+
+    formatDayParts(dateStr) {
+        const d = new Date(dateStr + 'T00:00:00');
+        if (!dateStr || isNaN(d)) return { title: dateStr || '', sub: '' };
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const diff = Math.round((today - d) / 86400000);
+        const long = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+        if (diff === 0) return { title: 'Сегодня', sub: long };
+        if (diff === 1) return { title: 'Вчера', sub: long };
+        return { title: d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }), sub: d.toLocaleDateString('ru-RU', { weekday: 'long' }) };
+    }
+
+    formatDayHeading(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d)) return dateStr;
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const diff = Math.round((today - d) / 86400000);
+        if (diff === 0) return 'Сегодня';
+        if (diff === 1) return 'Вчера';
+        const day = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        const wd = d.toLocaleDateString('ru-RU', { weekday: 'long' });
+        return `${day}, ${wd}`;
     }
 
     renderEmptyState(type) {
@@ -478,18 +685,15 @@ export class UIManager {
         }
         const msgByType = {
             all    : 'У вас пока нет операций. <br />Добавьте первую транзакцию — и она появится в списке.',
-            income : 'У вас пока ещё нет добавленных доходов. Добавьте доход — и он появится здесь. <br />Чтобы увидеть все операции, нажмите «Бюджет».',
-            expense: 'У вас пока ещё нет добавленных расходов. Добавьте расход — и он появится здесь. <br />Чтобы увидеть все операции, нажмите «Бюджет».',
-            deposit: 'Вклады пока пустуют. Пополните копилку — и мы отобразим операции тут. <br />Вернуться к полному списку можно нажатием на «Бюджет».',
-            debt   : 'У вас нет добавленных долгов в этом месяце — и это отлично! <br />Чтобы увидеть все операции, нажмите «Бюджет».'
+            income : 'Поступлений пока нет. Добавьте поступление — и оно появится здесь. <br />Чтобы увидеть все операции, нажмите «Доступно».',
+            expense: 'Трат пока нет. Добавьте трату — и она появится здесь. <br />Чтобы увидеть все операции, нажмите «Доступно».',
+            deposit: 'Накопления пока пустуют. Пополните копилку — и мы отобразим операции тут. <br />Вернуться к полному списку можно нажатием на «Доступно».',
+            debt   : 'У вас нет добавленных долгов в этом месяце — и это отлично! <br />Чтобы увидеть все операции, нажмите «Доступно».'
         };
         list.innerHTML = `
-      <li style="
-        list-style:none; padding:14px 12px; border-radius:12px;
-        background:var(--main-ground); color:var(--secondary-color);
-        border:1px dashed var(--border-color); text-align:center">
-        <div style="font-size:32px; line-height:1; margin-bottom:6px">🦈</div>
-        <div style="font-size:14px">${msgByType[type] || msgByType.all}</div>
+      <li class="empty-card">
+        <img class="empty-shark" src="./assets/shark.png" alt="">
+        <div class="empty-text">${msgByType[type] || msgByType.all}</div>
       </li>
     `;
     }
@@ -498,6 +702,7 @@ export class UIManager {
         const m = document.getElementById(id);
         if (!m) return;
 
+        if (id === 'settings-page') { try { window._renderSettingsList?.(); } catch (e) {} }
         // Fullscreen pages (settings, analytics) — синхронизируем с навбаром
         if (id === 'settings-page' || id === 'analytics-page') {
             if (window._navOpenPage) window._navOpenPage(id);
@@ -534,7 +739,7 @@ export class UIManager {
 
         // Backdrop прячем если больше нет открытых шитов
         const anyOpen = document.querySelector(
-            '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+            '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page)'
         );
         if (!anyOpen) {
             const bd = document.getElementById('bottom-sheet-backdrop');
@@ -658,7 +863,7 @@ export class UIManager {
             const isLegacy = !this.isNewDepositRoot(root);
 
             if (!isLegacy && isRoot) {
-                titleName = `💎 ${titleName || 'Вклад'}`;
+                titleName = `💎 ${titleName || 'Накопление'}`;
             }
         }
 
@@ -707,6 +912,8 @@ export class UIManager {
           <span class="tx-detail-emoji">${emoji}</span>
           <span class="tx-detail-title">${escapeHtml(cleanTitle)}</span>
         `;
+        const tile = document.getElementById('detail-emoji');
+        if (tile) tile.textContent = emoji;
 
         // Название из импорта — отдельная строка между заголовком и суммой
         const existingNameRow = document.getElementById('detail-income-name');
@@ -767,10 +974,31 @@ export class UIManager {
                 };
             }
         } else {
-            detailAmount.textContent = `Сумма: ${this.formatNumber(transaction.amount || 0)}`;
+            const sign = transaction.type === 'expense' ? '−' : transaction.type === 'income' ? '+' : '';
+            detailAmount.textContent = `${sign}${this.formatNumber(transaction.amount || 0)}`;
+            detailAmount.dataset.kind = transaction.type;
         }
+        if (transaction.type === 'debt') detailAmount.dataset.kind = 'debt';
 
         detailDate.textContent = `Дата: ${this.formatDate(transaction.date || new Date())}`;
+
+        const info = document.getElementById('detail-info');
+        if (info) {
+            const catName = (transaction.type === 'debt')
+                ? (transaction.direction === 'owe' ? 'Я должен' : 'Мне должны')
+                : (transaction.type === 'deposit' ? 'Накопления' : (cleanTitle || ''));
+            const when = this.formatDayHeading
+                ? this.formatDayHeading(transaction.date || new Date())
+                : this.formatDate(transaction.date || new Date());
+            const budgetName = this.budgetManager.getCurrentBudget()?.name || '';
+            info.classList.remove('hidden');
+            info.innerHTML = `
+              <div class="di-row"><span>Категория</span><b>${escapeHtml(catName)}</b></div>
+              <div class="di-row"><span>Дата</span><b>${escapeHtml(String(when))}</b></div>
+              <div class="di-row"><span>Бюджет</span><b>${escapeHtml(budgetName)}</b></div>`;
+        }
+        const x = document.getElementById('detail-x');
+        if (x) x.onclick = () => this.closeModal('transaction-detail-sheet');
 
         // ====== ВКЛАДЫ ======
         if (transaction.type === 'deposit') {
@@ -793,11 +1021,11 @@ export class UIManager {
 
                 depositMeta.classList.remove('hidden');
                 depositMeta.innerHTML = `
-          <div><strong>Вклад:</strong> ${escapeHtml(root.name || 'Без названия')}</div>
-          <div><strong>Годовой процент:</strong> ${meta.annualRate.toFixed(2)}%</div>
-          <div><strong>Срок:</strong> ${meta.termMonths ? meta.termMonths + ' мес.' : 'Б/С'}</div>
+          <div><strong>Накопление:</strong> ${escapeHtml(root.name || 'Без названия')}</div>
+          <div><strong>Ставка:</strong> ${meta.annualRate.toFixed(2)}% годовых</div>
+          <div><strong>Срок:</strong> ${meta.termMonths ? meta.termMonths + ' мес.' : 'Бессрочно'}</div>
           <div><strong>Стартовая сумма:</strong> ${this.formatNumber(meta.initialAmount)}</div>
-          <div><strong>Общее накопление:</strong> ${this.formatNumber(meta.totalInterest)}</div>
+          <div><strong>Начислено:</strong> ${this.formatNumber(meta.totalInterest)}</div>
           <div><strong>Ожидаемый итог:</strong> ${this.formatNumber(meta.currentBalance)}</div>
         `;
 
@@ -852,12 +1080,12 @@ export class UIManager {
         if (transaction.type === 'expense' && transaction.products?.length) {
             prodDiv.classList.remove('hidden');
             prodDiv.innerHTML = `
-        <strong>Товары:</strong>
+        <strong>Позиции:</strong>
         <div class="detail-products-list">
           ${transaction.products.map(p => `
             <div class="detail-product-row">
               <span class="product-title">${escapeHtml(p.name)}</span>
-              <span class="product-meta">${p.quantity} × ${this.formatNumber(p.price)}</span>
+              <span class="product-meta">${p.quantity} × ${this.formatNumber(p.price)} = ${this.formatNumber((p.quantity || 0) * (p.price || 0))}</span>
             </div>
           `).join('')}
         </div>
@@ -906,6 +1134,9 @@ export class UIManager {
             confirmBtn.onclick = cancelBtn.onclick = null;
 
             confirmBtn.onclick = () => {
+                // страховка: автобэкап перед удалением (его можно восстановить в «Данные и бэкапы»)
+                try { createAutoBackup('before-delete-transaction'); } catch (e) { console.warn('auto-backup:', e); }
+
                 // 🟢 Простая логика удаления вкладов:
                 if (transaction.type === 'deposit') {
                     const group = this.getDepositGroup(transaction);
@@ -997,6 +1228,13 @@ export class UIManager {
             }
 
             const emoji = getFirstGraphemeCluster(b.name) || '🦈';
+            let bal = 0;
+            try {
+                const keep = this.budgetManager.currentBudgetIndex;
+                this.budgetManager.currentBudgetIndex = index;
+                bal = Number(this.budgetManager.calculateTotals('all')?.overallBudget) || 0;
+                this.budgetManager.currentBudgetIndex = keep;
+            } catch (_) {}
 
             div.innerHTML = `
         <div class="budget-item-main">
@@ -1004,10 +1242,11 @@ export class UIManager {
           <div class="budget-info">
             <div class="budget-name">${escapeHtml(b.name)}</div>
             <div class="budget-meta">
-              ${index === currentIndex ? 'Текущий бюджет' : `Бюджет #${index + 1}`}
+              ${formatNumber(Math.floor(bal))} · ${(b.transactions?.length || 0)} опер.
             </div>
           </div>
         </div>
+        ${index === currentIndex ? '<span class="budget-check" aria-label="Текущий">✓</span>' : ''}
         <button class="delete-budget-btn" data-index="${index}" title="Удалить бюджет">
           🗑
         </button>
@@ -1049,6 +1288,7 @@ export class UIManager {
         document.getElementById('bottom-sheet-backdrop').classList.remove('hidden');
 
         document.getElementById('confirm-delete-budget').onclick = () => {
+            try { createAutoBackup('before-delete-budget'); } catch (e) { console.warn('auto-backup:', e); }
             const name = this.budgetManager.budgets[index]?.name || 'Unnamed';
             trackSafe?.('delete-budget', { tag: 'transaction', index, name });
 
@@ -1167,6 +1407,8 @@ export class UIManager {
 
         document.getElementById('close-budget-sheet')
             ?.addEventListener('click', () => this.closeModal('budget-switch-sheet'));
+        document.getElementById('budget-sheet-x')
+            ?.addEventListener('click', () => this.closeModal('budget-switch-sheet'));
 
         document.getElementById('add-budget-btn')?.addEventListener('click', () => {
             const newNameInput = document.getElementById('new-budget-name');
@@ -1200,10 +1442,10 @@ export class UIManager {
                 if (el) el.value = today;
             });
             this.hideAllForms();
-            this.openForm('income-form');
+            this.openForm('expense-form');
             document.querySelectorAll('.transaction-type-chips .chip-btn')
                 .forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.transaction-type-chips .chip-btn[data-type="income"]')
+            document.querySelector('.transaction-type-chips .chip-btn[data-type="expense"]')
                 ?.classList.add('active');
             this.openModal('transaction-sheet');
         });
@@ -1221,6 +1463,7 @@ export class UIManager {
         document.querySelectorAll('.close-form').forEach(btn => {
             btn.addEventListener('click', () => this.closeModal('transaction-sheet'));
         });
+        document.getElementById('tx-sheet-x')?.addEventListener('click', () => this.closeModal('transaction-sheet'));
 
         document.getElementById('income-form')?.addEventListener('submit', e => this.submitIncome(e));
         document.getElementById('expense-form')?.addEventListener('submit', e => this.submitExpense(e));
@@ -1284,7 +1527,7 @@ export class UIManager {
                 // Проверяем есть ли ещё открытые шиты (кроме month-picker)
                 const stillOpen = document.querySelector(
                     '.bottom-sheet.show:not(#month-picker-sheet), ' +
-                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page):not(#month-picker-sheet)'
                 );
                 if (!stillOpen) backdrop.classList.add('hidden');
                 return;
@@ -1292,7 +1535,7 @@ export class UIManager {
 
             // ── Обычные bottom-sheets — закрываем верхний по z-index ──
             const openSheets = Array.from(document.querySelectorAll(
-                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page)'
             )).filter(el => {
                 // Исключаем скрытые через CSS (display:none или нулевой opacity)
                 const style = getComputedStyle(el);
@@ -1315,7 +1558,7 @@ export class UIManager {
             top.style.zIndex = '';
 
             const remaining = document.querySelectorAll(
-                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page)'
+                '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page)'
             );
             if (!remaining.length) backdrop.classList.add('hidden');
         });
@@ -1406,6 +1649,34 @@ export class UIManager {
             this.showInlineError(categoryButton, 'Без категории — как без души 😢');
             return;
         }
+        // «Одной суммой»: без позиций, сумма из поля
+        if (form.dataset.split !== 'true') {
+            const amountEl = document.getElementById('expense-amount');
+            this.clearInlineError(amountEl);
+            const single = parseFloat(String(amountEl?.value || '').replace(/[^0-9.]/g, '')) || 0;
+            if (single <= 0) {
+                this.showInlineError(document.querySelector('#expense-form .amount-row') || amountEl, 'Введите сумму');
+                return;
+            }
+            this.budgetManager.addTransaction({
+                id      : Date.now(),
+                type    : 'expense',
+                date    : form['expense-date'].value,
+                category: hiddenCategoryInput.value,
+                amount  : single,
+                products: []
+            });
+            try { window.trackSafe?.('create-expense', { category: hiddenCategoryInput.value, amount: single, products_count: 0 }); } catch (e) { /* аналитика не должна ломать сохранение */ }
+            form.reset();
+            if (amountEl) amountEl.value = '';
+            this.syncSaveState(form);
+            this.closeModal('transaction-sheet');
+            this.updateUI();
+            refreshExportAnalytics(this.budgetManager);
+            refreshUserProfile(this.budgetManager, true);
+            return;
+        }
+
         const products = [];
         let isValid = true;
         document.querySelectorAll('#products-list .product-item').forEach(item => {
@@ -1419,7 +1690,7 @@ export class UIManager {
             const quantity = parseFloat(quantityInput.value.replace(',', '.')) || 0;
             const price = parseFloat(priceInput.value.replace(/[^0-9.]/g, '')) || 0;
             if (!name) {
-                this.showInlineError(nameInput, 'Введите название товара');
+                this.showInlineError(nameInput, 'Введите название позиции');
                 isValid = false;
             }
             if (quantity <= 0) {
@@ -1493,7 +1764,7 @@ export class UIManager {
             return;
         }
         if (!directionSelect.value) {
-            this.showInlineError(directionSelect, 'Выберите тип долга');
+            this.showInlineError(directionSelect, 'Выберите направление долга');
             return;
         }
         const transaction = {
@@ -1576,8 +1847,8 @@ export class UIManager {
         return budget.transactions
             .filter(t => t.type === 'deposit' && (t.depositId || t.id) === depositId)
             .sort((a, b) => {
-                const d = new Date(a.date) - new Date(b.date);
-                if (d !== 0) return d;
+                const da = a.date || '', db = b.date || '';
+                if (da !== db) return da < db ? -1 : 1;
                 return a.id - b.id;
             });
     }
@@ -1888,7 +2159,7 @@ export class UIManager {
             return;
         }
         if (!nameInput.value.trim()) {
-            this.showInlineError(nameInput, 'Введите название вклада');
+            this.showInlineError(nameInput, 'Введите название накопления');
             return;
         }
         if (amount <= 0) {
@@ -1950,7 +2221,7 @@ export class UIManager {
       <input type="text" class="product-name" placeholder="Название" maxlength="25" list="product-names-list">
       <input type="tel" class="product-quantity numeric-format" placeholder="Кол-во" required maxlength="5">
       <input type="tel" class="product-price numeric-format" placeholder="Цена" required maxlength="12" inputmode="numeric">
-      <button type="button" class="delete-product" title="Удалить товар">✖</button>
+      <button type="button" class="delete-product" title="Удалить позицию">✖</button>
     `;
         productsList.appendChild(container);
 
@@ -1983,7 +2254,84 @@ export class UIManager {
         });
 
         container.querySelector('.delete-product')
-            ?.addEventListener('click', () => container.remove());
+            ?.addEventListener('click', () => { container.remove(); this.updatePositionsSummary(); });
+
+        this.enhanceProductRow(container);
+    }
+
+    // Шаговый счётчик количества и сумма строки. Поля (.product-name/.product-quantity/.product-price)
+    // остаются теми же — submitExpense читает их как раньше.
+    enhanceProductRow(item) {
+        if (!item || item.dataset.enhanced) return;
+        item.dataset.enhanced = 'true';
+        const qty = item.querySelector('.product-quantity');
+        const price = item.querySelector('.product-price');
+        if (!qty || !price) return;
+
+        qty.placeholder = '0';
+        const stepper = document.createElement('div');
+        stepper.className = 'qty-stepper';
+        const mk = (cls, txt, label) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = cls; b.textContent = txt; b.setAttribute('aria-label', label);
+            return b;
+        };
+        const dec = mk('qty-dec', '−', 'Меньше');
+        const inc = mk('qty-inc', '+', 'Больше');
+        qty.parentNode.insertBefore(stepper, qty);
+        stepper.append(dec, qty, inc);
+
+        const sep = document.createElement('span');
+        sep.className = 'pos-sep';
+        sep.textContent = '×';
+        stepper.after(sep);
+
+        const total = document.createElement('span');
+        total.className = 'pos-total';
+        price.after(total);
+
+        const num = el => parseFloat(String(el.value).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+        const refresh = () => {
+            const t = num(qty) * num(price);
+            total.textContent = t > 0 ? this.formatNumber(t) : '';
+            this.updatePositionsSummary();
+        };
+        dec.addEventListener('click', () => {
+            const v = Math.max(0, Math.floor(num(qty)) - 1);
+            qty.value = v > 0 ? String(v) : '';
+            refresh();
+        });
+        inc.addEventListener('click', () => {
+            qty.value = String(Math.floor(num(qty)) + 1);
+            refresh();
+        });
+        [qty, price].forEach(el => el.addEventListener('input', refresh));
+        refresh();
+    }
+
+    updatePositionsSummary() {
+        const list = document.getElementById('products-list');
+        if (!list) return;
+        let box = document.getElementById('positions-summary');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'positions-summary';
+            box.className = 'positions-summary';
+            list.after(box);
+        }
+        let count = 0, sum = 0;
+        list.querySelectorAll('.product-item').forEach(row => {
+            const q = parseFloat(String(row.querySelector('.product-quantity')?.value || '').replace(',', '.')) || 0;
+            const p = parseFloat(String(row.querySelector('.product-price')?.value || '').replace(/[^0-9.]/g, '')) || 0;
+            if (q > 0 && p > 0) { count++; sum += q * p; }
+        });
+        box.textContent = count ? `Позиций: ${count} · Итого: ${this.formatNumber(sum)}` : '';
+        const expForm = document.getElementById('expense-form');
+        if (expForm?.dataset.split === 'true') {
+            const amt = document.getElementById('expense-amount');
+            if (amt) amt.value = sum > 0 ? this.formatNumber(sum) : '';
+            this.syncSaveState(expForm);
+        }
     }
 
 
@@ -1993,6 +2341,246 @@ export class UIManager {
 
     openForm(formId) {
         document.getElementById(formId)?.classList.remove('hidden');
+        try { this.renderQuickPicks(formId); } catch (e) { console.warn('quick picks:', e); }
+        if (formId === 'expense-form') {
+            document.querySelectorAll('#products-list .product-item').forEach(r => this.enhanceProductRow(r));
+            this.updatePositionsSummary();
+        }
+        if (formId === 'debt-form') {
+            const dir = document.getElementById('debt-direction');
+            if (dir && !dir.value) dir.value = 'owed';
+            this.syncDebtSegment();
+        }
+        this.syncBudgetCells();
+        this.syncSaveState(document.getElementById(formId));
+    }
+
+    getCurrencyLabel() {
+        const r = localStorage.getItem('region') || 'UZ';
+        return { RU: 'руб', KZ: 'тенге', KG: 'сом' }[r] || 'сум';
+    }
+
+    syncBudgetCells() {
+        const name = this.budgetManager.getCurrentBudget()?.name || 'BudgetIt';
+        document.querySelectorAll('.budget-cell b').forEach(b => { b.textContent = name; });
+    }
+
+    // Кнопка «Сохранить» выглядит неактивной, пока сумма не введена (нажатие всё равно покажет подсказку)
+    syncSaveState(form) {
+        if (!form) return;
+        const btn = form.querySelector('.add-btn');
+        if (!btn) return;
+        const type = form.id.replace('-form', '');
+        const el = document.getElementById(`${type}-amount`);
+        const val = parseFloat(String(el?.value || '').replace(/[^0-9.]/g, '')) || 0;
+        btn.classList.toggle('is-disabled', !(val > 0));
+    }
+
+    syncDebtSegment() {
+        const dir = document.getElementById('debt-direction');
+        document.querySelectorAll('#debt-direction-seg button').forEach(b => {
+            b.classList.toggle('active', !!dir && b.dataset.value === dir.value);
+        });
+    }
+
+    // Сумма сверху с валютой, режим «Разбить на позиции» у трат, сегмент направления у долгов
+    setupAddSheet() {
+        const cur = this.getCurrencyLabel();
+        ['expense', 'income', 'deposit', 'debt'].forEach(type => {
+            const form = document.getElementById(`${type}-form`);
+            const amt = document.getElementById(`${type}-amount`);
+            if (!form || !amt) return;
+            form.noValidate = true; // проверки делают submit-обработчики; скрытые required-поля не должны блокировать отправку
+            if (amt.parentElement.classList.contains('amount-row')) return;
+            const row = document.createElement('div');
+            row.className = 'amount-row';
+            amt.parentNode.insertBefore(row, amt);
+            row.appendChild(amt);
+            const c = document.createElement('span');
+            c.className = 'amount-cur';
+            c.textContent = cur;
+            row.appendChild(c);
+            const hint = document.createElement('div');
+            hint.className = 'amount-hint';
+            row.after(hint);
+            amt.addEventListener('input', () => this.syncSaveState(form));
+        });
+
+        // позиции: по умолчанию «одной суммой»
+        const exp = document.getElementById('expense-form');
+        if (exp) {
+            exp.dataset.split = 'false';
+            const setSplit = on => {
+                exp.dataset.split = on ? 'true' : 'false';
+                const amt = document.getElementById('expense-amount');
+                const hint = exp.querySelector('.amount-hint');
+                if (amt) amt.readOnly = on;
+                if (hint) hint.textContent = on ? 'Сумма считается по позициям' : '';
+                if (on) {
+                    const hasValue = !!document.querySelector('#products-list .product-price')?.value;
+                    const first = document.querySelector('#products-list .product-item .product-price');
+                    if (first && !hasValue && amt?.value) {
+                        first.value = amt.value;
+                        first.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    this.updatePositionsSummary();
+                } else if (amt && !amt.value) {
+                    // вернулись к одной сумме — оставляем посчитанное по позициям
+                    const sum = this._positionsSum();
+                    if (sum > 0) amt.value = this.formatNumber(sum);
+                }
+                this.syncSaveState(exp);
+            };
+            document.getElementById('split-start')?.addEventListener('click', () => setSplit(true));
+            document.getElementById('split-stop')?.addEventListener('click', () => {
+                const sum = this._positionsSum();
+                const amt = document.getElementById('expense-amount');
+                if (amt && sum > 0) amt.value = this.formatNumber(sum);
+                setSplit(false);
+            });
+        }
+
+        document.querySelectorAll('#debt-direction-seg button').forEach(b => {
+            b.addEventListener('click', () => {
+                const dir = document.getElementById('debt-direction');
+                if (!dir) return;
+                dir.value = b.dataset.value;
+                dir.dispatchEvent(new Event('change'));
+                this.syncDebtSegment();
+            });
+        });
+        this.syncBudgetCells();
+    }
+
+    _positionsSum() {
+        let sum = 0;
+        document.querySelectorAll('#products-list .product-item').forEach(row => {
+            const q = parseFloat(String(row.querySelector('.product-quantity')?.value || '').replace(',', '.')) || 0;
+            const p = parseFloat(String(row.querySelector('.product-price')?.value || '').replace(/[^0-9.]/g, '')) || 0;
+            if (q > 0 && p > 0) sum += q * p;
+        });
+        return sum;
+    }
+
+    // Поле-кнопка даты (шторка выбора) для форм редактирования; нативный input остаётся источником значения
+    attachDateField(dateInput) {
+        if (!dateInput) return;
+        let field = dateInput.nextElementSibling?.classList?.contains('date-field') ? dateInput.nextElementSibling : null;
+        const sync = () => {
+            if (field) field.innerHTML = `<small>Дата</small><b>${formatDateLabel(dateInput.value)}</b><span class="date-field-arrow">▾</span>`;
+        };
+        if (!field) {
+            field = document.createElement('button');
+            field.type = 'button';
+            field.className = 'date-field';
+            dateInput.insertAdjacentElement('afterend', field);
+            field.addEventListener('click', () => openDateSheet({
+                value: dateInput.value,
+                onPick: iso => {
+                    dateInput.value = iso;
+                    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    sync();
+                }
+            }));
+            dateInput.addEventListener('change', sync);
+            dateInput.tabIndex = -1;
+        }
+        dateInput._syncDateField = sync;
+        sync();
+    }
+
+    // Быстрые чипы в форме новой операции: «Сегодня / Вчера» и самые частые категории.
+    // Только добавляют удобство — значения проходят через те же поля и обработчики, что и раньше.
+    renderQuickPicks(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        const type = formId.replace('-form', '');
+
+        // дата: поле-кнопка открывает шторку; нативный <input type=date> остаётся источником значения
+        const dateInput = document.getElementById(`${type}-date`);
+        if (dateInput) {
+            let field = form.querySelector('.date-field');
+            const sync = () => {
+                if (field) field.innerHTML = `<small>Дата</small><b>${formatDateLabel(dateInput.value)}</b><span class="date-field-arrow">▾</span>`;
+            };
+            if (!field) {
+                field = document.createElement('button');
+                field.type = 'button';
+                field.className = 'date-field';
+                const row = document.createElement('div');
+                row.className = 'dt-row';
+                dateInput.insertAdjacentElement('afterend', row);
+                row.appendChild(field);
+
+                field.addEventListener('click', () => openDateSheet({
+                    value: dateInput.value,
+                    onPick: iso => {
+                        dateInput.value = iso;
+                        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        sync();
+                    }
+                }));
+                dateInput.addEventListener('change', sync);
+                dateInput.tabIndex = -1;
+            }
+            sync();
+        }
+
+        // частые категории (только для поступлений и трат)
+        if (type !== 'income' && type !== 'expense') return;
+        const select = document.getElementById(`${type}-category`);
+        if (!select) return;
+        const top = [...this.getCategoryUsageStats(type).entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name)
+            .filter(name => [...select.options].some(o => o.value === name))
+            .slice(0, 12);
+
+        let box = form.querySelector('.quick-cats');
+        if (!box) {
+            box = document.createElement('div');
+            box.className = 'quick-picks quick-cats';
+            const anchor = form.querySelector(`[data-select-id="${select.id}"]`) || select;
+            anchor.insertAdjacentElement('afterend', box);
+        }
+        // категория предвыбрана (как в макете): самая частая, иначе первая из списка
+        if (!select.value) {
+            const first = top[0] || [...select.options].find(o => o.value)?.value;
+            if (first) {
+                const o = [...select.options].find(x => x.value === first);
+                this.currentSelectForCategory = select;
+                this.selectCategory(first, (o?.textContent || first).trim());
+            }
+        }
+        box.innerHTML = '';
+        const chipValues = [...top];
+        if (select.value && !chipValues.includes(select.value)) chipValues.unshift(select.value);
+        chipValues.slice(0, 12).forEach(name => {
+            const opt = [...select.options].find(o => o.value === name);
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'chip-btn quick-chip';
+            b.dataset.value = name;
+            b.textContent = (opt?.textContent || name).trim();
+            b.addEventListener('click', () => {
+                this.currentSelectForCategory = select;
+                this.selectCategory(name, b.textContent);
+            });
+            box.appendChild(b);
+        });
+        box.hidden = chipValues.length === 0;
+        const markActive = () => box.querySelectorAll('.quick-chip')
+            .forEach(c => c.classList.toggle('active', c.dataset.value === select.value));
+        markActive();
+        if (!select.dataset.quickBound) {
+            select.dataset.quickBound = '1';
+            select.addEventListener('change', () => {
+                form.querySelectorAll('.quick-cats .quick-chip')
+                    .forEach(c => c.classList.toggle('active', c.dataset.value === select.value));
+            });
+        }
     }
 
     initializeCategoryButtons() {
@@ -2012,7 +2600,7 @@ export class UIManager {
             } else if (select.id === 'income-category') {
                 placeholder.textContent = '🛠️ Выберите категорию';
             } else if (select.id === 'debt-direction') {
-                placeholder.textContent = '🔄 Выберите тип долга';
+                placeholder.textContent = '🔄 Выберите направление';
             } else if (select.id === 'deposit-status') {
                 placeholder.textContent = '🔄 Выберите статус';
             } else {
@@ -2075,6 +2663,7 @@ export class UIManager {
             select.parentNode.insertBefore(container, select);
             select.style.display = 'none';
         });
+        this.applyCustomCategories();
     }
 
     /**
@@ -2184,12 +2773,16 @@ export class UIManager {
                 .replaceAll('>', '&gt;')
                 .replaceAll('"', '&quot;');
 
+        const customType = isIncomeSelect ? 'income' : (isExpenseSelect ? 'expense' : null);
+        const customSet = new Set(customType ? (this.budgetManager.customCategories?.[customType] || []) : []);
+        const itemHtml = (value, text) => customSet.has(value)
+            ? `<li class="category-item is-custom" data-value="${escapeHtml(value)}"><span>${escapeHtml(text)}</span><button type="button" class="cc-del" aria-label="Удалить свою категорию">✕</button></li>`
+            : `<li class="category-item" data-value="${escapeHtml(value)}">
+                ${escapeHtml(text)}
+            </li>`;
+
         const renderPlainList = (items) => {
-            categoryList.innerHTML = items.map(opt => `
-            <li class="category-item" data-value="${escapeHtml(opt.value)}">
-                ${escapeHtml(opt.text)}
-            </li>
-        `).join('');
+            categoryList.innerHTML = items.map(opt => itemHtml(opt.value, opt.text)).join('');
         };
 
         const renderGroupedList = () => {
@@ -2243,25 +2836,18 @@ export class UIManager {
                 if (child.tagName === 'OPTGROUP') {
                     const optionsHtml = Array.from(child.children)
                         .filter(opt => opt.value)
-                        .map(opt => `
-                        <li class="category-item" data-value="${escapeHtml(opt.value)}">
-                            ${escapeHtml(opt.text)}
-                        </li>
-                    `)
+                        .map(opt => itemHtml(opt.value, opt.text))
                         .join('');
 
+                    const isOpen = child.dataset.open === 'true';
                     html += `
                     <div class="optgroup-wrapper">
-                        <div class="category-group-label dropdown-toggle">▶ ${escapeHtml(child.label)}</div>
-                        <div class="group-options hidden">${optionsHtml}</div>
+                        <div class="category-group-label dropdown-toggle">${isOpen ? '▼' : '▶'} ${escapeHtml(child.label)}</div>
+                        <div class="group-options${isOpen ? '' : ' hidden'}">${optionsHtml}</div>
                     </div>
                 `;
                 } else if (child.tagName === 'OPTION' && child.value) {
-                    html += `
-                    <li class="category-item" data-value="${escapeHtml(child.value)}">
-                        ${escapeHtml(child.text)}
-                    </li>
-                `;
+                    html += itemHtml(child.value, child.text);
                 }
             });
 
@@ -2288,6 +2874,8 @@ export class UIManager {
 
         render('');
 
+        this._renderCustomCategoryAdder(categorySheet, categoryList, currentSelect, customType);
+
         if (!categoryList.dataset.boundDelegation) {
             categoryList.addEventListener('click', (e) => {
                 const toggle = e.target.closest('.dropdown-toggle');
@@ -2295,6 +2883,22 @@ export class UIManager {
                     const optionsContainer = toggle.nextElementSibling;
                     const hidden = optionsContainer.classList.toggle('hidden');
                     toggle.textContent = `${hidden ? '▶' : '▼'} ${toggle.textContent.replace(/^[▶▼]\s*/, '')}`;
+                    return;
+                }
+
+                const del = e.target.closest('.cc-del');
+                if (del) {
+                    e.stopPropagation();
+                    const li = del.closest('.category-item');
+                    if (!li) return;
+                    if (!del.classList.contains('confirm')) {
+                        // двойное нажатие: первое — «Удалить?», второе — удаление
+                        del.classList.add('confirm');
+                        del.textContent = 'Удалить?';
+                        setTimeout(() => { del.classList.remove('confirm'); del.textContent = '✕'; }, 2500);
+                        return;
+                    }
+                    this.removeCustomCategoryValue(li.dataset.value);
                     return;
                 }
 
@@ -2347,6 +2951,82 @@ export class UIManager {
                 }
             };
         }
+    }
+
+    // ── Свои категории ─────────────────────────────────────────────
+    // Добавляют в селекты группу «✨ Свои»; значение — строка «эмодзи название», как у встроенных.
+    applyCustomCategories() {
+        const cc = this.budgetManager.customCategories || { income: [], expense: [] };
+        document.querySelectorAll('select[id$="-category"]').forEach(select => {
+            const type = select.id.includes('income') ? 'income' : (select.id.includes('expense') ? 'expense' : null);
+            if (!type) return;
+            const keep = select.value;
+            select.querySelectorAll('optgroup[data-custom]').forEach(g => g.remove());
+            const list = cc[type] || [];
+            if (!list.length) return;
+            const group = document.createElement('optgroup');
+            group.label = '✨ Свои';
+            group.dataset.custom = 'true';
+            group.dataset.open = 'true';
+            list.forEach(v => {
+                const o = document.createElement('option');
+                o.value = v;
+                o.textContent = v;
+                group.appendChild(o);
+            });
+            const first = select.querySelector('option[value=""]');
+            if (first && first.nextSibling) select.insertBefore(group, first.nextSibling);
+            else select.appendChild(group);
+            if (keep) select.value = keep;
+        });
+    }
+
+    _renderCustomCategoryAdder(sheet, list, select, type) {
+        sheet.querySelector('#category-add-custom')?.remove();
+        if (!type) return;
+        const box = document.createElement('div');
+        box.id = 'category-add-custom';
+        box.className = 'category-add-custom';
+        box.innerHTML = '<button type="button" class="cc-open">＋ Своя категория</button>';
+        const search = sheet.querySelector('#category-search');
+        sheet.insertBefore(box, search || list);
+
+        box.querySelector('.cc-open').addEventListener('click', () => {
+            box.innerHTML = `
+                <div class="cc-form">
+                    <input class="cc-emoji" type="text" inputmode="text" maxlength="4" placeholder="🏷️" aria-label="Эмодзи">
+                    <input class="cc-name" type="text" maxlength="20" placeholder="Название" aria-label="Название категории">
+                    <button type="button" class="cc-save">Добавить</button>
+                </div>
+                <div class="cc-error" role="alert"></div>`;
+            const err = box.querySelector('.cc-error');
+            const nameEl = box.querySelector('.cc-name');
+            nameEl.focus();
+            const save = () => {
+                const existing = Array.from(select.querySelectorAll('option')).map(o => o.value).filter(Boolean);
+                const res = addCustomCategory(this.budgetManager.customCategories, type,
+                    box.querySelector('.cc-emoji').value, nameEl.value, existing);
+                if (res.error) { err.textContent = res.error; return; }
+                this.budgetManager.customCategories = res.categories;
+                this.budgetManager.saveToStorage();
+                this.applyCustomCategories();
+                if (typeof window.trackSafe === 'function') trackSafe('custom-category-add', { type });
+                this.currentSelectForCategory = select;
+                this.selectCategory(res.value, res.value);
+            };
+            box.querySelector('.cc-save').addEventListener('click', save);
+            nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+        });
+    }
+
+    removeCustomCategoryValue(value) {
+        const cc = this.budgetManager.customCategories;
+        const type = (cc?.income || []).includes(value) ? 'income' : 'expense';
+        this.budgetManager.customCategories = removeCustomCategory(cc, type, value);
+        this.budgetManager.saveToStorage();
+        this.applyCustomCategories();
+        const select = this.currentSelectForCategory;
+        if (select) this.openCategorySheet(null, select); // перерисовать список
     }
 
     openDebtPaymentModal(id, remainingAmount) {
@@ -2499,9 +3179,24 @@ export class UIManager {
                     div.classList.add('active');
                 }
 
-                div.textContent = this.monthNames[key] || key;
+                const nowD = new Date();
+                const isFuture = this.yearFilter > nowD.getFullYear() ||
+                    (this.yearFilter === nowD.getFullYear() && i > nowD.getMonth() + 1);
+                let spent = 0, earned = 0;
+                try {
+                    const t = this.budgetManager.calculateTotals(key, this.yearFilter);
+                    spent = Number(t?.monthlyExpense) || 0;
+                    earned = Number(t?.monthlyIncome) || 0;
+                } catch (_) {}
+                // доход месяца без переноса остатка: переносимый остаток в monthlyIncome не входит (carryOver отдельно)
+                const compact = v => v >= 1e6 ? `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace('.0', '')}M`
+                    : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v));
+                div.innerHTML = `<span class="mi-name">${this.monthNames[key] || key}</span>${earned > 0 ? `<span class="mi-inc">+${compact(earned)}</span>` : ''}${spent > 0 ? `<span class="mi-sum">−${compact(spent)}</span>` : ''}${spent <= 0 && earned <= 0 ? '<span class="mi-none">—</span>' : ''}`;
+                if (isFuture) div.classList.add('is-future');
+                else if (spent <= 0 && earned <= 0) div.classList.add('is-empty');
 
                 div.addEventListener('click', () => {
+                    if (isFuture) return;
                     this.monthFilter = key;
                     this.activeYearForMonthFilter = this.yearFilter;
 
@@ -2512,7 +3207,7 @@ export class UIManager {
                     // Проверяем по .show (не по .hidden) — т.к. CSS делает hidden-sheets display:block
                     const anySheetOpen = document.querySelector(
                         '.bottom-sheet.show, ' +
-                        '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                        '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page):not(#month-picker-sheet)'
                     );
                     if (!anySheetOpen && backdrop) backdrop.classList.add('hidden');
 
@@ -2548,6 +3243,15 @@ export class UIManager {
             grid.offsetHeight;
             grid.classList.add('months-grid-anim');
         };
+
+        const closeSheet = () => {
+            sheet.classList.remove('show');
+            sheet.classList.add('hidden');
+            const open = document.querySelector('.bottom-sheet.show, .bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page):not(#month-picker-sheet)');
+            if (!open && backdrop) backdrop.classList.add('hidden');
+        };
+        const xBtn = document.getElementById('month-sheet-x');
+        if (xBtn) xBtn.onclick = closeSheet;
 
         // стрелки года
         prevBtn.onclick = () => {
@@ -2585,7 +3289,7 @@ export class UIManager {
                 sheet.classList.add('hidden');
                 const anySheetOpen2 = document.querySelector(
                     '.bottom-sheet.show, ' +
-                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page):not(#month-picker-sheet)'
                 );
                 if (!anySheetOpen2 && backdrop) backdrop.classList.add('hidden');
 
@@ -2607,7 +3311,7 @@ export class UIManager {
                 sheet.classList.add('hidden');
                 const anySheetOpen3 = document.querySelector(
                     '.bottom-sheet.show, ' +
-                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#month-picker-sheet)'
+                    '.bottom-sheet:not(.hidden):not(#settings-page):not(#analytics-page):not(#accounts-page):not(#planner-page):not(#month-picker-sheet)'
                 );
                 if (!anySheetOpen3 && backdrop) backdrop.classList.add('hidden');
 

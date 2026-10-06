@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v4.0.1';
+const CACHE_VERSION = 'v5.0.0';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
     '/style.css',
     '/theme.css',
     '/theme-polish-fixes.css',
+    '/glass.css',
     '/Achievements.css',
     '/Search.css',
     '/analytics-insights.css',
@@ -39,6 +40,13 @@ const STATIC_ASSETS = [
     '/src/BudgetManager.js',
     '/src/UIManager.js',
     '/src/ThemeManager.js',
+    '/src/theme/themeTokens.js',
+    '/src/ui/DateSheet.js',
+    '/src/shark/SharkMood.js',
+    '/src/shark/SharkUI.js',
+    '/src/ui/AccountsPage.js',
+    '/src/ui/DesktopWidgets.js',
+    '/src/utils/customCategories.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
     '/src/profilePage.js',
@@ -55,6 +63,10 @@ const STATIC_ASSETS = [
     '/src/planner/plannerUtils.js',
 
     // utils
+    '/src/analytics/period.js',
+    '/src/analytics/stats.js',
+    '/src/analytics/ui.js',
+    '/src/utils/insightsMath.js',
     '/src/utils/emojiMap.js',
     '/src/utils/loader.js',
     '/src/utils/tweakSystem.js',
@@ -101,6 +113,17 @@ const STATIC_ASSETS = [
     '/assets/akulka-transaction-hero.png',
     '/assets/planner.png',
     '/assets/shark-import.png',
+    '/assets/icons/LG.png',
+    '/assets/icons/budgetit-icon.png',
+    '/assets/icons/ludomania-icon.png',
+    '/assets/icons/migri-icon.png',
+    '/assets/icons/trackit-icon.png',
+
+    // assets — шрифты (self-hosted)
+    '/assets/fonts/manrope-cyrillic-wght-normal.woff2',
+    '/assets/fonts/manrope-latin-wght-normal.woff2',
+    '/assets/fonts/unbounded-cyrillic-wght-normal.woff2',
+    '/assets/fonts/unbounded-latin-wght-normal.woff2',
 
     // assets — PWA иконки
     '/assets/icon-192x192v4.png',
@@ -172,14 +195,25 @@ const STATIC_ASSETS = [
     '/assets/avatar/zombie.png',
 ];
 
+/* Внешние библиотеки (CDN): кладём в кэш, чтобы графики, импорт Excel/PDF работали без сети */
+const CDN_ASSETS = [
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2',
+    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+];
+const CDN_HOSTS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+
 /* === INSTALL ======================================================== */
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(async cache => {
-                const results = await Promise.allSettled(
-                    STATIC_ASSETS.map(url => cache.add(url))
-                );
+                // cache:'reload' — берём свежие файлы с сервера, а не из HTTP-кэша браузера
+                const local = STATIC_ASSETS.map(url => cache.add(new Request(url, { cache: 'reload' })));
+                const cdn   = CDN_ASSETS.map(url => cache.add(new Request(url, { mode: 'cors', credentials: 'omit' })));
+                const results = await Promise.allSettled([...local, ...cdn]);
                 results
                     .filter(r => r.status === 'rejected')
                     .forEach(r => console.warn('[SW] asset skip:', r.reason?.url || r.reason));
@@ -216,32 +250,7 @@ self.addEventListener('fetch', event => {
 
     const url = new URL(request.url);
     const isUmami = url.href.includes('umami');
-
-    // внешние домены пропускаем, кроме umami, который явно разрешён
-    if (url.origin !== self.location.origin && !isUmami) return;
-
-    // /api/ не кэшируем
-    if (url.pathname.startsWith('/api/')) return;
-
-    const isNavigate =
-        request.mode === 'navigate' ||
-        (request.headers.get('accept') || '').includes('text/html');
-
-    if (isNavigate) {
-        const network = fromNetwork(request, 4000)
-            .then(resp => {
-                if (!resp.ok) {
-                    if (resp.status === 404)  return caches.match('/404.html');
-                    if (resp.status >= 500)   return caches.match('/500.html');
-                }
-                cacheIfAllowed(request, resp.clone());
-                return resp;
-            })
-            .catch(() => caches.match('/offline.html'));
-
-        event.respondWith(network);
-        return;
-    }
+    const isCdn = CDN_HOSTS.includes(url.hostname);
 
     // ⛔ Для umami.js и прочей аналитики — всегда только сеть
     if (isUmami) {
@@ -249,23 +258,75 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Остальное: cache-first + подкачка из сети
-    event.respondWith(
-        caches.match(request).then(cached => {
-            const network = fetch(request)
-                .then(resp => {
-                    cacheIfAllowed(request, resp.clone());
-                    return resp;
-                })
-                .catch(() => cached);
-            return cached || network;
-        })
-    );
+    // прочие внешние домены пропускаем
+    if (url.origin !== self.location.origin && !isCdn) return;
+
+    // /api/ не кэшируем
+    if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
+
+    // Диапазонные запросы (видео/аудио) не трогаем
+    if (request.headers.has('range')) return;
+
+    const isNavigate =
+        request.mode === 'navigate' ||
+        (request.headers.get('accept') || '').includes('text/html');
+
+    if (isNavigate && !isCdn) {
+        event.respondWith(handleNavigate(request, url));
+        return;
+    }
+
+    // CDN и остальная статика: кэш сразу + тихое обновление из сети
+    event.respondWith(cacheFirst(event, request));
 });
 
 /* === HELPERS ======================================================== */
+
+// Страница: сеть (до 4 с) → иначе то, что есть в кэше → иначе offline.html
+async function handleNavigate(request, url) {
+    try {
+        const resp = await fromNetwork(request, 4000);
+        if (!resp.ok) {
+            if (resp.status === 404) return (await caches.match('/404.html')) || resp;
+            if (resp.status >= 500)  return (await caches.match('/500.html')) || resp;
+        }
+        cacheIfAllowed(request, resp.clone());
+        return resp;
+    } catch (e) {
+        // офлайн или очень медленная сеть: открываем приложение из кэша
+        const exact = await caches.match(request);
+        if (exact) return exact;
+        const bare = await caches.match(request, { ignoreSearch: true });
+        if (bare) return bare;
+        const p = url.pathname;
+        if (p === '/' || p === '' || p.endsWith('/index.html') || !/\.[a-z0-9]+$/i.test(p)) {
+            const app = await caches.match('/index.html');
+            if (app) return app;
+        }
+        return (await caches.match('/offline.html')) ||
+            new Response('Нет соединения', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+}
+
+async function cacheFirst(event, request) {
+    const cached = await caches.match(request);
+    const refresh = fetch(request)
+        .then(resp => { cacheIfAllowed(request, resp.clone()); return resp; })
+        .catch(() => null);
+
+    if (cached) {
+        event.waitUntil(refresh);   // обновляем кэш в фоне, пока SW жив
+        return cached;
+    }
+    const net = await refresh;
+    if (net) return net;
+    // та же статика, но с другим ?v= — берём любую копию
+    const loose = await caches.match(request, { ignoreSearch: true });
+    return loose || Response.error();
+}
+
 function cacheIfAllowed(request, response) {
-    if (response.ok && (response.type === 'basic' || response.type === 'cors')) {
+    if (response.ok && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
         caches.open(CACHE_NAME)
             .then(c => c.put(request, response))
             .catch(err => console.warn('[SW] put error:', err, request.url));

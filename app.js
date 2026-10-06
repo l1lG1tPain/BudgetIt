@@ -7,7 +7,11 @@ import { initThemeSelector } from './src/ThemeManager.js';
 import { initSettings } from './src/settings.js';
 import { showLoader } from './src/utils/loader.js';
 import { SearchManager } from './src/Searchmanager.js';
+import { normalizeCustomCategories } from './src/utils/customCategories.js';
 import { PlannerManager } from './src/planner/PlannerManager.js';
+import { SharkUI } from './src/shark/SharkUI.js';
+import { AccountsPage } from './src/ui/AccountsPage.js';
+import { DesktopWidgets } from './src/ui/DesktopWidgets.js';
 import { PlannerPage } from './src/planner/PlannerPage.js';
 import { PlannerSheet } from './src/planner/PlannerSheet.js';
 
@@ -78,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         budgetManager.planners = Array.isArray(initialState.planners)
             ? initialState.planners
             : [];
+        budgetManager.customCategories = normalizeCustomCategories(initialState.customCategories);
     }
 
     const uiManager = new UIManager(budgetManager);
@@ -105,6 +110,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     plannerPage.init();
 
     window._budgetPlannerRef = { plannerManager, plannerPage, plannerSheet };
+
+    new SharkUI({ budgetManager, plannerManager, uiManager }).init();
+    new AccountsPage({ budgetManager, uiManager }).init();
+    const desktopWidgets = new DesktopWidgets({ budgetManager, plannerManager, uiManager });
+    desktopWidgets.init();
+    uiManager.desktopWidgets = desktopWidgets;
 
     initSettings(budgetManager, uiManager);
 

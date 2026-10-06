@@ -97,11 +97,13 @@
     const symbols=[...new Set(cfg.pairs.map(([f])=>f))];
     for(const p of cfg.providers){
       try{
-        if(p==='cbu')  return await fetchFromCBU(symbols);
-        if(p==='cbr')  return await fetchFromCBR(symbols);
-        if(p==='nbk')  return await fetchFromNBK(symbols);
-        if(p==='nbkr') return await fetchFromNBKR(symbols);
-        if(p==='host') return await fetchFromHost(base, symbols);
+        let out;
+        if(p==='cbu')  out = await fetchFromCBU(symbols);
+        else if(p==='cbr')  out = await fetchFromCBR(symbols);
+        else if(p==='nbk')  out = await fetchFromNBK(symbols);
+        else if(p==='nbkr') out = await fetchFromNBKR(symbols);
+        else if(p==='host') out = await fetchFromHost(base, symbols);
+        return { ...out, source: p };
       }catch(e){ console.warn('[currencyChips] provider failed:', p, e); }
     }
     throw new Error('All providers failed');
@@ -130,110 +132,174 @@
   }
 
   // ===== UI helpers =====
-  function mountContainer(){
-    const anchor=document.getElementById(CONTAINER_ID);
-    if(!anchor){ console.warn(`[currencyChips] anchor #${CONTAINER_ID} not found`); return null; }
-    let c=anchor.querySelector('.currency-chip-container');
-    if(c) c.innerHTML=''; else { c=document.createElement('div'); c.className='currency-chip-container'; anchor.appendChild(c); }
-    return c;
-  }
+  const SOURCE_NAMES = { cbu:'ЦБ Узбекистана', cbr:'ЦБ России', nbk:'Нацбанк Казахстана', nbkr:'НБ Кыргызстана', host:'exchangerate.host' };
+  const SYMBOLS = { USD:'$', EUR:'€', RUB:'₽', CNY:'¥', KZT:'₸', KGS:'с', UZS:'сум' };
+  const DEFAULT_ON = { UZ:['USD','RUB'], RU:['USD','EUR'], KZ:['USD','RUB'], KG:['USD','RUB'] };
+  const FX_VISIBLE_KEY = 'budgetit:fxVisible';
+  const LAST_KEY = 'budgetit:fx:last';
 
-  // Всегда 2 знака после запятой
-  function fmt(n){
+  let state = { fiat:null, crypto:null, series:{}, updatedAt:null, offline:false };
+
+  function fmt(n, d = 2){
     try{
-      if(n===null || isNaN(n)) return '—';
-      return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2, maximumFractionDigits:2}).format(n);
+      if(n===null || n===undefined || isNaN(n)) return '—';
+      return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:d, maximumFractionDigits:d}).format(n);
     }catch{ return '—'; }
   }
+  function fmt0(n){ return fmt(n,0); }
 
-  // Спарклайн (компактный)
-  function svgSpark(values, width=100, height=18){
+  function fxVisible(region){
+    let saved = {};
+    try{ saved = JSON.parse(localStorage.getItem(FX_VISIBLE_KEY) || '{}')[region] || null; }catch{}
+    const cfg = REGION_CFG[region] || REGION_CFG.UZ;
+    const all = cfg.pairs.map(([f])=>f);
+    if (saved && typeof saved === 'object') return all.filter(c => saved[c] !== false && (saved[c] === true || (DEFAULT_ON[region]||[]).includes(c)));
+    return all.filter(c => (DEFAULT_ON[region]||[]).includes(c));
+  }
+  function setFxVisible(region, code, on){
+    let all = {};
+    try{ all = JSON.parse(localStorage.getItem(FX_VISIBLE_KEY) || '{}'); }catch{}
+    const cfg = REGION_CFG[region] || REGION_CFG.UZ;
+    const cur = all[region] || {};
+    cfg.pairs.forEach(([f]) => { if (cur[f] === undefined) cur[f] = (DEFAULT_ON[region]||[]).includes(f); });
+    cur[code] = !!on;
+    all[region] = cur;
+    try{ localStorage.setItem(FX_VISIBLE_KEY, JSON.stringify(all)); }catch{}
+    renderMain(); renderSheet();
+  }
+
+  // Спарклайн; рост — красным (--out), падение — зелёным (--in), как в макете
+  function svgSpark(values, width=64, height=20){
     const pts=values.filter(v=>typeof v==='number' && v>0);
-    if(!pts.length) return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"></svg>`;
+    if(pts.length<2) return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true"></svg>`;
     const min=Math.min(...pts), max=Math.max(...pts), span=Math.max(max-min,1e-9);
     const step=width/Math.max(values.length-1,1);
     const trend=pts[pts.length-1]-pts[0];
-    const color=trend>0?'#ff0000':(trend<0?'#00aa00':'#888888');
-
-    let lineD='', areaD='', has=false;
+    const color=trend>0?'var(--out,#ff4b5c)':(trend<0?'var(--in,#27AE60)':'var(--muted,#888)');
+    let d='';
     values.forEach((v,i)=>{
       if(typeof v!=='number'||v<=0) return;
-      const x=i*step, y=height-((v-min)/span)*(height-2)-1;
-      lineD+=(lineD?' L':'M')+x.toFixed(2)+' '+y.toFixed(2);
-      if(!has){ areaD=`M${x} ${height} L${x} ${y}`; has=true; } else { areaD+=` L${x} ${y}`; }
+      const x=i*step, y=height-((v-min)/span)*(height-4)-2;
+      d+=(d?' L':'M')+x.toFixed(1)+' '+y.toFixed(1);
     });
-    if(has) areaD+=` L${(values.length-1)*step} ${height} Z`;
-    const gid=`g-${Math.random().toString(36).slice(2)}`;
-    return `
-      <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="${areaD}" fill="url(#${gid})"/>
-        <path d="${lineD}" fill="none" stroke="${color}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
-      </svg>
-    `;
+    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
 
-  // ===== render one chip =====
-  async function renderChip(container, region, fromCurr, toCurr, todayData, label, isCrypto=false){
-    const r=todayData?.rates?.[fromCurr]||null;
-    let value=r?.value ?? null;
-    let prev =r?.prev  ?? null;
+  function seriesFor(code, rate){
+    const s = (state.series[code] || []).filter(v => typeof v === 'number');
+    if (s.length >= 2) return s;
+    if (rate && typeof rate.prev === 'number' && typeof rate.value === 'number') return [rate.prev, rate.value];
+    return [];
+  }
+  function deltaPct(code, rate){
+    const s = seriesFor(code, rate);
+    if (s.length < 2) return null;
+    return (s[s.length-1] - s[0]) / s[0] * 100;
+  }
 
-    // Спред ±0.5% только для фиата
-    if(typeof value==='number' && !isNaN(value) && !isCrypto){
-      value = label==='Покупка' ? value*0.995 : value*1.005;
-      prev  = typeof prev==='number' ? (label==='Покупка'? prev*0.995 : prev*1.005) : null;
-    }
+  function readBalance(){
+    const el = document.querySelector('#block-budget .block-value');
+    if (!el) return null;
+    const digits = (el.textContent || '').replace(/[^\d,.\-−]/g,'').replace('−','-').replace(/\s/g,'').replace(',', '.');
+    const n = parseFloat(digits);
+    return isNaN(n) ? null : n;
+  }
 
-    // Спарклайн заранее — пригодится и для стрелки, если prev отсутствует
-    let series=[]; try{ series=await loadSeries(todayData.base, fromCurr, SPARK_DAYS); }catch{ series=[]; }
-    const validSeries = series.filter(v=>typeof v==='number');
+  // ===== главная: чипы «≈ 381 $» + «💱 Курсы ›» =====
+  function renderMain(){
+    const anchor = document.getElementById(CONTAINER_ID);
+    if (!anchor) return;
+    const region = getRegion();
+    const bal = readBalance();
+    const rates = state.fiat?.rates || {};
+    const chips = fxVisible(region).map(code => {
+      const r = rates[code];
+      if (!r || !r.value || bal === null) return '';
+      return `<span class="fx-chip">≈ ${fmt0(bal / r.value)} ${SYMBOLS[code] || code}</span>`;
+    }).join('');
+    anchor.innerHTML = `<div class="fx-row">${chips}<button type="button" class="fx-open" id="fx-open-btn">💱 Курсы ›</button></div>`;
+    anchor.querySelector('#fx-open-btn').addEventListener('click', openSheet);
+  }
 
-    // Тренд: 1) value-prev если есть prev; 2) иначе по серии (последняя - первая)
-    let trendDelta = 0;
-    if (typeof prev==='number' && typeof value==='number') {
-      trendDelta = value - prev;
-    } else if (validSeries.length >= 2) {
-      trendDelta = validSeries[validSeries.length-1] - validSeries[0];
-    }
-    const arrow = trendDelta===0 ? '' : (trendDelta>0 ? '▲' : '▼');
-    const arrowClass = trendDelta===0 ? '' : (trendDelta>0 ? 'trend-up' : 'trend-down');
+  // ===== шторка «Курсы валют» =====
+  function ensureSheet(){
+    let sheet = document.getElementById('fx-sheet');
+    if (sheet) return sheet;
+    sheet = document.createElement('div');
+    sheet.id = 'fx-sheet';
+    sheet.className = 'bottom-sheet hidden';
+    sheet.innerHTML = `
+      <div class="sheet-title-row"><h2>Курсы валют</h2><button type="button" class="sheet-x" id="fx-sheet-x" aria-label="Закрыть">✕</button></div>
+      <div class="fx-source"><span id="fx-source-text"></span><button type="button" id="fx-refresh" aria-label="Обновить">↻</button></div>
+      <div id="fx-table"></div>
+      <div id="fx-crypto"></div>`;
+    document.body.appendChild(sheet);
+    sheet.querySelector('#fx-sheet-x').addEventListener('click', closeSheet);
+    sheet.querySelector('#fx-refresh').addEventListener('click', () => loadAndRender(true));
+    return sheet;
+  }
+  function openSheet(){
+    const sheet = ensureSheet();
+    renderSheet();
+    const ui = window._budgetAppRef?.uiManager;
+    if (ui?.openModal) ui.openModal('fx-sheet');
+    else { sheet.classList.remove('hidden'); document.getElementById('bottom-sheet-backdrop')?.classList.remove('hidden'); }
+  }
+  function closeSheet(){
+    const ui = window._budgetAppRef?.uiManager;
+    if (ui?.closeModal) ui.closeModal('fx-sheet');
+    else document.getElementById('fx-sheet')?.classList.add('hidden');
+  }
 
-    const chip=document.createElement('div');
-    chip.className='currency-chip';
-    chip.style.padding='6px 8px';
-    chip.innerHTML = `
-      <div class="chip-info" style="font-size:11px; line-height:13px; margin-bottom:4px;">
-        <span>${flagOf(fromCurr)} ${fromCurr}</span>
-        <span>→</span>
-        <span>${flagOf(toCurr)} ${toCurr} (${label})</span>
+  function rowHtml(code, base, rate, on){
+    const val = rate?.value;
+    const buy = typeof val === 'number' ? val*0.995 : null;
+    const sell = typeof val === 'number' ? val*1.005 : null;
+    const d = deltaPct(code, rate);
+    const arrow = d === null || Math.abs(d) < 0.005 ? '' : (d > 0 ? '▲' : '▼');
+    const cls = d === null ? '' : (d > 0 ? 'up' : 'down');
+    return `<div class="fx-row-item">
+      <div class="fx-row-top">
+        <div class="fx-cur"><span class="fx-flag">${flagOf(code)}</span><b>${code}</b></div>
+        <div class="fx-vals"><small>Покупка</small><b>${fmt(buy)}</b></div>
+        <div class="fx-vals"><small>Продажа</small><b>${fmt(sell)}</b></div>
+        <label class="sw fx-sw" title="На главной"><input type="checkbox" data-fx="${code}" ${on ? 'checked' : ''}><span></span></label>
       </div>
-      <div class="chip-body" style="display:flex; align-items:center; gap:4px;">
-        ${arrow ? `<span class="${arrowClass}" style="font-size:12px; line-height:1;">${arrow}</span>` : ''}
-        <div class="chip-value" style="font-weight:600; font-size:14px;">${value!==null ? fmt(value) : '—'}</div>
-        <div class="chip-sparkline" style="opacity:.9;margin-left:auto">${svgSpark(series, 100, 18)}</div>
-      </div>
-    `;
-    container.appendChild(chip);
+      <div class="fx-row-bottom"><span class="fx-spark">${svgSpark(seriesFor(code, rate))}</span>
+        <span class="fx-delta ${cls}">${arrow} ${d === null ? '' : fmt(Math.abs(d)) + '%'}</span></div>
+    </div>`;
+  }
+
+  function renderSheet(){
+    const sheet = document.getElementById('fx-sheet');
+    if (!sheet) return;
+    const region = getRegion(); const cfg = REGION_CFG[region] || REGION_CFG.UZ;
+    const src = state.fiat?.source;
+    const when = state.updatedAt ? new Date(state.updatedAt).toLocaleString('ru-RU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+    sheet.querySelector('#fx-source-text').textContent =
+      `${SOURCE_NAMES[src] || 'Курсы'} · обновлено ${when}${state.offline ? ' (офлайн)' : ''}`;
+    const rates = state.fiat?.rates || {};
+    const on = fxVisible(region);
+    sheet.querySelector('#fx-table').innerHTML = `
+      <div class="fx-head"><span></span><span>Покупка</span><span>Продажа</span><span>На главной</span></div>` +
+      (Object.keys(rates).length
+        ? cfg.pairs.map(([code, base]) => rowHtml(code, base, rates[code], on.includes(code))).join('')
+        : '<div class="fx-empty">Курсы пока не загрузились. Проверь интернет и нажми ↻.</div>');
+    const cr = state.crypto?.rates || {};
+    sheet.querySelector('#fx-crypto').innerHTML = (cr.BTC?.value || cr.USDT?.value) ? `
+      <h3 class="fx-h">Крипта</h3>
+      ${['BTC','USDT'].filter(c => cr[c]?.value).map(c => `
+        <div class="fx-row-item"><div class="fx-row-top">
+          <div class="fx-cur"><span class="fx-flag">${flagOf(c)}</span><b>${c}</b></div>
+          <div class="fx-vals" style="grid-column: span 3; text-align:right"><b>${fmt(cr[c].value)} $</b></div>
+        </div></div>`).join('')}` : '';
+    sheet.querySelectorAll('input[data-fx]').forEach(inp => {
+      inp.addEventListener('change', () => setFxVisible(region, inp.dataset.fx, inp.checked));
+    });
   }
 
   // ===== series (спарклайн) =====
   async function loadSeries(base, foreign, days = SPARK_DAYS){
-    // Крипта — синтетический спокойный ряд
-    if (foreign === 'BTC' || foreign === 'USDT') {
-      const start = foreign === 'BTC' ? 60000 : 1.0;
-      let cur = start;
-      return Array.from({ length: days }, () => {
-        const delta = (Math.random() - 0.5) * (foreign === 'BTC' ? 2000 : 0.02);
-        cur = Math.max(0.0001, cur + delta);
-        return cur;
-      });
-    }
     const end   = new Date();
     const start = new Date(); start.setDate(end.getDate() - (days - 1));
     const s = start.toISOString().slice(0,10), e = end.toISOString().slice(0,10);
@@ -245,53 +311,67 @@
     try {
       const js = await (await fetch(url, { cache: 'no-store' })).json();
       const daysSorted = Object.keys(js.rates || {}).sort();
-      let values = daysSorted.map(d => {
+      const values = daysSorted.map(d => {
         const rb = Number(js.rates[d]?.[base]);
         const rf = Number(js.rates[d]?.[foreign]);
         return (rb > 0 && rf > 0) ? (rb / rf) : null;
       });
-      if (!values.some(v => typeof v === 'number')) {
-        let cur = 1;
-        values = Array.from({ length: days }, () => (cur = Math.max(0.0001, cur * (1 + (Math.random()-0.5)*0.01))));
-      }
-      setCache(key, values);
-      return values;
-    } catch (e) {
-      console.warn('[series] host failed', e);
-      return Array.from({ length: days }, () => null);
-    }
+      if (values.some(v => typeof v === 'number')) { setCache(key, values); return values; }
+    } catch (err) { console.warn('[series] failed', err); }
+    return [];
   }
 
   // ===== boot =====
-  async function loadAndRender(){
-    const container=mountContainer(); if(!container) return;
-    const region=getRegion(); const cfg=REGION_CFG[region]||REGION_CFG.UZ;
-
-    let todayData={base:cfg.base, rates:{}}; try{ todayData=await loadToday(region); }catch(e){ console.warn('[currencyChips] fiat failed', e); }
-    let cryptoData={base:'USD', rates:{}};   try{ cryptoData=await loadCryptoToday(); }catch(e){ console.warn('[currencyChips] crypto failed', e); }
-
-    if(Object.keys(todayData.rates).length){
-      for(const [foreign, base] of cfg.pairs){
-        await renderChip(container, region, foreign, base, todayData, 'Покупка');
-        await renderChip(container, region, foreign, base, todayData, 'Продажа');
-      }
-    }
-    if(Object.keys(cryptoData.rates).length){
-      for(const {base, foreign, label} of CRYPTO_PAIRS){
-        if(!cryptoData.rates[foreign]?.value) continue;
-        await renderChip(container, region, foreign, base, cryptoData, label, true);
-      }
-    }
-
-    const badge=document.createElement('div');
-    badge.className='chip-time-note';
-    badge.style.marginTop='4px';
-    badge.style.fontSize='11px';
-    badge.textContent='Обновлено: '+new Date().toLocaleString('ru-RU');
-    container.appendChild(badge);
+  function restoreLast(){
+    try{
+      const last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null');
+      if (last && last.region === getRegion()) { state = { ...state, ...last.state, offline: true }; }
+    }catch{}
   }
 
-  document.addEventListener('DOMContentLoaded', loadAndRender);
-  window.addEventListener('budgetit:region-changed', loadAndRender);
+  async function loadAndRender(force){
+    const region=getRegion(); const cfg=REGION_CFG[region]||REGION_CFG.UZ;
+    if (force) { try { Object.keys(localStorage).filter(k => k.startsWith('rates:')).forEach(k => localStorage.removeItem(k)); } catch {} }
+    let ok = false;
+    try{
+      const fiat = await loadToday(region);
+      if (Object.keys(fiat.rates).length) {
+        state.fiat = fiat; state.updatedAt = Date.now(); state.offline = false; ok = true;
+      }
+    }catch(e){ console.warn('[currencyChips] fiat failed', e); }
+    try{ const c = await loadCryptoToday(); if (Object.keys(c.rates).length) state.crypto = c; }catch(e){}
+    if (!ok) state.offline = true;
+
+    renderMain(); renderSheet();
+
+    if (ok) {
+      // 7-дневные ряды подгружаем после первой отрисовки
+      for (const [code, base] of cfg.pairs) {
+        try { state.series[code] = await loadSeries(base, code, SPARK_DAYS); } catch {}
+      }
+      try { localStorage.setItem(LAST_KEY, JSON.stringify({ region, state: { fiat: state.fiat, crypto: state.crypto, series: state.series, updatedAt: state.updatedAt } })); } catch {}
+      renderSheet();
+    }
+  }
+
+  function init(){
+    restoreLast();
+    renderMain();
+    const bal = document.querySelector('#block-budget .block-value');
+    if (bal && window.MutationObserver) new MutationObserver(() => renderMain()).observe(bal, { childList: true, characterData: true, subtree: true });
+    loadAndRender();
+  }
+
+  window.BudgetItFx = {
+    open: openSheet,
+    refresh: () => loadAndRender(true),
+    pairsFor: region => ((REGION_CFG[region] || REGION_CFG.UZ).pairs.map(([f]) => f)),
+    isOn: (region, code) => fxVisible(region).includes(code),
+    setOn: setFxVisible,
+    flagOf
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.addEventListener('budgetit:region-changed', () => { state = { fiat:null, crypto:null, series:{}, updatedAt:null, offline:false }; restoreLast(); renderMain(); loadAndRender(); });
   setInterval(loadAndRender, 15*60*1000);
 })();

@@ -1287,7 +1287,7 @@ main {
     width: 100%;
     background: var(--tertiary-color);
     box-shadow: 0 -2px 25px rgba(0, 0, 0, 0.9);
-    padding: 0 0 90px;
+    padding: 0 0 120px;
     z-index: 1500;
     overflow-y: auto;
     transform: translateY(100%);
@@ -4242,7 +4242,7 @@ footer.liquid-footer {
     background: transparent;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    border-radius: 18px;
+    border-radius: 32px;
     color: rgba(255, 255, 255, 0.45);
     position: relative;
     transition: color 0.22s ease,

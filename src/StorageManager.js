@@ -1,4 +1,5 @@
 // src/StorageManager.js
+import { normalizeCustomCategories } from './utils/customCategories.js';
 const DB_NAME = 'AkulkaVault';
 const DB_VERSION = 1;
 const STORE_NAME = 'DeepSeaState';
@@ -84,6 +85,7 @@ export class StorageManager {
         let productNames = [];
         let userId = null;
         let planners = [];
+        let customCategories = null;
 
         try {
             const rawBudgets = localStorage.getItem('budgets');
@@ -117,12 +119,19 @@ export class StorageManager {
             planners = [];
         }
 
+        try {
+            customCategories = JSON.parse(localStorage.getItem('customCategories') || 'null');
+        } catch {
+            customCategories = null;
+        }
+
         return this.#normalizeState({
             budgets,
             currentBudgetIndex: idx,
             productNames,
             userId,
-            planners
+            planners,
+            customCategories
         });
     }
 
@@ -132,7 +141,8 @@ export class StorageManager {
             currentBudgetIndex: typeof raw.currentBudgetIndex === 'number' ? raw.currentBudgetIndex : 0,
             productNames: Array.isArray(raw.productNames) ? raw.productNames : [],
             userId: raw.userId || null,
-            planners: Array.isArray(raw.planners) ? raw.planners : []
+            planners: Array.isArray(raw.planners) ? raw.planners : [],
+            customCategories: normalizeCustomCategories(raw.customCategories)
         };
     }
 
@@ -175,6 +185,7 @@ export class StorageManager {
         try { localStorage.setItem('currentBudgetIndex', String(normalized.currentBudgetIndex)); } catch {}
         try { localStorage.setItem('productNames', JSON.stringify(normalized.productNames)); } catch {}
         try { localStorage.setItem('planners', JSON.stringify(normalized.planners)); } catch {}
+        try { localStorage.setItem('customCategories', JSON.stringify(normalized.customCategories)); } catch {}
 
         if (normalized.userId) {
             try { localStorage.setItem('budgetit-user-id', normalized.userId); } catch {}
@@ -192,7 +203,8 @@ export class StorageManager {
             currentBudgetIndex: state.currentBudgetIndex,
             productNames: state.productNames,
             userId: state.userId,
-            planners: state.planners
+            planners: state.planners,
+            customCategories: state.customCategories
         };
 
         return JSON.stringify(payload, null, 2);
@@ -221,7 +233,8 @@ export class StorageManager {
                 currentBudgetIndex: data.currentBudgetIndex,
                 productNames: data.productNames,
                 userId: data.userId,
-                planners: data.planners
+                planners: data.planners,
+                customCategories: data.customCategories
             });
         } else {
             throw new Error('Неизвестный формат файла экспорта');

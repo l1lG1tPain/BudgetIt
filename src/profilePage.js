@@ -61,7 +61,7 @@ export function renderProfilePage(budgetManager) {
     // ── DOM ───────────────────────────────
     _setText('pp-level', currentLevel);
     _setText('pp-level-badge', currentLevel);
-    _setText('pp-level-pts', `${totalPoints} / ${nextThreshold} pts`);
+    _setText('pp-level-pts', `${totalPoints} / ${nextThreshold} XP`);
     _setText('pp-level-remaining', remaining);
     _setText('pp-points', totalPoints);
     _setText('pp-achievements', `${unlockedIds.length}`);
