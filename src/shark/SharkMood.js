@@ -4,6 +4,8 @@
 //   Формулы перенесены из прототипа дизайна (react / planCalc / thr).
 // ===============================
 
+import { MOOD_TEXTS, TOAST_TEXTS, FLAVOR } from './texts/index.js';
+
 export const SHARK_SETTINGS_KEY = 'budgetit:shark';
 const TEXT_HISTORY_KEY = 'budgetit:shark:texts';
 
@@ -16,13 +18,31 @@ export const CHARACTER_THRESHOLDS = {
 
 export const CHARACTER_LABELS = { kind: 'Добрая', normal: 'Обычная', strict: 'Строгая' };
 
-const DEFAULTS = { character: 'normal', reactions: true, vibration: true, quietHours: true, dailyTip: true };
+// Картинка Акулки под настроение (ok и new — базовая)
+export const MOOD_IMAGES = {
+    new  : 'assets/shark.png',
+    ok   : 'assets/shark.png',
+    tense: 'assets/wary-shark.png',
+    angry: 'assets/angry-shark.png',
+    proud: 'assets/proud-shark.png'
+};
+export const sharkImage = key => MOOD_IMAGES[key] || MOOD_IMAGES.ok;
+
+const DEFAULTS = {
+    character: 'normal', reactions: true, vibration: true, quietHours: true, dailyTip: true,
+    talk: 'normal',      // болтливость: 'quiet' | 'normal' | 'chatty'
+    limitMode: 'auto',   // 'auto' — Акулка считает сама, 'custom' — своя сумма
+    customLimit: 0
+};
 
 export function getSharkSettings(storage = globalThis.localStorage) {
     try {
         const raw = JSON.parse(storage?.getItem(SHARK_SETTINGS_KEY) || '{}');
         const s = { ...DEFAULTS, ...raw };
         if (!CHARACTER_THRESHOLDS[s.character]) s.character = 'normal';
+        if (s.limitMode !== 'custom') s.limitMode = 'auto';
+        if (!['quiet', 'normal', 'chatty'].includes(s.talk)) s.talk = 'normal';
+        s.customLimit = Math.max(0, Math.round(Number(s.customLimit) || 0));
         return s;
     } catch (e) {
         return { ...DEFAULTS };
@@ -47,7 +67,7 @@ export function isoDay(date = new Date()) {
     return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-function shiftDay(iso, delta) {
+export function shiftDay(iso, delta) {
     const d = new Date(iso + 'T00:00:00');
     d.setDate(d.getDate() + delta);
     return isoDay(d);
@@ -87,6 +107,15 @@ export function getDailyLimit({ transactions = [], planner = null, today = isoDa
     return { limit: Math.round(median(regular.length ? regular : sums)), source: 'median' };
 }
 
+// Итоговый лимит с учётом ручной настройки.
+// source: 'custom' | 'plan' | 'median' | 'none'; auto — что насчитала бы сама Акулка.
+export function getLimitInfo({ transactions = [], planner = null, today = isoDay(), settings = null } = {}) {
+    const auto = getDailyLimit({ transactions, planner, today });
+    const custom = Math.round(Number(settings?.customLimit) || 0);
+    if (settings?.limitMode === 'custom' && custom > 0) return { limit: custom, source: 'custom', auto };
+    return { ...auto, auto };
+}
+
 // Траты за день без плановых «Основных» и «Регулярных» категорий активного плана
 export function getSpentOnDay({ transactions = [], planner = null, day = isoDay(), normalize = c => c } = {}) {
     const planned = new Set();
@@ -100,62 +129,36 @@ export function getSpentOnDay({ transactions = [], planner = null, day = isoDay(
 }
 
 // ───────── тексты ─────────
-const fmt = n => Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+export const fmt = n => Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-const TEXTS = {
-    new: [
-        () => 'Я Акулка. Добавь первую трату — начну следить за лимитом.',
-        () => 'Пока знакомимся. Запиши пару трат, и я посчитаю твой дневной лимит.',
-        () => 'Данных мало. Три дня с записями — и я скажу, сколько тебе можно в день.',
-        () => 'Привет! Пиши траты, а я покажу, как ты тратишь деньги.',
-        () => 'Пока без лимита: мне нужно хотя бы 3 дня твоих трат.',
-        () => 'Только знакомлюсь с твоим бюджетом. Запиши сегодняшнюю покупку.'
-    ],
-    ok: [
-        ({ left }) => `Всё спокойно. На сегодня в запасе ещё ${fmt(left)}.`,
-        ({ left }) => `Ты в лимите, осталось ${fmt(left)}. Так держать.`,
-        ({ left }) => `Довольна: до лимита ещё ${fmt(left)}.`,
-        ({ left }) => `Траты в норме. На сегодня доступно ${fmt(left)}.`,
-        ({ left }) => `Хороший день: можно потратить ещё ${fmt(left)}.`,
-        ({ left }) => `Плыву спокойно — до лимита ${fmt(left)}.`
-    ],
-    tense: [
-        ({ left }) => `Насторожилась: до лимита осталось ${fmt(left)}.`,
-        ({ left }) => `Ты близко к лимиту — в запасе всего ${fmt(left)}.`,
-        ({ left }) => `Почти упёрлись: осталось ${fmt(left)} на сегодня.`,
-        ({ left }) => `Аккуратнее с тратами — до лимита ${fmt(left)}.`,
-        ({ left }) => `Лимит рядом, осталось ${fmt(left)}. Подумай перед покупкой.`,
-        ({ left }) => `Присматриваюсь: на сегодня ещё ${fmt(left)}, не больше.`
-    ],
-    angry: [
-        ({ over }) => `Лимит пробит на ${fmt(over)}. Завтра поджмёмся.`,
-        ({ over }) => `Ты вышла за лимит на ${fmt(over)}. Я недовольна.`,
-        ({ over }) => `Перерасход ${fmt(over)}. Давай завтра потратим меньше.`,
-        ({ over }) => `Злюсь: на ${fmt(over)} больше, чем можно сегодня.`,
-        ({ over }) => `Сегодня перебор на ${fmt(over)}. Завтра — аккуратнее.`,
-        ({ over }) => `Лимит превышен на ${fmt(over)}. Остановись на сегодня.`
-    ],
-    proud: [
-        ({ days }) => `Горжусь тобой! ${days} дн. подряд в лимите.`,
-        ({ days }) => `Неделя в лимите — ${days} дн. Ты молодец.`,
-        ({ days }) => `Серия ${days} дн. без перерасхода. Так держать!`,
-        ({ days }) => `${days} дн. в лимите. Я очень довольна тобой.`,
-        ({ days }) => `Красота: ${days} дн. подряд без превышений.`,
-        ({ days }) => `Ты держишься уже ${days} дн. Горжусь!`
-    ]
-};
+// Шаблоны {left} {over} {days} превращаем в функции (v) => строка
+const fillMood = tpl => (v = {}) => tpl.replace(/\{(left|over|days)\}/g, (m, k) => k === 'days' ? v.days : fmt(v[k]));
+const TEXTS = {};
+for (const key of Object.keys(MOOD_TEXTS)) {
+    TEXTS[key] = {};
+    for (const ch of Object.keys(MOOD_TEXTS[key])) TEXTS[key][ch] = MOOD_TEXTS[key][ch].map(fillMood);
+}
 
-// Антиповтор: не берём вариант, использованный за последние 3 дня
-function pickText(state, vars, storage = globalThis.localStorage, today = isoDay()) {
-    const list = TEXTS[state];
+export const TEXT_VARIANTS = TEXTS; // для тестов
+
+function textList(state, character) {
+    const entry = TEXTS[state];
+    if (Array.isArray(entry)) return entry;
+    return entry[character] || entry.normal || Object.values(entry)[0];
+}
+
+// Антиповтор: не берём вариант, использованный за последние 3 дня (отдельно по настроению и характеру)
+function pickText(state, vars, storage = globalThis.localStorage, today = isoDay(), character = 'normal') {
+    const list = textList(state, character);
+    const hkey = Array.isArray(TEXTS[state]) ? state : `${state}:${character}`;
     let hist = {};
     try { hist = JSON.parse(storage?.getItem(TEXT_HISTORY_KEY) || '{}'); } catch (e) { hist = {}; }
     const cutoff = shiftDay(today, -3);
-    const used = new Set((hist[state] || []).filter(x => x.d > cutoff).map(x => x.i));
+    const used = new Set((hist[hkey] || []).filter(x => x.d > cutoff).map(x => x.i));
     let candidates = list.map((_, i) => i).filter(i => !used.has(i));
     if (!candidates.length) candidates = list.map((_, i) => i);
     const idx = candidates[Math.floor(Math.random() * candidates.length)];
-    hist[state] = [...(hist[state] || []).filter(x => x.d > cutoff), { i: idx, d: today }];
+    hist[hkey] = [...(hist[hkey] || []).filter(x => x.d > cutoff), { i: idx, d: today }];
     try { storage?.setItem(TEXT_HISTORY_KEY, JSON.stringify(hist)); } catch (e) { /* ignore */ }
     return list[idx](vars);
 }
@@ -168,12 +171,24 @@ export const MOOD_TITLES = {
     angry: 'Акулка злится',
     proud: 'Акулка гордится'
 };
+export const TITLES_BY_CHARACTER = {
+    kind: {
+        new: 'Акулка знакомится 🦈', ok: 'Акулка довольна 💙', tense: 'Акулка насторожилась 🤔',
+        angry: 'Акулка переживает 😟', proud: 'Акулка гордится! 🏆'
+    },
+    normal: MOOD_TITLES,
+    strict: {
+        new: 'Акулка требует данных', ok: 'Акулка в рамках', tense: 'Акулка предупреждает',
+        angry: 'Акулка злится 🚫', proud: 'Акулка отмечает прогресс'
+    }
+};
+const titleFor = (key, character) => (TITLES_BY_CHARACTER[character] || MOOD_TITLES)[key] || MOOD_TITLES[key];
 
-// Дней подряд в лимите (по вчерашним и более ранним дням, до 7)
+// Дней подряд в лимите (по вчерашним и более ранним дням, до 30)
 export function countStreakInLimit({ transactions = [], planner = null, limit, today = isoDay(), normalize } = {}) {
     if (!limit) return 0;
     let streak = 0;
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= 30; i++) {
         const day = shiftDay(today, -i);
         const any = transactions.some(t => t.date === day);
         if (!any) break; // день без записей серию не продолжает
@@ -187,7 +202,7 @@ export function countStreakInLimit({ transactions = [], planner = null, limit, t
 export function computeMood({ spent, limit, character = 'normal', hasData = true, streak = 0 }, opts = {}) {
     const [warnAt, angryAt] = getThresholds(character);
     if (!hasData || !limit) {
-        return { key: 'new', title: MOOD_TITLES.new, text: pickText('new', {}, opts.storage, opts.today), ratio: 0, limit: 0 };
+        return { key: 'new', title: titleFor('new', character), text: pickText('new', {}, opts.storage, opts.today, character), ratio: 0, limit: 0 };
     }
     const ratio = spent / limit;
     let key = 'ok';
@@ -196,31 +211,56 @@ export function computeMood({ spent, limit, character = 'normal', hasData = true
     else if (streak >= 7 && ratio <= 1) key = 'proud';
     const left = Math.max(0, limit - spent);
     const over = Math.max(0, spent - limit);
+    // «Добрая» при превышении лимита остаётся в «насторожилась», но говорит про перерасход
+    const textKey = key === 'tense' && over > 0 ? 'tenseOver' : key;
     return {
         key, ratio, limit,
-        title: MOOD_TITLES[key],
-        text: pickText(key, { left, over, days: streak }, opts.storage, opts.today)
+        title: titleFor(key, character),
+        text: pickText(textKey, { left, over, days: streak }, opts.storage, opts.today, character)
     };
 }
 
 // ───────── реакции на сохранение (тосты) ─────────
+const pick = list => list[Math.floor(Math.random() * list.length)];
+
+const fillToast = tpl => (a, d = {}) => tpl.replace(/\{(\w+)\}/g, (m, k) => {
+    if (k === 'sum') return fmt(a);
+    if (k === 'date') return d.backdate;
+    if (k === 'left' || k === 'over') return fmt(d[k]);
+    return m;
+});
+const REACT = {};
+for (const key of Object.keys(TOAST_TEXTS)) {
+    if (key === 'limitCustom' || key === 'limitAuto') continue;
+    REACT[key] = {};
+    for (const ch of Object.keys(TOAST_TEXTS[key])) REACT[key][ch] = TOAST_TEXTS[key][ch].map(fillToast);
+}
+
+export const REACT_VARIANTS = REACT;
+const forChar = (entry, character) => Array.isArray(entry) ? entry : (entry[character] || entry.normal || Object.values(entry)[0]);
+
 // before/after — траты за сегодня (без плановых) до и после операции
-export function reactToSave({ type, amount, before = 0, after = 0, limit = 0, character = 'normal', backdate = null }) {
+function reactBase({ type, amount, before = 0, after = 0, limit = 0, character = 'normal', backdate = null, first = false }) {
     const [warnAt, angryAt] = getThresholds(character);
     const colors = { ok: 'var(--in)', warn: 'var(--debt)', bad: 'var(--out)', save: 'var(--save)', sys: 'var(--accent)' };
-    if (type === 'income') return { text: `+${fmt(amount)} пришло. Акулка довольна.`, color: colors.ok, mood: 'ok' };
-    if (type === 'deposit') return { text: `Отложено ${fmt(amount)}. Акулка гордится тобой.`, color: colors.save, mood: 'proud' };
-    if (type === 'debt') return { text: 'Долг записан. Напомню, когда подойдёт срок.', color: colors.warn, mood: 'ok' };
-    if (backdate) return { text: `Записала задним числом — на ${backdate}.`, color: colors.sys, mood: 'ok' };
-    if (!limit) return { text: `Записала трату на ${fmt(amount)}.`, color: colors.sys, mood: 'ok' };
+    const make = (entry, d = {}) => pick(forChar(entry, character))(amount, d);
+    if (type === 'income') return { text: make(REACT.income), color: colors.ok, mood: 'ok' };
+    if (type === 'deposit') return { text: make(REACT.deposit), color: colors.save, mood: 'proud' };
+    if (type === 'debt') return { text: make(REACT.debt), color: colors.warn, mood: 'ok' };
+    if (backdate) return { text: make(REACT.backdate, { backdate }), color: colors.sys, mood: 'ok' };
+    if (first && type === 'expense') return { text: make(REACT.first), color: colors.sys, mood: 'ok' };
+    if (!limit) return { text: make(REACT.noLimit), color: colors.sys, mood: 'ok' };
     if (after > limit * angryAt) {
+        const d = { over: after - limit };
         return before > limit * angryAt
-            ? { text: `Ещё ${fmt(amount)}. Перерасход уже ${fmt(after - limit)}.`, color: colors.bad, mood: 'angry', repeat: true }
-            : { text: `Лимит пробит на ${fmt(after - limit)}. Завтра поджмёмся.`, color: colors.bad, mood: 'angry' };
+            ? { text: make(REACT.angryRepeat, d), color: colors.bad, mood: 'angry', repeat: true }
+            : { text: make(REACT.angry, d), color: colors.bad, mood: 'angry' };
     }
-    if (after > limit) return { text: `Чуть выше лимита: +${fmt(after - limit)}. Ничего, бывает.`, color: colors.warn, mood: 'tense' };
-    if (after / limit > warnAt) return { text: `Записала. До лимита осталось ${fmt(limit - after)}.`, color: colors.warn, mood: 'tense' };
-    return { text: `Записала. В запасе ещё ${fmt(limit - after)}.`, color: colors.ok, mood: 'ok' };
+    if (after > limit) return { text: make(REACT.over, { over: after - limit }), color: colors.warn, mood: 'tense' };
+    if (before / limit < 0.9 && after / limit >= 0.9) return { text: make(REACT.ninety, { left: limit - after }), color: colors.warn, mood: 'tense' };
+    if (before / limit < 0.5 && after / limit >= 0.5 && after / limit <= warnAt) return { text: make(REACT.half, { left: limit - after }), color: colors.ok, mood: 'ok' };
+    if (after / limit > warnAt) return { text: make(REACT.warn, { left: limit - after }), color: colors.warn, mood: 'tense' };
+    return { text: make(REACT.ok, { left: limit - after }), color: colors.ok, mood: 'ok' };
 }
 
 // Тихие часы: после 23:00 и до 6:00 без анимации и вибрации
@@ -228,4 +268,29 @@ export function isQuietNow(settings, now = new Date()) {
     if (!settings?.quietHours) return false;
     const h = now.getHours();
     return h >= 23 || h < 6;
+}
+
+// Тост после сохранения лимита
+const compileLimit = list => list.map(t => l => t.replace('{limit}', fmt(l)));
+const LIMIT_SET = { custom: {}, auto: {} };
+for (const ch of Object.keys(TOAST_TEXTS.limitCustom)) {
+    LIMIT_SET.custom[ch] = compileLimit(TOAST_TEXTS.limitCustom[ch]);
+    LIMIT_SET.auto[ch] = TOAST_TEXTS.limitAuto[ch].map(t => () => t);
+}
+export function limitSetText(character, mode, limit) {
+    const entry = LIMIT_SET[mode === 'custom' ? 'custom' : 'auto'];
+    return pick(forChar(entry, character))(limit);
+}
+
+// Обёртка: в режимах «Обычная» и «Болтушка» иногда вместо спокойной реакции выпадает редкая реплика,
+// а у «Болтушки» к реакции добавляется короткий хвостик. talk по умолчанию 'quiet' — без добавок.
+export function reactToSave(args) {
+    const r = reactBase(args);
+    const talk = args.talk || 'quiet';
+    if (talk === 'quiet' || !r || args.first || args.backdate) return r;
+    const ch = FLAVOR.rare[args.character] ? args.character : 'normal';
+    const calm = r.mood === 'ok' || r.mood === 'proud';
+    if (calm && Math.random() < (talk === 'chatty' ? 1 / 12 : 1 / 30)) return { ...r, text: pick(FLAVOR.rare[ch]) };
+    if (talk === 'chatty' && calm && Math.random() < 0.5) return { ...r, text: `${r.text} ${pick(FLAVOR.tail[ch])}` };
+    return r;
 }

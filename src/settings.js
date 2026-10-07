@@ -1,5 +1,6 @@
 // settings.js  —  ESM-модуль
 import { initThemeSelector, THEMES, getSavedTheme } from './ThemeManager.js';
+import { markFlag } from './shark/SharkExtra.js';
 import { getSharkSettings, CHARACTER_LABELS, findActivePlanner, isoDay } from './shark/SharkMood.js';
 import { ALL_ACHIEVEMENTS } from '../constants/achievementList.js';
 import { initializeAnalytics } from './widgets/charts.js';
@@ -1580,6 +1581,7 @@ function normalizeImportedData(parsed, budgetManager) {
 }
 
 function downloadJSON(payload, filename) {
+    markFlag('export');
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 

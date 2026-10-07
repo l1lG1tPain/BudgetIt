@@ -144,6 +144,7 @@ export class ExcelImportManager {
           <div id="ei-detected-source" class="ei-detected-source" style="display:none"></div>
           <details class="ei-cols">
           <summary class="ei-section-title ei-cols-sum">Колонки <span>изменить</span></summary>
+          <div class="ei-cols-note" style="font-size:12px;opacity:.7;margin:0 0 8px">Колонки определила Акулка. Если что-то не так — поправь здесь.</div>
           <div class="ei-map-grid">
             <label class="ei-map-label">Дата</label>
             <select id="ei-col-date" class="ei-select"></select>

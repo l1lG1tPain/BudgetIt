@@ -232,7 +232,8 @@
       <div class="sheet-title-row"><h2>Курсы валют</h2><button type="button" class="sheet-x" id="fx-sheet-x" aria-label="Закрыть">✕</button></div>
       <div class="fx-source"><span id="fx-source-text"></span><button type="button" id="fx-refresh" aria-label="Обновить">↻</button></div>
       <div id="fx-table"></div>
-      <div id="fx-crypto"></div>`;
+      <div id="fx-crypto"></div>
+      <div id="fx-calc" class="fx-calc"></div>`;
     document.body.appendChild(sheet);
     sheet.querySelector('#fx-sheet-x').addEventListener('click', closeSheet);
     sheet.querySelector('#fx-refresh').addEventListener('click', () => loadAndRender(true));
@@ -296,6 +297,119 @@
     sheet.querySelectorAll('input[data-fx]').forEach(inp => {
       inp.addEventListener('change', () => setFxVisible(region, inp.dataset.fx, inp.checked));
     });
+    renderCalc();
+  }
+
+  // ===== калькулятор валют (внизу шторки) =====
+  // «Обменник»: отдаём валюту по курсу ПОКУПКИ (банк покупает), получаем по курсу ПРОДАЖИ (ЦБ ∓0,5%, как в таблице).
+  // «Официальный»: везде курс ЦБ без спреда.
+  const CALC_KEY = 'budgetit:fx:calc';
+  const calc = { from: null, to: null, mode: 'shop', amount: '' };
+  const QUICK = { UZS:[100000,500000,1000000], KZT:[10000,50000,100000], RUB:[1000,5000,10000], KGS:[1000,5000,10000] };
+  try { Object.assign(calc, JSON.parse(localStorage.getItem(CALC_KEY) || '{}')); } catch {}
+  function calcSave(){ try { localStorage.setItem(CALC_KEY, JSON.stringify({ from:calc.from, to:calc.to, mode:calc.mode, amount:calc.amount })); } catch {} }
+
+  function calcCodes(){
+    const cfg = REGION_CFG[getRegion()] || REGION_CFG.UZ;
+    return [cfg.base, ...cfg.pairs.map(([f]) => f)];
+  }
+  function calcRate(code, side, mode){
+    const cfg = REGION_CFG[getRegion()] || REGION_CFG.UZ;
+    if (code === cfg.base) return 1;
+    const v = state.fiat?.rates?.[code]?.value;
+    if (!(v > 0)) return null;
+    if (mode === 'cb') return v;
+    return side === 'buy' ? v * 0.995 : v * 1.005;
+  }
+  // сумма в валюте from → сумма в валюте to (null, если курса нет)
+  function convert(amount, from, to, mode = calc.mode){
+    if (!(amount >= 0)) return null;
+    if (from === to) return amount;
+    const a = calcRate(from, 'buy', mode), b = calcRate(to, 'sell', mode);
+    if (!a || !b) return null;
+    return amount * a / b;
+  }
+  function calcDec(code, n){ return (code === 'UZS' || code === 'KZT') ? 0 : (n !== undefined && n > 0 && n < 1 ? 4 : 2); }
+  function parseAmount(str){ const n = parseFloat(String(str || '').replace(/\s/g, '').replace(',', '.')); return isNaN(n) ? 0 : n; }
+  function formatAmountInput(raw){
+    const s = String(raw).replace(/[^\d.,]/g, '');
+    const m = s.match(/^(\d*)([.,]?)(\d{0,2})/);
+    const int = (m[1] || '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return int + (m[2] ? ',' + (m[3] || '') : '');
+  }
+
+  function ensureCalc(){
+    const host = document.getElementById('fx-calc');
+    if (!host) return null;
+    if (host.dataset.ready) return host;
+    host.dataset.ready = '1';
+    host.innerHTML = `
+      <h3 class="fx-h">Калькулятор</h3>
+      <div class="fx-calc-card">
+        <div class="fx-calc-mode" id="fx-calc-mode"><button type="button" data-mode="shop">Обменник</button><button type="button" data-mode="cb">По курсу ЦБ</button></div>
+        <div class="fx-calc-line"><input id="fx-calc-amount" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Сумма"><select id="fx-calc-from" aria-label="Из валюты"></select></div>
+        <div class="fx-calc-swap"><button type="button" id="fx-calc-swap" aria-label="Поменять валюты местами">⇅</button></div>
+        <div class="fx-calc-line"><output id="fx-calc-result" class="empty">0</output><select id="fx-calc-to" aria-label="В валюту"></select></div>
+        <div class="fx-calc-quick" id="fx-calc-quick"></div>
+        <div class="fx-calc-note" id="fx-calc-note"></div>
+      </div>`;
+    const input = host.querySelector('#fx-calc-amount');
+    input.addEventListener('input', () => {
+      const sig = v => (v.match(/[\d,]/g) || []).length;
+      const before = sig(input.value.slice(0, input.selectionStart ?? input.value.length));
+      input.value = formatAmountInput(input.value);
+      let pos = 0, seen = 0;
+      while (pos < input.value.length && seen < before) { if (/[\d,]/.test(input.value[pos])) seen++; pos++; }
+      try { input.setSelectionRange(pos, pos); } catch {}
+      calc.amount = input.value; calcSave(); renderCalc();
+    });
+    input.addEventListener('focus', () => setTimeout(() => host.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 250));
+    host.querySelector('#fx-calc-from').addEventListener('change', e => { calc.from = e.target.value; if (calc.to === calc.from) calc.to = calcCodes().find(c => c !== calc.from); calcSave(); renderCalc(); });
+    host.querySelector('#fx-calc-to').addEventListener('change', e => { calc.to = e.target.value; if (calc.from === calc.to) calc.from = calcCodes().find(c => c !== calc.to); calcSave(); renderCalc(); });
+    host.querySelector('#fx-calc-swap').addEventListener('click', () => { [calc.from, calc.to] = [calc.to, calc.from]; calcSave(); renderCalc(); });
+    host.querySelector('#fx-calc-mode').addEventListener('click', e => { const b = e.target.closest('button[data-mode]'); if (b) { calc.mode = b.dataset.mode; calcSave(); renderCalc(); } });
+    host.querySelector('#fx-calc-quick').addEventListener('click', e => {
+      const b = e.target.closest('button[data-v]'); if (!b) return;
+      calc.amount = formatAmountInput(b.dataset.v); input.value = calc.amount; calcSave(); renderCalc();
+    });
+    return host;
+  }
+
+  function renderCalc(){
+    const host = ensureCalc();
+    if (!host) return;
+    const cfg = REGION_CFG[getRegion()] || REGION_CFG.UZ;
+    const codes = calcCodes();
+    if (!codes.includes(calc.from)) calc.from = codes.find(c => c !== cfg.base) || codes[0];
+    if (!codes.includes(calc.to) || calc.to === calc.from) calc.to = cfg.base !== calc.from ? cfg.base : codes[1];
+    if (calc.mode !== 'cb') calc.mode = 'shop';
+
+    const sig = codes.join(',');
+    const selFrom = host.querySelector('#fx-calc-from'), selTo = host.querySelector('#fx-calc-to');
+    if (host.dataset.codes !== sig) {
+      const opts = codes.map(c => `<option value="${c}">${flagOf(c)} ${c}</option>`).join('');
+      selFrom.innerHTML = opts; selTo.innerHTML = opts; host.dataset.codes = sig;
+    }
+    selFrom.value = calc.from; selTo.value = calc.to;
+    host.querySelectorAll('#fx-calc-mode button').forEach(b => b.classList.toggle('active', b.dataset.mode === calc.mode));
+
+    const input = host.querySelector('#fx-calc-amount');
+    if (document.activeElement !== input && input.value !== calc.amount) input.value = calc.amount || '';
+
+    const amount = parseAmount(calc.amount);
+    const out = host.querySelector('#fx-calc-result');
+    const res = amount > 0 ? convert(amount, calc.from, calc.to) : null;
+    out.classList.toggle('empty', res === null);
+    out.textContent = res === null ? (amount > 0 ? '—' : '0') : fmt(res, calcDec(calc.to, res));
+
+    const q = QUICK[calc.from] || [10, 100, 1000];
+    host.querySelector('#fx-calc-quick').innerHTML = q.map(v => `<button type="button" data-v="${v}">${fmt0(v)}</button>`).join('');
+
+    let one = convert(1, calc.from, calc.to), a = calc.from, b = calc.to;
+    if (one !== null && one < 1) { one = convert(1, calc.to, calc.from); a = calc.to; b = calc.from; } // «1 USD = …», а не «1 сум = 0,0001 $»
+    host.querySelector('#fx-calc-note').textContent = one === null
+      ? 'Курсы пока не загрузились — нажми ↻ вверху.'
+      : `1 ${a} = ${fmt(one, calcDec(b, one))} ${b} · ${calc.mode === 'shop' ? 'курс обменника (ЦБ ±0,5%)' : 'официальный курс'}${state.offline ? ' · офлайн' : ''}`;
   }
 
   // ===== series (спарклайн) =====
@@ -365,6 +479,7 @@
   window.BudgetItFx = {
     open: openSheet,
     refresh: () => loadAndRender(true),
+    convert: (amount, from, to, mode) => convert(amount, from, to, mode),
     pairsFor: region => ((REGION_CFG[region] || REGION_CFG.UZ).pairs.map(([f]) => f)),
     isOn: (region, code) => fxVisible(region).includes(code),
     setOn: setFxVisible,

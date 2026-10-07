@@ -1905,3 +1905,111 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
   background:linear-gradient(to bottom, var(--bg) 55%, transparent)}
 
 :root:root:root #transaction-list li.tx-day-head.is-past{visibility:hidden}
+
+/* ── 5.0.1: Акулка — совет дня, кнопки, шторка лимита, чат ───────────────── */
+.akulka-card .ak-extra { margin-top: 8px; padding: 7px 10px; border-radius: 12px; font-size: 12.5px; line-height: 1.15; font-weight: 600;
+    color: var(--text, inherit); background: var(--faint, rgba(255,255,255,.07)); border: 1px solid var(--stroke, rgba(255,255,255,.08)); }
+.akulka-card .ak-extra[hidden] { display: none; }
+.akulka-card .ak-foot { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.akulka-card .ak-pill { height: 28px; padding: 0 11px; margin: 0 !important; border: none; border-radius: 14px; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+    background: var(--faint, rgba(255,255,255,.1)) !important; color: var(--text, inherit) !important; cursor: pointer; }
+.akulka-card .ak-pill:active { transform: scale(.97); }
+.akulka-card[role="button"] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.akulka-card[role="button"]:active { transform: scale(.99); }
+
+#shark-limit-sheet, #shark-chat-sheet { padding-bottom: 24px; max-height: 88vh; overflow-y: auto; }
+#shark-limit-sheet .sheet-title-row, #shark-chat-sheet .sheet-title-row { display: flex !important; flex-direction: row !important; align-items: center; justify-content: space-between; padding: 0 4px 10px; }
+#shark-limit-sheet .sheet-title-row h2, #shark-chat-sheet .sheet-title-row h2 { margin: 0; font-size: 20px; font-weight: 800; }
+#shark-limit-sheet .sheet-x, #shark-chat-sheet .sheet-x { flex: 0 0 34px; }
+.sl-hero { text-align: center; padding: 6px 0 14px; }
+.sl-num { font-family: var(--font-num, inherit); font-size: 38px; font-weight: 800; letter-spacing: -.5px; font-variant-numeric: tabular-nums; color: var(--text, inherit); }
+.sl-sub { margin-top: 2px; font-size: 12.5px; color: var(--muted, inherit); }
+.sl-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); }
+.sl-seg button { flex: 1; min-height: 40px; margin: 0 !important; border: none; border-radius: 12px; background: transparent !important; color: var(--muted, inherit) !important; font-weight: 800; font-size: 14px; }
+.sl-seg button.active { background: var(--text, #fff) !important; color: var(--bg, #111) !important; }
+.sl-panel { margin-top: 12px; }
+.sl-panel[hidden] { display: none; }
+.sl-explain { padding: 12px 14px; border-radius: 18px; background: var(--faint, rgba(255,255,255,.06)); border: 1px solid var(--stroke, rgba(255,255,255,.08)); }
+.sl-explain p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text, inherit); }
+.sl-explain p + p { margin-top: 8px; color: var(--muted, inherit); font-size: 13px; }
+.sl-input { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 56px; border-radius: 18px; background: var(--faint, rgba(255,255,255,.07)); border: 1.5px solid var(--stroke, rgba(255,255,255,.12)); }
+.sl-input:focus-within { border-color: var(--accent, #3ddc97); }
+.sl-input input { flex: 1; min-width: 0; height: 100%; border: none !important; outline: none; background: transparent !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;
+    font-family: var(--font-num, inherit); font-size: 24px; font-weight: 800; color: var(--text, inherit); font-variant-numeric: tabular-nums; }
+.sl-input span { font-size: 13px; color: var(--muted, inherit); font-weight: 700; }
+.sl-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sl-quick button { height: 32px; padding: 0 12px; margin: 0 !important; border: none; border-radius: 16px; font-size: 13px; font-weight: 700; background: var(--faint, rgba(255,255,255,.1)) !important; color: var(--text, inherit) !important; }
+.sl-quick button[hidden] { display: none; }
+.sl-hint { margin-top: 10px; font-size: 12.5px; line-height: 1.4; color: var(--muted, inherit); }
+.sl-thr { margin: 14px 2px 0; font-size: 13px; line-height: 1.4; color: var(--muted, inherit); }
+.sl-thr b { color: var(--text, inherit); }
+.sl-save { width: 100%; height: 50px; margin: 16px 0 0 !important; border: none; border-radius: 18px; font-size: 16px; font-weight: 800; background: var(--accent, #3ddc97) !important; color: var(--on-accent, #07130d) !important; }
+.sl-save:disabled { opacity: .4; }
+
+.sc-log { display: flex; flex-direction: column; gap: 10px; max-height: 42vh; overflow-y: auto; padding: 2px 2px 12px; scroll-behavior: smooth; }
+.sc-msg { display: flex; align-items: flex-end; gap: 8px; max-width: 94%; }
+.sc-msg.user { align-self: flex-end; }
+.sc-msg img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.sc-bub { padding: 9px 13px; border-radius: 18px; font-size: 14px; line-height: 1.4; background: var(--glass2, rgba(255,255,255,.1)); border: 1px solid var(--stroke, rgba(255,255,255,.08)); color: var(--text, inherit); }
+.sc-msg.shark .sc-bub { border-bottom-left-radius: 6px; }
+.sc-msg.user .sc-bub { border-bottom-right-radius: 6px; background: var(--accent, #3ddc97); color: var(--on-accent, #07130d); border-color: transparent; font-weight: 700; }
+.sc-act { display: block; margin: 8px 0 0 !important; height: 30px; padding: 0 12px; border: none; border-radius: 15px; font-size: 13px; font-weight: 700; background: var(--faint, rgba(255,255,255,.12)) !important; color: var(--text, inherit) !important; }
+.sc-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; border-top: 1px solid var(--stroke, rgba(255,255,255,.08)); }
+.sc-chips button { height: 34px; padding: 0 13px; margin: 0 !important; border: none; border-radius: 17px; font-size: 13px; font-weight: 700; background: var(--faint, rgba(255,255,255,.1)) !important; color: var(--text, inherit) !important; }
+.sc-chips button:active { transform: scale(.97); }
+.sc-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+.sc-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted, #888); animation: scDot 1s ease-in-out infinite; }
+.sc-dots i:nth-child(2) { animation-delay: .15s; } .sc-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes scDot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .sc-dots i { animation: none; } .sc-log { scroll-behavior: auto; } }
+
+/* ── 5.0.1: калькулятор в «Курсах» ─────────────────────────────────────── */
+#fx-sheet .fx-calc { margin-top: 18px; }
+#fx-sheet .fx-calc-card { padding: 12px; border-radius: 22px; background: var(--faint, rgba(255,255,255,.06)); border: 1px solid var(--stroke, rgba(255,255,255,.1)); box-shadow: inset 0 1px 0 var(--hi, rgba(255,255,255,.06)); }
+#fx-sheet .fx-calc-mode { display: flex; gap: 4px; padding: 3px; margin-bottom: 10px; border-radius: 13px; background: var(--faint, rgba(255,255,255,.07)); }
+#fx-sheet .fx-calc-mode button { flex: 1; height: 30px; margin: 0 !important; border: none; border-radius: 10px; font-size: 12.5px; font-weight: 800; background: transparent !important; color: var(--muted, inherit) !important; }
+#fx-sheet .fx-calc-mode button.active { background: var(--text, #fff) !important; color: var(--bg, #111) !important; }
+#fx-sheet .fx-calc-line { display: flex; align-items: center; gap: 8px; height: 54px; padding: 0 8px 0 14px; border-radius: 16px; background: var(--glass2, rgba(255,255,255,.08)); border: 1.5px solid transparent; }
+#fx-sheet .fx-calc-line:focus-within { border-color: var(--accent, #3ddc97); }
+#fx-sheet .fx-calc-line input, #fx-sheet .fx-calc-line output { flex: 1; min-width: 0; font-family: var(--font-num, inherit); font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text, inherit); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#fx-sheet .fx-calc-line input { height: 100%; border: none !important; outline: none; background: transparent !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+#fx-sheet .fx-calc-line input::placeholder { color: var(--muted, #888); opacity: .6; }
+#fx-sheet .fx-calc-line output { display: block; }
+#fx-sheet .fx-calc-line output.empty { color: var(--muted, inherit); opacity: .6; }
+#fx-sheet .fx-calc-line select { flex: none; height: 38px; padding: 0 28px 0 12px; margin: 0 !important; border: none; border-radius: 12px; font-size: 14px; font-weight: 800; color: var(--text, inherit);
+    background-color: var(--faint, rgba(255,255,255,.12)); -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 17px) calc(50% - 1px), calc(100% - 12px) calc(50% - 1px); background-size: 5px 5px; background-repeat: no-repeat; }
+#fx-sheet .fx-calc-swap { display: flex; justify-content: center; margin: -6px 0; position: relative; z-index: 1; }
+#fx-sheet .fx-calc-swap button {margin: 0 !important; border-radius: 17px; border: 3px solid var(--bg, #111); font-size: 15px; font-weight: 800; background: var(--accent, #3ddc97) !important; color: var(--on-accent, #07130d) !important; }
+#fx-sheet .fx-calc-quick { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+#fx-sheet .fx-calc-quick::-webkit-scrollbar { display: none; }
+#fx-sheet .fx-calc-quick button { flex: none; height: 28px; padding: 0 12px; margin: 0 !important; border: none; border-radius: 14px; font-size: 12.5px; font-weight: 700; background: var(--faint, rgba(255,255,255,.1)) !important; color: var(--text, inherit) !important; }
+#fx-sheet .fx-calc-note { margin-top: 10px; font-size: 12px; line-height: 1.4; color: var(--muted, inherit); }
+
+/* 5.0.1 — помощь и советы в чате Акулки */
+.sc-bub p { margin: 0 0 7px; }
+.sc-bub p:last-child, .sc-bub ul:last-child { margin-bottom: 0; }
+.sc-bub .sc-h { font-size: 15px; margin-bottom: 8px; }
+.sc-list { margin: 2px 0 8px; padding-left: 18px; }
+.sc-list li { margin: 0 0 5px; }
+.sc-bub b { font-weight: 800; }
+.sc-msg.shark { max-width: 96%; }
+.sc-chips { max-height: 34vh; overflow-y: auto; }
+.sc-chips .sc-menu { background: var(--accent, #3ddc97) !important; color: var(--on-accent, #07130d) !important; }
+.sc-chips .sc-back { background: transparent !important; box-shadow: inset 0 0 0 1px var(--stroke, rgba(255,255,255,.2)); }
+
+/* 5.0.1 — игры, цифры, форма «А что если», пасхалка по тапу на Акулку */
+.sc-form { display: flex; gap: 8px; padding: 10px 0 2px; }
+.sc-form[hidden] { display: none; }
+.sc-form input { flex: 1; min-width: 0; height: 42px; padding: 0 14px; border-radius: 21px; border: 1px solid var(--stroke, rgba(255,255,255,.15)); background: var(--glass2, rgba(255,255,255,.08)); color: var(--text, inherit); font-size: 16px; }
+.sc-form button { height: 42px; padding: 0 16px; border: none; border-radius: 21px; font-weight: 800; background: var(--accent, #3ddc97); color: var(--on-accent, #07130d); }
+.sc-chips .sc-start { box-shadow: inset 0 0 0 1px var(--stroke, rgba(255,255,255,.2)); }
+.sc-msg.shark img { cursor: pointer; }
+@keyframes sc-wig { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-12deg) scale(1.08); } 60% { transform: rotate(10deg) scale(1.08); } }
+.sc-wiggle { animation: sc-wig .5s ease; }
+
+/* Болтливость: «хвостик» под ответом и форма цели накопления */
+.sc-aside { margin-top: 6px; font-size: 13px; opacity: .7; font-style: italic; }
+.sc-form-goal { gap: 6px; flex-wrap: wrap; }
+.sc-form-goal input { min-width: 0; flex: 1 1 120px; }
+.sc-form-goal input[type="date"] { flex: 1 1 140px; }

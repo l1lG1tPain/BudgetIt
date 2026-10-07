@@ -46,7 +46,7 @@
 
 
 
-  <link rel="manifest" href="manifest.json?v=5.0.0">
+  <link rel="manifest" href="manifest.json?v=5.0.1">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -304,10 +304,11 @@
     </button>
 
     <!-- Карточка Акулки (этап 3: статичная, динамика — этап 6) -->
-    <div id="akulka-card" class="akulka-card" aria-live="polite">
+    <div id="akulka-card" class="akulka-card" aria-live="polite" role="button" tabindex="0" aria-label="Спросить Акулку">
       <img id="akulka-img" src="./assets/shark.png" alt="Акулка">
       <div id="akulka-title" class="ak-title">Акулка на посту</div>
       <div id="akulka-text" class="ak-text">Слежу за твоим бюджетом.</div>
+      <div id="akulka-extra" class="ak-extra" hidden></div>
       <div class="ak-bar"><span id="akulka-bar"></span></div>
     </div>
     </div>
@@ -715,7 +716,7 @@
                   <img src="assets/icons/budgetit-icon.png" class="product-icon">
                   <h3>BudgetIt</h3>
                   <p>Учёт финансов с аналитикой</p>
-                  <span class="product-version">v5.0.0</span>
+                  <span class="product-version">v5.0.1</span>
               </div>
 
               <a href="https://migry-bice.vercel.app/" target="_blank" class="product-card link">
@@ -1016,7 +1017,13 @@
         <img src="./assets/shark.png" alt="Акулка">
         <div id="shark-live-title" class="ak-title">Акулка</div>
         <div id="shark-live-text" class="ak-text"></div>
+        <div id="shark-live-extra" class="ak-extra" hidden></div>
         <div class="ak-bar"><span id="shark-live-bar"></span></div>
+      </div>
+
+      <div class="set-title">Лимит</div>
+      <div class="set-card">
+        <button type="button" class="set-row" id="shark-limit-open"><span class="set-flag">🎯</span><span class="set-main"><b>Дневной лимит</b><small id="shark-limit-sub">Как считается и как изменить</small></span><span class="set-check">›</span></button>
       </div>
 
       <div class="set-title">Характер</div>
@@ -1024,6 +1031,13 @@
         <button type="button" class="set-row" data-char="kind"><span class="set-flag">😇</span><span class="set-main"><b>Добрая</b><small>Насторожится с 90% лимита, не злится — только подскажет</small></span><span class="set-check"></span></button>
         <button type="button" class="set-row" data-char="normal"><span class="set-flag">🙂</span><span class="set-main"><b>Обычная</b><small>Насторожится с 80%, разозлится при превышении лимита</small></span><span class="set-check"></span></button>
         <button type="button" class="set-row" data-char="strict"><span class="set-flag">😠</span><span class="set-main"><b>Строгая</b><small>Насторожится уже с 70%, разозлится при превышении</small></span><span class="set-check"></span></button>
+      </div>
+
+      <div class="set-title">Болтливость</div>
+      <div class="set-card" id="shark-talk-seg" role="group">
+        <button type="button" class="set-row" data-talk="quiet"><span class="set-flag">🤫</span><span class="set-main"><b>Тихая</b><small>Только важное: без шуток и лишних реплик</small></span><span class="set-check"></span></button>
+        <button type="button" class="set-row" data-talk="normal"><span class="set-flag">💬</span><span class="set-main"><b>Обычная</b><small>Советы и реплики время от времени</small></span><span class="set-check"></span></button>
+        <button type="button" class="set-row" data-talk="chatty"><span class="set-flag">🗣️</span><span class="set-main"><b>Болтушка</b><small>Больше реплик: время суток, шутки, хвостики к ответам</small></span><span class="set-check"></span></button>
       </div>
 
       <div class="set-card">
@@ -1050,7 +1064,7 @@
               <div class="about-hero">
                   <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
                   <div class="about-title">BudgetIt</div>
-                  <div class="about-version">Версия 5.0.0</div>
+                  <div class="about-version">Версия 5.0.1</div>
                   <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
               </div>
 
@@ -1130,11 +1144,20 @@
                   </div>
                   <div class="about-changelog">
                       <div class="about-changelog-row">
+                          <div class="about-changelog-ver">5.0.1</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Акулка заговорила
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Акулка с разным видом и речью, настройка болтливости, свой дневной лимит, чат с помощью, цель накопления, значки и словарик, калькулятор валют</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
                           <div class="about-changelog-ver">5.0.0</div>
                           <div class="about-changelog-info">
                               <div class="about-changelog-name">
                                   Глубокое стекло
-                                  <span class="about-badge-now">Сейчас</span>
                               </div>
                               <div class="about-changelog-desc">Новый дизайн, Акулка с настроением, страница «Счета», курсы валют, аналитика 2.0, быстрее на телефоне</div>
                           </div>

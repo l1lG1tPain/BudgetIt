@@ -96,7 +96,7 @@ export class PlannerPage {
             const ok = this.plannerManager.deletePlanner(this.activePlannerId);
             if (!ok) return;
             const planners = this.plannerManager.getPlannersForCurrentBudget();
-            this.activePlannerId = planners[0]?.id || null;
+            this.activePlannerId = planners[planners.length - 1]?.id || null;
             this.render();
         });
 
@@ -175,7 +175,7 @@ export class PlannerPage {
         if (!this.dropdownMenu || !this.dropdownLabel) return;
 
         if (!this.activePlannerId && planners.length) {
-            this.activePlannerId = planners[0].id;
+            this.activePlannerId = planners[planners.length - 1].id; // по умолчанию — последний созданный план
         }
 
         const activePlanner = planners.find(p => p.id === this.activePlannerId) || null;

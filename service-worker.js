@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.0';
+const CACHE_VERSION = 'v5.0.1';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -44,6 +44,26 @@ const STATIC_ASSETS = [
     '/src/ui/DateSheet.js',
     '/src/shark/SharkMood.js',
     '/src/shark/SharkUI.js',
+    '/src/shark/SharkTalk.js',
+    '/src/shark/SharkPlus.js',
+    '/src/shark/SharkExtra.js',
+    '/src/shark/texts/flavor.js',
+    '/src/shark/texts/answers-c.js',
+    '/src/shark/texts/glossary.js',
+    '/src/shark/texts/mood.js',
+    '/src/shark/texts/mood-more.js',
+    '/src/shark/texts/toasts-more.js',
+    '/src/shark/texts/extras-more-a.js',
+    '/src/shark/texts/extras-more-b.js',
+    '/src/shark/texts/answers.js',
+    '/src/shark/texts/index.js',
+    '/src/shark/texts/answers-a.js',
+    '/src/shark/texts/answers-b.js',
+    '/src/shark/texts/proactive.js',
+    '/src/shark/texts/fun.js',
+    '/src/shark/texts/toasts.js',
+    '/src/shark/texts/extras.js',
+    '/src/shark/texts/help.js',
     '/src/ui/AccountsPage.js',
     '/src/ui/DesktopWidgets.js',
     '/src/utils/customCategories.js',
@@ -134,6 +154,9 @@ const STATIC_ASSETS = [
     '/assets/500.png',
     '/assets/offline.png',
     '/assets/shark.png',
+    '/assets/wary-shark.png',
+    '/assets/proud-shark.png',
+    '/assets/angry-shark.png',
 
     // assets — аватары профиля
     '/assets/avatar/active.png',

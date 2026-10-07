@@ -2,7 +2,7 @@
 //   DesktopWidgets.js — виджеты правой колонки на десктопе
 //   «Куда ушли деньги» и «Можно тратить в день». На мобильном скрыты CSS-ом.
 // ===============================
-import { getDailyLimit, getSpentOnDay, findActivePlanner, isoDay } from '../shark/SharkMood.js';
+import { getLimitInfo, getSharkSettings, getSpentOnDay, findActivePlanner, isoDay } from '../shark/SharkMood.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const COLORS = ['var(--accent)', 'var(--out)', 'var(--save)', 'var(--debt)', 'var(--in)'];
@@ -18,6 +18,7 @@ export class DesktopWidgets {
             side.insertAdjacentHTML('beforeend',
                 '<section id="dw-spend" class="dw-card"></section><section id="dw-daily" class="dw-card"></section>');
         }
+        window.addEventListener('budgetit:shark-limit-changed', () => this.refresh());
         this._initHeader();
         this._initSidebarBudget();
         this.refresh();
@@ -93,7 +94,7 @@ export class DesktopWidgets {
         const planners = this.pm?.getAllPlanners?.() || [];
         const planner = findActivePlanner(planners, budget?.id || this.pm?.getCurrentBudgetId?.(), today);
         const normalize = c => this.pm?.normalizeCategory?.(c) ?? String(c || '').trim();
-        const { limit } = getDailyLimit({ transactions, planner, today });
+        const { limit } = getLimitInfo({ transactions, planner, today, settings: getSharkSettings() });
         const now = new Date();
         const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const left = dim - now.getDate();

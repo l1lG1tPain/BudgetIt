@@ -16,6 +16,7 @@ import {
 } from '../constants/index.js';
 
 import { monthNames } from '../constants/constants.js';
+import { markFlag } from './shark/SharkExtra.js';
 import { addCustomCategory, removeCustomCategory } from './utils/customCategories.js';
 import { openDateSheet, formatDateLabel } from './ui/DateSheet.js';
 import { refreshExportAnalytics, createAutoBackup } from './settings.js';
@@ -1321,6 +1322,7 @@ export class UIManager {
     }
 
     exportData() {
+        markFlag('export');
         const dataStr = JSON.stringify(this.budgetManager.budgets);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
