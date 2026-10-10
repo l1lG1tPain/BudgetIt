@@ -3,657 +3,711 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="theme.css">
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json?v=2.10.1">
+    <link rel="manifest" href="manifest.json?v=5.0.2">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="bdde8040-4b94-4ae7-ad56-92a613dd4502" data-auto-track="false"></script>
     <script src="https://pwastat.ru/pwa_stats.php?id=406&token=4577f71b4b8147e853ec7a90eb82efdfd7eb8fd3af0199d3e654c09b3c2c4741"></script>
-    <meta name="theme-color" content="#F5F7F9" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0a0a0a"  media="(prefers-color-scheme: dark)">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#070d1c">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-title" content="BudgetIt">
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" href="assets/icon-512x512v2.10.png">
-    <meta name="description" content="BudgetIt — бесплатная PWA для учёта доходов, расходов, вкладов и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями.">
+    <link rel="apple-touch-icon" href="assets/icon-512x512v4.png">
+    <meta name="description" content="BudgetIt (Акулка, Shark) — бесплатный учёт личного бюджета: поступления, траты, накопления и долги, план месяца и аналитика. Без регистрации, работает офлайн, данные хранятся на устройстве. Free budget & expense tracker with a Shark mascot.">
+    <meta name="keywords" content="учёт бюджета, личный бюджет, учёт расходов, учёт доходов, планировщик бюджета, накопления, вклады, долги, финансовая аналитика, бюджет приложение, PWA, офлайн, Узбекистан, Россия, Казахстан, Киргизия, акулка, акулка бюджета, бюджет с акулкой, akulka, akulka budget, budgetit shark, shark budget app, shark, budget tracker, expense tracker, personal finance, money tracker, savings and debts tracker, offline budget app">
+    <meta name="application-name" content="BudgetIt">
     <meta name="author" content="BudgetIt by l1lG1tPain">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <meta name="color-scheme" content="dark">
+    <meta name="format-detection" content="telephone=no">
     <link rel="canonical" href="https://budgetit.app/">
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="BudgetIt">
     <meta property="og:url" content="https://budgetit.app/">
-    <meta property="og:title" content="BudgetIt — Track your money with Shark">
-    <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode and offline.">
+    <meta property="og:title" content="BudgetIt — Акулка бюджета 🦈 Track your money with Shark">
+    <meta property="og:description" content="Поступления, траты, накопления и долги в одном приложении. План месяца, аналитика и офлайн-режим. Без регистрации. Free budget tracker with a Shark mascot.">
     <meta property="og:image" content="https://budgetit.app/assets/og-cover.png">
+    <meta property="og:image:alt" content="Акулка в бордовом худи — талисман BudgetIt">
     <meta property="og:locale" content="ru_RU">
+    <meta property="og:locale:alternate" content="en_US">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="BudgetIt — Акулка следит за твоим бюджетом">
+    <meta name="twitter:title" content="BudgetIt — Акулка следит за твоим бюджетом | Shark budget tracker">
+    <meta name="twitter:description" content="Бесплатный учёт бюджета: траты, поступления, накопления, долги, план месяца и аналитика. Работает офлайн.">
     <meta name="twitter:image" content="https://budgetit.app/assets/og-cover.png">
+    <meta name="twitter:image:alt" content="Акулка в бордовом худи — талисман BudgetIt">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="assets/icon-512x512v2.9.png">
-    <title>Добро пожаловать в BudgetIt</title>
+    <link rel="preload" as="image" href="assets/onb-hello.webp" fetchpriority="high">
+    <title>BudgetIt — Акулка: бесплатный учёт бюджета, траты, накопления, долги | Shark budget tracker</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "BudgetIt",
+      "alternateName": ["Акулка бюджета", "Akulka", "BudgetIt Shark", "Shark budget tracker"],
+      "url": "https://budgetit.app/",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web, Android, iOS, Windows",
+      "inLanguage": "ru",
+      "description": "Бесплатное приложение для учёта личного бюджета: поступления, траты, накопления, долги, план месяца и аналитика. Работает офлайн, данные хранятся на устройстве.",
+      "image": "https://budgetit.app/assets/og-cover.png",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
     <style>
+        @font-face {
+            font-family: 'Manrope'; font-style: normal; font-weight: 200 800; font-display: swap;
+            src: url('/assets/fonts/manrope-cyrillic-wght-normal.woff2') format('woff2-variations');
+            unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        @font-face {
+            font-family: 'Manrope'; font-style: normal; font-weight: 200 800; font-display: swap;
+            src: url('/assets/fonts/manrope-latin-wght-normal.woff2') format('woff2-variations');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Unbounded'; font-style: normal; font-weight: 200 900; font-display: swap;
+            src: url('/assets/fonts/unbounded-cyrillic-wght-normal.woff2') format('woff2-variations');
+            unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        @font-face {
+            font-family: 'Unbounded'; font-style: normal; font-weight: 200 900; font-display: swap;
+            src: url('/assets/fonts/unbounded-latin-wght-normal.woff2') format('woff2-variations');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
         :root {
-            --blue:        #3B82F6;
-            --blue-deep:   #1D4ED8;
-            --blue-light:  #EFF6FF;
-            --blue-glow:   rgba(59,130,246,0.10);
-            --blue-glow2:  rgba(59,130,246,0.06);
-            --income:      #27AE60;
-            --expense:     #ff4b5c;
-            --deposit:     #9B59B6;
-            --debt:        #F1C40F;
-            --bg:          #F5F7F9;
-            --bg-card:     #FFFFFF;
-            --text-primary:#1A1A1A;
-            --text-sub:    #7a808f;
-            --text-muted:  #b0b6c3;
-            --placeholder: #c0c6d3;
-            --border:      #e2e6ed;
-            --divider:     #eaedf2;
-            --btn-bg:      #1A1A1A;
-            --btn-fg:      #FFFFFF;
-            --btn-icon-bg: rgba(255,255,255,0.15);
-            --btn-icon-fg: #FFFFFF;
-            --import-fg:   #a0a6b3;
-            --tag-fg:      #9aa0ae;
-            --version-fg:  #c0c6d3;
-            --error:       rgba(255,75,92,0.5);
-            --error-glow:  rgba(255,75,92,0.08);
+            --bg: #070d1c;
+            --text: #eaf1ff;
+            --muted: #9fb0d0;
+            --soft: #b9c8e6;
+            --accent: #5bb8ff;
+            --ink: #06101f;
+            --in: #3ddc97;
+            --out: #ff6b81;
+            --save: #ffc857;
+            --debt: #c084fc;
+            --glass: rgba(255,255,255,.06);
+            --glass2: rgba(255,255,255,.1);
+            --stroke: rgba(255,255,255,.12);
+            --stroke2: rgba(255,255,255,.22);
+            --hi: inset 0 1px 0 rgba(255,255,255,.14);
         }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg:          #0a0a0a;
-                --bg-card:     rgba(255,255,255,0.05);
-                --text-primary:#FFFFFF;
-                --text-sub:    rgba(255,255,255,0.38);
-                --text-muted:  rgba(255,255,255,0.22);
-                --placeholder: rgba(255,255,255,0.22);
-                --border:      rgba(255,255,255,0.10);
-                --divider:     rgba(255,255,255,0.07);
-                --btn-bg:      #FFFFFF;
-                --btn-fg:      #0a0a0a;
-                --btn-icon-bg: rgba(0,0,0,0.18);
-                --btn-icon-fg: #0a0a0a;
-                --import-fg:   rgba(255,255,255,0.30);
-                --tag-fg:      rgba(255,255,255,0.28);
-                --version-fg:  rgba(255,255,255,0.15);
-                --blue-glow:   rgba(59,130,246,0.14);
-                --blue-glow2:  rgba(59,130,246,0.07);
-                --blue-light:  rgba(59,130,246,0.08);
-            }
-        }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { -webkit-text-size-adjust: 100%; }
         body {
-            font-family: 'Montserrat', sans-serif;
-            background: var(--bg);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-y: auto;
-            user-select: none;
-            transition: background 0.3s, color 0.3s;
+            margin: 0; background: var(--bg); color: var(--text);
+            font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            overflow-x: hidden;
         }
-        .ob-hero-screen {
-            min-height: 100svh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 32px 20px 48px;
-            position: relative;
-            overflow: hidden;
-        }
-        .ob-glow {
-            position: absolute; width: 400px; height: 400px; border-radius: 50%;
-            background: radial-gradient(circle, var(--blue-glow) 0%, transparent 70%);
-            top: -130px; right: -110px; pointer-events: none;
-        }
-        .ob-glow2 {
-            position: absolute; width: 240px; height: 240px; border-radius: 50%;
-            background: radial-gradient(circle, var(--blue-glow2) 0%, transparent 70%);
-            bottom: -70px; left: -60px; pointer-events: none;
-        }
-        .ob-root {
-            width: 100%; max-width: 440px;
-            display: flex; flex-direction: column;
-            position: relative; z-index: 1;
-        }
-        .ob-tag {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-size: 11px; font-weight: 500; color: var(--tag-fg);
-            letter-spacing: 0.11em; text-transform: uppercase;
-            margin-bottom: 52px;
-        }
-        .ob-tag-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--blue); flex-shrink: 0;
-            animation: ob-pulse 2s ease-in-out infinite;
-        }
-        @keyframes ob-pulse {
-            0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
-            50%     { opacity:0.5; box-shadow: 0 0 0 5px rgba(59,130,246,0); }
-        }
-        .ob-hero { margin-bottom: 44px; }
-        .ob-shark-img {
-            display: none;
-        }
-        .ob-shark-emoji {
-            font-size: 64px; line-height: 1; display: block; margin-bottom: 22px;
-            animation: ob-float 3.5s ease-in-out infinite;
-        }
-        @keyframes ob-float {
-            0%,100% { transform: translateY(0); }
-            50%     { transform: translateY(-9px); }
-        }
-        .ob-heading {
-            font-size: 32px; font-weight: 300; line-height: 1.20;
-            letter-spacing: -0.6px; margin-bottom: 14px;
-            color: var(--text-primary);
-        }
-        .ob-heading em {
-            font-style: normal; font-weight: 700; color: transparent;
-            background: linear-gradient(90deg, var(--blue), var(--blue-deep));
-            -webkit-background-clip: text; background-clip: text;
-        }
-        .ob-sub {
-            font-size: 14px; font-weight: 300; color: var(--text-sub);
-            line-height: 1.75; max-width: 300px;
-        }
-        .ob-form { width: 100%; }
-        .ob-field {
-            display: flex; align-items: center;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 0 18px; height: 58px;
-            margin-bottom: 10px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .ob-field:focus-within {
-            border-color: var(--blue);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-        }
-        .ob-field.ob-error {
-            border-color: var(--error) !important;
-            box-shadow: 0 0 0 3px var(--error-glow) !important;
-        }
-        .ob-field input {
-            flex: 1; background: none; border: none; outline: none;
-            color: var(--text-primary); font-size: 15px; font-weight: 400;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .ob-field input::placeholder { color: var(--placeholder); font-weight: 300; }
-        .ob-btn {
-            width: 100%; height: 58px; border: none; border-radius: 16px;
-            background: var(--btn-bg); color: var(--btn-fg);
-            font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-            font-family: 'Montserrat', sans-serif; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            margin-bottom: 10px;
-            transition: transform 0.12s, background 0.25s, color 0.25s, box-shadow 0.25s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ob-btn:active { transform: scale(0.975); }
-        .ob-btn.ob-success {
-            background: linear-gradient(135deg, var(--blue), var(--blue-deep)) !important;
-            color: #fff !important;
-            box-shadow: 0 6px 24px rgba(59,130,246,0.35);
-        }
-        .ob-btn-icon {
-            width: 30px; height: 30px; border-radius: 9px;
-            background: var(--btn-icon-bg); color: var(--btn-icon-fg);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; margin-left: auto; flex-shrink: 0; font-style: normal;
-            transition: background 0.25s, color 0.25s;
-        }
-        .ob-import {
-            display: flex; align-items: center; justify-content: center; gap: 7px;
-            width: 100%; height: 48px; border-radius: 14px;
-            border: 1px solid var(--border); background: var(--bg-card); color: var(--import-fg);
-            font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
-            font-family: 'Montserrat', sans-serif; cursor: pointer; margin-bottom: 28px;
-            transition: color 0.2s, border-color 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ob-import { margin-bottom: 0; }
-        #file-input { display: none; }
+        button { font-family: inherit; cursor: pointer; }
+        input { font-family: inherit; }
+        input::placeholder { color: #7d8db0; }
+        button:focus-visible, input:focus-visible, label:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+        h1, h2, h3, p { margin: 0; }
+        html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        input { -webkit-user-select: text; user-select: text; }
+        img { -webkit-user-drag: none; user-drag: none; -webkit-user-select: none; user-select: none; pointer-events: none; }
 
-        /* Sticky footer — всегда прижат к низу экрана */
-        .ob-sticky-footer {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            z-index: 100;
-            background: var(--bg);
-            border-top: 1px solid var(--divider);
-            padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .ob-sticky-footer .ob-help {
-            background: none; border: none; cursor: pointer; padding: 0;
-            color: var(--blue); font-size: 12px; font-weight: 400;
-            font-family: 'Montserrat', sans-serif;
-            display: flex; align-items: center; gap: 5px;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ob-sticky-footer .ob-version {
-            font-size: 11px; font-weight: 300; color: var(--version-fg); letter-spacing: 0.08em;
+        /* ===== фон ===== */
+        .orb { position: absolute; border-radius: 50%; pointer-events: none; }
+        .o1 { left: -110px; top: -80px; width: 340px; height: 340px; background: #2a6df0; opacity: .42; filter: blur(90px); }
+        .o2 { right: -130px; top: 520px; width: 320px; height: 320px; background: #b0213f; opacity: .38; filter: blur(90px); }
+        .o3 { left: -120px; top: 1500px; width: 320px; height: 320px; background: #1fa7c9; opacity: .28; filter: blur(90px); }
+        .o4 { right: -120px; top: 2250px; width: 300px; height: 300px; background: #b0213f; opacity: .3; filter: blur(90px); }
+        .app { position: relative; min-height: 100vh; min-height: 100dvh; }
+        .bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+
+        /* ===== анимации ===== */
+        @keyframes bob    { 0%,100% { transform: translateY(0) }  50% { transform: translateY(6px) } }
+        @keyframes bobup  { 0%,100% { transform: translateY(0) }  50% { transform: translateY(-6px) } }
+        @keyframes floaty { 0%,100% { transform: translateY(0) }  50% { transform: translateY(-8px) } }
+        @keyframes pulse  { 0% { box-shadow: 0 0 0 0 rgba(91,184,255,.55) } 70% { box-shadow: 0 0 0 16px rgba(91,184,255,0) } 100% { box-shadow: 0 0 0 0 rgba(91,184,255,0) } }
+        @keyframes rise   { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+        @keyframes nudge  { 0%,100% { transform: translateX(0) } 50% { transform: translateX(5px) } }
+        @keyframes shake  { 0%,100% { transform: translateX(0) } 20% { transform: translateX(-7px) } 40% { transform: translateX(7px) } 60% { transform: translateX(-5px) } 80% { transform: translateX(5px) } }
+        .bob { animation: bob 1.5s ease-in-out infinite; }
+        .bobup { animation: bobup 1.5s ease-in-out infinite; }
+        .floaty { animation: floaty 4s ease-in-out infinite; }
+        .pulse { animation: pulse 2.2s ease-out infinite; }
+        .rise { animation: rise .7s ease both; }
+        .nudge { animation: nudge 1.2s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+            .bob, .bobup, .floaty, .pulse, .rise, .nudge, .shake { animation: none !important; }
         }
 
-        /* Отступ снизу чтобы контент не прятался за sticky footer */
-        .ob-hero-screen { padding-bottom: 150px; }
-        .landing { padding-bottom: 100px; }
-        .ob-scroll-hint {
-            position: absolute; bottom: 50px; left: 50%;
-            transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
-            color: var(--text-muted); font-size: 10px; font-weight: 500;
-            letter-spacing: 0.1em; text-transform: uppercase;
-            border: none; background: none; cursor: pointer;
-            opacity: 0;
-            animation: ob-in 0.5s ease 0.7s forwards, ob-bounce 2.5s ease-in-out 1.5s infinite;
-            -webkit-tap-highlight-color: transparent;
-        }
-        @keyframes ob-bounce {
-            0%,100% { transform: translateX(-50%) translateY(0); }
-            50%     { transform: translateX(-50%) translateY(6px); }
-        }
-        .ob-tag, .ob-hero, .ob-form {
-            opacity: 0; transform: translateY(20px);
-            animation: ob-in 0.5s ease forwards;
-        }
-        .ob-tag  { animation-delay: 0.04s; }
-        .ob-hero { animation-delay: 0.12s; }
-        .ob-form { animation-delay: 0.20s; }
-        @keyframes ob-in { to { opacity: 1; transform: translateY(0); } }
+        /* ===== каркас ===== */
+        .wrap { position: relative; max-width: 460px; margin: 0 auto; padding: 0 14px 24px; }
+        .top { display: flex; align-items: center; justify-content: space-between; padding: 22px 0 14px; }
+        .logo { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .2px; }
+        .tag { padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); font-size: 12px; font-weight: 700; color: var(--soft); }
 
-        /* LANDING */
-        .landing { width: 100%; max-width: 440px; margin: 0 auto; padding: 0 20px 90px; }
-        .land-sep { width: calc(100% - 40px); max-width: 400px; height: 1px; background: var(--divider); margin: 0 auto 52px; }
-        .sec { margin-bottom: 52px; }
-        .sec-label {
-            font-size: 10px; font-weight: 600; color: var(--blue);
-            letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px;
+        .glass {
+            border-radius: 26px; background: var(--glass); border: 1px solid var(--stroke);
+            box-shadow: var(--hi); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
-        .sec-title {
-            font-size: 22px; font-weight: 700; line-height: 1.25;
-            color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.3px;
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            .glass { background: rgba(20,30,56,.88); }
         }
-        .sec-sub { font-size: 13px; font-weight: 300; color: var(--text-sub); line-height: 1.75; margin-bottom: 22px; }
 
-        /* Stats */
-        .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 18px 16px;
+        /* ===== hero ===== */
+        .hero-left { display: flex; flex-direction: column; }
+        .hero-left h1 { order: 1; font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.2; }
+        .lead { display: none; order: 2; }
+        .stage { order: 2; position: relative; width: calc(100% + 28px); margin: 0 -14px; overflow: hidden; height: clamp(440px, calc(100vh - 262px), 592px); height: clamp(440px, calc(100svh - 262px), 592px); }
+        .cta-row { order: 3; display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+        .halo { position: absolute; right: -10%; top: 14%; width: 78%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(91,184,255,.4), rgba(91,184,255,0) 70%); }
+        .akulka { position: absolute; right: -1%; bottom: 0; width: auto; height: 94%; filter: drop-shadow(0 24px 40px rgba(0,0,0,.55)); }
+        .bubble {
+            position: absolute; left: 14px; top: 4%; width: 46%; padding: 14px;
+            border-radius: 20px 20px 6px 20px; background: var(--glass2); border: 1px solid rgba(255,255,255,.18);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
         }
-        .stat-num { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 5px; }
-        .stat-label { font-size: 12px; font-weight: 400; color: var(--text-sub); }
+        .bubble b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+        .bubble span { font-size: 14px; font-weight: 600; line-height: 1.4; }
+        .pills { position: absolute; left: 14px; bottom: 2%; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+        .pill { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); font-size: 12px; font-weight: 700; color: #d6e2fa; }
 
-        /* Chart */
-        .chart-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 20px 18px;
+        .btn-primary {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
+            min-height: 64px; padding: 0 20px; border: 0; border-radius: 20px;
+            background: var(--accent); color: var(--ink); text-align: left;
         }
-        .chart-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 100px; }
-        .chart-total { font-size: 24px; font-weight: 700; color: var(--text-primary); }
-        .chart-badge {
-            font-size: 11px; font-weight: 600;
-            background: rgba(39,174,96,0.12); color: var(--income);
-            border-radius: 8px; padding: 3px 9px;
+        .cta-txt { display: flex; flex-direction: column; gap: 2px; }
+        .cta-t { font-size: 16px; font-weight: 800; }
+        .cta-s { font-size: 12px; font-weight: 700; opacity: .75; }
+        .btn-ghost {
+            display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
+            border-radius: 16px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18);
+            color: #cfdaf2; font-size: 14px; font-weight: 800; cursor: pointer; text-align: center;
         }
-        .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
-        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .bar { width: 100%; border-radius: 5px 5px 0 0; }
-        .bar-lbl { font-size: 10px; font-weight: 400; color: var(--text-muted); }
-        .chart-legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
-        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-sub); }
-        .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .ico-right { display: none; }
 
-        /* Features */
-        .feat-list { display: flex; flex-direction: column; gap: 10px; }
-        .feat-item {
-            display: flex; align-items: flex-start; gap: 14px;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 14px; padding: 16px;
+        /* ===== форма ===== */
+        .form-col { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+        .card { padding: 18px; scroll-margin-top: 16px; }
+        .step { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--accent); }
+        .card h2 { font-size: 20px; font-weight: 800; margin: 4px 0 16px; }
+        .card .hint { font-size: 13px; font-weight: 600; color: var(--muted); margin: -10px 0 16px; }
+        .lbl { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin: 0 0 8px; }
+        .lbl.gap { margin-top: 18px; }
+        .field {
+            display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-radius: 18px;
+            background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.14);
         }
-        .feat-icon {
-            width: 38px; height: 38px; border-radius: 10px;
-            background: var(--blue-light);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; flex-shrink: 0;
+        .field.ob-error { border-color: var(--out); animation: shake .45s ease; }
+        .field input { flex: 1; min-width: 0; height: 100%; background: transparent; border: 0; color: var(--text); font-size: 17px; font-weight: 700; outline: none; }
+        .field:focus-within { border-color: var(--accent); }
+        .count { font-size: 12px; font-weight: 700; color: var(--muted); }
+        .suggest {
+            display: flex; flex-wrap: nowrap; gap: 8px; margin: 10px -18px 0; padding: 2px 28px 6px 18px;
+            overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x;
+            scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+            mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
         }
-        .feat-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
-        .feat-desc  { font-size: 12px; font-weight: 300; color: var(--text-sub); line-height: 1.6; }
+        .suggest::-webkit-scrollbar { display: none; }
+        .suggest button { flex: none; white-space: nowrap; height: 38px; padding: 0 14px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: #cfdaf2; font-size: 13px; font-weight: 700; }
+        .suggest .emo { width: 44px; padding: 0; font-size: 19px; line-height: 1; }
+        .suggest .emo[aria-pressed="true"] { background: rgba(91,184,255,.16); border-color: var(--accent); }
+        .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .opt {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 14px; border-radius: 16px; text-align: left;
+            background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.12); color: #dbe6fb;
+        }
+        .opt[aria-pressed="true"] { background: rgba(91,184,255,.16); border-color: var(--accent); color: #fff; }
+        .opt .n { font-size: 14px; font-weight: 800; }
+        .opt .d { font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--muted); }
+        .region .opt { min-height: 58px; }
+        .moods .opt { min-height: 96px; padding: 12px 10px; }
+        .moods .opt .d { font-size: 11.5px; }
+        .btn-next {
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 18px;
+            border-radius: 16px; background: var(--glass2); border: 1px solid var(--stroke2); color: var(--text); font-size: 15px; font-weight: 800;
+        }
+        .preview { display: flex; gap: 12px; align-items: flex-end; margin-top: 18px; }
+        .ava { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: var(--glass2); border: 1px solid var(--stroke2); }
+        .ava img { position: absolute; left: -35px; top: -2px; width: 112px; height: auto; }
+        .say { flex: 1; min-width: 0; padding: 12px 14px; border-radius: 18px 18px 18px 6px; background: rgba(0,0,0,.28); border: 1px solid var(--stroke); font-size: 14px; font-weight: 600; line-height: 1.4; }
 
-        /* Shark CTA */
-        .shark-section {
-            background: var(--blue-light); border: 1px solid rgba(59,130,246,0.15);
-            border-radius: 20px; padding: 36px 20px;
-            display: flex; flex-direction: column; align-items: center; text-align: center;
-            position: relative; overflow: hidden;
+        #ob-create-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 58px; border: 0; border-radius: 20px;
+            background: var(--accent); color: var(--ink); font-size: 16px; font-weight: 800; box-shadow: 0 12px 32px rgba(91,184,255,.35);
+            scroll-margin-top: 24px;
         }
-        .shark-section::before {
-            content: ""; position: absolute; inset: 0; border-radius: 20px;
-            background: radial-gradient(circle at 50% 0%, rgba(59,130,246,0.10), transparent 70%);
-            pointer-events: none;
-        }
-        .shark-cta-img {
-            width: 160px; height: 160px; border-radius: 50%; object-fit: cover;
-            margin-bottom: 22px; position: relative; z-index: 1;
-            animation: ob-float 3.5s ease-in-out infinite;
-            filter: drop-shadow(0 16px 28px rgba(59,130,246,0.20));
-        }
-        .shark-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; position: relative; z-index: 1; }
-        .shark-sub { font-size: 13px; font-weight: 300; color: var(--text-sub); line-height: 1.7; margin-bottom: 24px; position: relative; z-index: 1; }
-        .shark-btn {
-            height: 52px; border: none; border-radius: 14px;
-            background: var(--blue); color: #fff;
-            font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
-            font-family: 'Montserrat', sans-serif; cursor: pointer; padding: 0 28px;
-            display: flex; align-items: center; gap: 8px;
-            transition: transform 0.12s, box-shadow 0.2s;
-            position: relative; z-index: 1;
-            -webkit-tap-highlight-color: transparent;
-            box-shadow: 0 4px 18px rgba(59,130,246,0.32);
-        }
-        .shark-btn:active { transform: scale(0.97); }
+        #ob-create-btn.ob-success { background: var(--in); animation: none; }
+        .sub-cta { text-align: center; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: -6px; }
 
-        /* MODAL */
-        .ob-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-            display: flex; align-items: flex-end; justify-content: center;
-            z-index: 1000; padding: 16px;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        .import { padding: 18px; scroll-margin-top: 16px; }
+        .drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 20px 14px; border-radius: 20px; border: 1.5px dashed rgba(255,255,255,.28); }
+        .drop h3 { font-size: 16px; font-weight: 800; }
+        .drop p { font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--muted); }
+        .drop .btn-ghost { margin-top: 6px; background: var(--glass2); border-color: var(--stroke2); color: var(--text); }
+        #file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+        /* ===== что внутри ===== */
+        .inside { margin-top: 36px; }
+        .inside > h2 { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 20px; margin-bottom: 14px; }
+        .feats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .feat { padding: 16px; border-radius: 22px; background: var(--glass); border: 1px solid var(--stroke); }
+        .feat.wide { grid-column: span 2; display: flex; gap: 14px; align-items: center; }
+        .feat h3 { font-size: 15px; font-weight: 800; margin: 10px 0 4px; }
+        .feat.wide h3 { margin-top: 0; }
+        .feat p { font-size: 12.5px; font-weight: 600; line-height: 1.4; color: var(--muted); }
+        .feat svg { flex: none; }
+
+        .banner { margin-top: 20px; border-radius: 26px; overflow: hidden; background: var(--glass); border: 1px solid var(--stroke); }
+        .banner img { display: block; width: 100%; height: auto; }
+        .banner .bt { padding: 18px 20px 22px; }
+        .banner h2 { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 8px; }
+        .banner p { font-size: 13.5px; font-weight: 600; line-height: 1.5; color: var(--soft); }
+        .banner ul { list-style: none; margin: 14px 0 0; padding: 0; display: none; flex-direction: column; gap: 12px; }
+        .banner li { display: flex; gap: 12px; align-items: center; font-size: 15px; font-weight: 700; }
+
+        .foot { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0 0; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: var(--muted); }
+        .foot svg { flex: none; margin-top: 1px; }
+        .foot-links { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+        .help-link { background: none; border: 0; padding: 8px 0; color: var(--soft); font-size: 13px; font-weight: 800; }
+
+        /* ===== закреплённая кнопка (телефон) ===== */
+        .sticky {
+            position: sticky; bottom: 0; z-index: 5; margin: 0 -14px; padding: 28px 14px 20px;
+            background: linear-gradient(to top, #070d1c 60%, rgba(7,13,28,0));
+            transition: opacity .25s ease, transform .25s ease;
         }
-        .ob-modal.ob-modal--open { opacity: 1; pointer-events: all; }
-        .ob-modal-card {
-            background: var(--bg); border: 1px solid var(--border);
-            border-radius: 20px; padding: 24px 20px 28px;
-            width: 100%; max-width: 440px;
-            transform: translateY(24px); transition: transform 0.25s ease;
-        }
-        .ob-modal--open .ob-modal-card { transform: translateY(0); }
-        .ob-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .ob-modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-        .ob-modal-close {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 8px; width: 30px; height: 30px; cursor: pointer;
-            font-size: 13px; color: var(--text-sub);
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .ob-modal-step { display: flex; gap: 14px; margin-bottom: 16px; }
-        .ob-modal-step:last-child { margin-bottom: 0; }
-        .ob-modal-num {
-            width: 24px; height: 24px; border-radius: 8px;
-            background: rgba(59,130,246,0.12); color: var(--blue);
-            font-size: 11px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; margin-top: 1px;
-        }
-        .ob-modal-step-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
-        .ob-modal-step-desc  { font-size: 12px; font-weight: 300; color: var(--text-sub); line-height: 1.65; }
-        .ob-alert {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 2000; padding: 16px; animation: ob-in 0.15s ease;
-        }
-        .ob-alert-card {
-            background: var(--bg); border: 1px solid var(--border);
-            border-radius: 16px; padding: 20px; width: 100%; max-width: 320px; text-align: center;
-        }
-        .ob-alert-icon { font-size: 28px; margin-bottom: 10px; }
-        .ob-alert-msg  { font-size: 13px; font-weight: 400; color: var(--text-sub); line-height: 1.6; margin-bottom: 16px; }
-        .ob-alert-btn  {
-            width: 100%; height: 40px; border: none; border-radius: 10px;
-            background: var(--btn-bg); color: var(--btn-fg);
-            font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
-            font-family: 'Montserrat', sans-serif; cursor: pointer;
-        }
-        @media (max-height: 680px) {
-            .ob-shark-img { width: 96px; height: 96px; margin-bottom: 14px; }
-            .ob-heading   { font-size: 26px; }
-            .ob-tag       { margin-bottom: 32px; }
-            .ob-hero      { margin-bottom: 28px; }
+        .sticky.hide { opacity: 0; transform: translateY(24px); pointer-events: none; }
+        .sticky .btn-primary { min-height: 56px; border-radius: 18px; justify-content: center; box-shadow: 0 10px 28px rgba(91,184,255,.4); }
+        .sticky .cta-t { font-size: 16px; }
+
+        /* ===== модалки ===== */
+        .ob-modal { position: fixed; inset: 0; z-index: 50; display: none; align-items: flex-end; justify-content: center; background: rgba(3,6,14,.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+        .ob-modal.ob-modal--open { display: flex; }
+        .ob-modal-card { width: 100%; max-width: 460px; max-height: 90vh; overflow: auto; padding: 22px 20px 28px; border-radius: 28px 28px 0 0; background: #0e1730; border: 1px solid var(--stroke); animation: rise .3s ease both; }
+        .ob-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .ob-modal-title { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 17px; }
+        .ob-modal-close { width: 40px; height: 40px; border-radius: 50%; background: var(--glass2); border: 1px solid var(--stroke); color: var(--text); font-size: 16px; }
+        .ob-modal-step { display: flex; gap: 14px; padding: 12px 0; }
+        .ob-modal-num { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(91,184,255,.18); color: var(--accent); font-weight: 800; font-size: 14px; }
+        .ob-modal-step-title { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+        .ob-modal-step-desc { font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--muted); }
+
+        .ob-alert { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(3,6,14,.65); }
+        .ob-alert-card { width: 100%; max-width: 340px; padding: 24px 20px 20px; border-radius: 24px; background: #0e1730; border: 1px solid var(--stroke); text-align: center; }
+        .ob-alert-icon { font-size: 34px; margin-bottom: 8px; }
+        .ob-alert-msg { font-size: 14px; font-weight: 600; line-height: 1.45; margin-bottom: 16px; }
+        .ob-alert-btn { height: 46px; padding: 0 26px; border: 0; border-radius: 14px; background: var(--accent); color: var(--ink); font-size: 14px; font-weight: 800; }
+
+        @media (max-height: 700px) and (max-width: 959px) { .pills { display: none; } }
+
+        /* ===== компьютер ===== */
+        @media (min-width: 960px) {
+            .o1 { width: 520px; height: 520px; filter: blur(120px); }
+            .o2 { top: 380px; width: 520px; height: 520px; filter: blur(120px); }
+            .o3 { top: 1250px; width: 480px; height: 480px; filter: blur(120px); }
+            .o4 { top: 1650px; width: 420px; height: 420px; filter: blur(120px); }
+            .wrap { max-width: 1200px; padding: 0 40px 60px; }
+            .top { padding: 28px 0 36px; }
+            .logo { font-size: 20px; }
+            .tag { padding: 8px 16px; font-size: 13px; }
+            .hero-grid { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+            .hero-left { flex: 1 1 520px; min-width: 0; }
+            .hero-left h1 { font-size: 52px; line-height: 1.12; margin-bottom: 18px; }
+            .lead { display: block; order: 2; max-width: 480px; margin-bottom: 28px; font-size: 18px; font-weight: 600; line-height: 1.5; color: var(--soft); }
+            .cta-row { order: 3; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 28px; }
+            .stage { order: 4; width: auto; margin: 0; height: 640px; border-radius: 36px; overflow: hidden; background: rgba(255,255,255,.05); border: 1px solid var(--stroke); box-shadow: var(--hi); }
+            .halo { right: 20px; top: 140px; width: 420px; }
+            .akulka { right: 48px; height: 610px; filter: drop-shadow(0 28px 44px rgba(0,0,0,.55)); }
+            .bubble { left: 32px; top: 28px; width: 236px; padding: 16px; border-radius: 24px 24px 24px 8px; }
+            .bubble span { font-size: 15px; line-height: 1.4; }
+            .pills { left: 32px; bottom: 36px; }
+            .pill { padding: 9px 14px; font-size: 13px; }
+            .btn-primary { width: auto; min-height: 60px; padding: 0 24px; }
+            .cta-s { display: none; }
+            .ico-down { display: none; }
+            .ico-right { display: block; }
+            .btn-ghost { min-height: 60px; border-radius: 20px; }
+            .form-col { flex: 1 1 440px; min-width: 0; max-width: 560px; margin-top: 0; gap: 16px; }
+            .card { padding: 24px; border-radius: 28px; }
+            .card h2 { font-size: 22px; margin-bottom: 18px; }
+            .card .hint { margin-top: -14px; margin-bottom: 18px; }
+            .suggest { margin: 10px -24px 0; padding: 2px 32px 6px 24px; }
+            .btn-next { display: none; }
+            #ob-create-btn { height: 60px; }
+            .import { padding: 16px 20px; border-radius: 24px; }
+            .drop { flex-direction: row; text-align: left; gap: 16px; padding: 0; border: 0; }
+            .drop > div { flex: 1; min-width: 0; }
+            .drop .btn-ghost { margin-top: 0; min-height: 46px; border-radius: 14px; }
+            .drop p { font-size: 12.5px; }
+            .inside { margin-top: 72px; }
+            .inside > h2 { font-size: 26px; margin-bottom: 20px; }
+            .feats { display: flex; flex-wrap: wrap; gap: 14px; }
+            .feat { flex: 1 1 200px; padding: 20px; border-radius: 24px; }
+            .feat.wide { display: block; }
+            .feat.wide h3 { margin-top: 12px; }
+            .feat h3 { font-size: 16px; margin: 12px 0 6px; }
+            .feat p { font-size: 13px; line-height: 1.45; }
+            .banner { display: flex; flex-wrap: wrap; align-items: stretch; margin-top: 56px; border-radius: 32px; box-shadow: var(--hi); }
+            .banner img { flex: 0 1 440px; min-width: 280px; width: 440px; height: 100%; object-fit: cover; }
+            .banner .bt { flex: 1 1 360px; min-width: 0; padding: 40px; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+            .banner h2 { font-size: 26px; line-height: 1.2; margin: 0; }
+            .banner p { font-size: 15px; line-height: 1.55; }
+            .banner ul { display: flex; margin: 0; }
+            .foot { margin-top: 36px; max-width: 640px; font-size: 13px; }
+            .sticky { display: none; }
+            .ob-modal { align-items: center; }
+            .ob-modal-card { border-radius: 28px; }
         }
     </style>
 </head>
 <body>
 
-<section class="ob-hero-screen">
-    <div class="ob-glow"  aria-hidden="true"></div>
-    <div class="ob-glow2" aria-hidden="true"></div>
-
-    <div class="ob-root">
-        <div class="ob-tag">
-            <div class="ob-tag-dot"></div>
-            BudgetIt &middot; v5.0.1
-        </div>
-
-        <div class="ob-hero">
-            <img src="assets/shark-import.png" alt="Акулка BudgetIt" class="ob-shark-img"
-                 onerror="this.style.display='none';document.querySelector('.ob-shark-emoji').style.display='block';"/>
-            <span class="ob-shark-emoji" aria-label="Акула">&#x1F988;</span>
-            <h1 class="ob-heading">
-                Твои деньги &mdash;<br>под <em>контролем</em>
-            </h1>
-            <p class="ob-sub">Дай бюджету имя и акулка начнёт следить за каждым рублём</p>
-        </div>
-
-        <div class="ob-form">
-            <div class="ob-field" id="ob-field">
-                <input type="text" id="budget-name" placeholder="Как назовём бюджет?" autocomplete="off" maxlength="40"/>
-            </div>
-            <button class="ob-btn" id="ob-create-btn" onclick="createBudget()">
-                Создать бюджет
-                <span class="ob-btn-icon" aria-hidden="true">&#x2192;</span>
-            </button>
-            <label for="file-input" class="ob-import">&#x2193; &nbsp;Импортировать JSON</label>
-            <input type="file" id="file-input" accept="application/json" onchange="importBudget(event)"/>
-        </div>
+<div class="app">
+    <div class="bg" aria-hidden="true">
+        <div class="orb o1"></div>
+        <div class="orb o2"></div>
+        <div class="orb o3"></div>
+        <div class="orb o4"></div>
     </div>
 
-    <button class="ob-scroll-hint" onclick="document.getElementById('landing').scrollIntoView({behavior:'smooth'})" aria-label="Листать вниз">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-        </svg>
-        Листай вниз
-    </button>
-</section>
+    <div class="wrap">
+        <header class="top">
+            <div class="logo">BudgetIt</div>
+            <div class="tag">Знакомство &middot; 1 минута</div>
+        </header>
 
-<!-- Sticky footer — всегда внизу экрана -->
-<div class="ob-sticky-footer">
-    <button class="ob-help" onclick="openHelpModal()">? &nbsp;Как это работает</button>
-    <div class="ob-version">budgetit.app</div>
-</div>
+        <div class="hero-grid">
+            <section class="hero-left">
+                <h1>Бюджет под присмотром Акулки</h1>
+                <p class="lead">Поступления, траты, накопления и долги в одном месте. Без регистрации, прямо на твоём устройстве.</p>
 
-<div class="landing" id="landing">
-    <div class="land-sep"></div>
+                <div class="stage">
+                    <div class="halo" aria-hidden="true"></div>
+                    <img class="akulka floaty" src="assets/onb-hello.webp" alt="Акулка в бордовом худи протягивает руку для знакомства"
+                         onerror="this.onerror=null;this.src='assets/shark.png';">
+                    <div class="bubble rise">
+                        <b>Акулка</b>
+                        <span>Привет! Давай знакомиться. Я буду присматривать за твоим бюджетом.</span>
+                    </div>
+                    <div class="pills">
+                        <div class="pill">Без регистрации</div>
+                        <div class="pill">Работает офлайн</div>
+                        <div class="pill">Данные у тебя</div>
+                    </div>
+                </div>
 
-    <!-- Что внутри -->
-    <div class="sec">
-        <div class="sec-label">Что внутри</div>
-        <div class="sec-title">Всё под одной крышей</div>
-        <p class="sec-sub">Четыре типа финансов, одно приложение — никакой путаницы</p>
-        <div class="stat-row">
-            <div class="stat-card">
-                <div class="stat-num" style="color:var(--income)">+</div>
-                <div class="stat-label">Поступления</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" style="color:var(--expense)">−</div>
-                <div class="stat-label">Траты</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" style="color:var(--deposit)">%</div>
-                <div class="stat-label">Накопления</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-num" style="color:var(--debt)">!</div>
-                <div class="stat-label">Долги</div>
+                <div class="cta-row">
+                    <button type="button" class="btn-primary pulse" id="cta-setup">
+                        <span class="cta-txt">
+                            <span class="cta-t">Настроить за пару секунд</span>
+                            <span class="cta-s">Название, страна и характер Акулки</span>
+                        </span>
+                        <svg class="bob ico-down" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#06101f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                        <svg class="nudge ico-right" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06101f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                    <label for="file-input" class="btn-ghost" tabindex="0" id="import-chip">Импорт .json</label>
+                </div>
+            </section>
+
+            <div class="form-col" id="form-col">
+                <section class="card glass" id="s1" aria-labelledby="s1-title">
+                    <div class="step">Шаг 1 из 2</div>
+                    <h2 id="s1-title">Как назовём бюджет?</h2>
+                    <label class="lbl" for="budget-name">Название</label>
+                    <div class="field" id="ob-field">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9fb0d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 012-2h11v4"/><path d="M4 7v10a2 2 0 002 2h13a1 1 0 001-1v-8a1 1 0 00-1-1H6a2 2 0 01-2-2z"/><circle cx="16" cy="14" r="1"/></svg>
+                        <input type="text" id="budget-name" placeholder="Например, Личное" autocomplete="off" maxlength="13" enterkeyhint="done"/>
+                        <span class="count" id="name-count">0/13</span>
+                    </div>
+                    <div class="suggest" id="suggest" aria-label="Быстрые названия">
+                        <button type="button" data-name="Личное">Личное</button>
+                        <button type="button" data-name="Семья">Семья</button>
+                        <button type="button" data-name="Работа">Работа</button>
+                        <button type="button" class="emo" data-emoji="&#x1F988;" aria-pressed="false" aria-label="Значок бюджета: акула">&#x1F988;</button>
+                        <button type="button" class="emo" data-emoji="&#x1F4B0;" aria-pressed="false" aria-label="Значок бюджета: деньги">&#x1F4B0;</button>
+                        <button type="button" class="emo" data-emoji="&#x1F3E0;" aria-pressed="false" aria-label="Значок бюджета: дом">&#x1F3E0;</button>
+                    </div>
+
+                    <div class="lbl gap" id="region-lbl">Страна и валюта</div>
+                    <div class="grid2 region" id="region-grid" role="group" aria-labelledby="region-lbl">
+                        <button type="button" class="opt" data-region="UZ" aria-pressed="false"><span class="n">Узбекистан</span><span class="d">UZS &middot; сум</span></button>
+                        <button type="button" class="opt" data-region="RU" aria-pressed="false"><span class="n">Россия</span><span class="d">RUB &middot; &#x20BD;</span></button>
+                        <button type="button" class="opt" data-region="KZ" aria-pressed="false"><span class="n">Казахстан</span><span class="d">KZT &middot; &#x20B8;</span></button>
+                        <button type="button" class="opt" data-region="KG" aria-pressed="false"><span class="n">Киргизия</span><span class="d">KGS &middot; сом</span></button>
+                    </div>
+
+                    <button type="button" class="btn-next" id="next-1">
+                        Дальше
+                        <svg class="bob" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#eaf1ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                    </button>
+                </section>
+
+                <section class="card glass" id="s2" aria-labelledby="s2-title">
+                    <div class="step">Шаг 2 из 2</div>
+                    <h2 id="s2-title">Какой должна быть Акулка?</h2>
+                    <p class="hint">От характера зависит, когда и как она предупредит о лимите.</p>
+                    <div class="grid3 moods" id="mood-grid" role="group" aria-label="Характер Акулки">
+                        <button type="button" class="opt" data-mood="kind" aria-pressed="false"><span class="n">Добрая</span><span class="d">Подбадривает и не ругает</span></button>
+                        <button type="button" class="opt" data-mood="normal" aria-pressed="false"><span class="n">Обычная</span><span class="d">Говорит по делу, без нажима</span></button>
+                        <button type="button" class="opt" data-mood="strict" aria-pressed="false"><span class="n">Строгая</span><span class="d">Предупреждает раньше и жёстче</span></button>
+                    </div>
+                    <div class="preview">
+                        <div class="ava"><img src="assets/onb-think.webp" alt="Акулка задумалась"></div>
+                        <div class="say" id="mood-say" aria-live="polite"></div>
+                    </div>
+                </section>
+
+                <button type="button" id="ob-create-btn" class="pulse">
+                    <span id="ob-create-label">Создать бюджет и начать</span>
+                    <svg class="nudge" id="ob-create-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06101f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+                <div class="sub-cta">Всё это можно поменять в профиле позже</div>
+
+                <section class="import glass" id="imp" aria-labelledby="imp-title">
+                    <div class="drop">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5bb8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0l-4 4m4-4l4 4M5 20h14"/></svg>
+                        <div>
+                            <h3 id="imp-title">Есть данные из прошлой версии?</h3>
+                            <p>Загрузи файл .json: бюджеты, планы и накопления вернутся на место.</p>
+                        </div>
+                        <label for="file-input" class="btn-ghost" tabindex="0">Выбрать файл .json</label>
+                    </div>
+                    <input type="file" id="file-input" accept="application/json,.json" onchange="importBudget(event)"/>
+                </section>
             </div>
         </div>
-    </div>
 
-    <!-- График -->
-    <div class="sec">
-        <div class="sec-label">Аналитика</div>
-        <div class="sec-title">Видишь куда уходят деньги</div>
-        <p class="sec-sub">Графики обновляются после каждой записи — без лишних кликов</p>
-        <div class="chart-card">
-            <div class="chart-head">
-                <div>
-                    <div style="font-size:12px;font-weight:400;color:var(--text-sub);margin-bottom:4px;">Баланс за месяц</div>
-                    <div class="chart-total">&#x20BD; 48 200</div>
+        <section class="inside" aria-labelledby="inside-title">
+            <h2 id="inside-title">Что внутри</h2>
+            <div class="feats">
+                <div class="feat">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3ddc97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 7-8"/></svg>
+                    <h3>Траты и поступления</h3>
+                    <p>Записывай за пару касаний, с позициями и категориями.</p>
                 </div>
-                <div class="chart-badge">+12%</div>
+                <div class="feat">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffc857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg>
+                    <h3>Накопления и долги</h3>
+                    <p>Проценты по вкладам и платежи по долгам.</p>
+                </div>
+                <div class="feat">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+                    <h3>План месяца</h3>
+                    <p>Лимит на день пересчитывается по факту.</p>
+                </div>
+                <div class="feat">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5bb8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+                    <h3>Аналитика</h3>
+                    <p>Графики и инсайты по твоим данным.</p>
+                </div>
+                <div class="feat wide">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ff6b81" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 20h14"/></svg>
+                    <div>
+                        <h3>Залётом</h3>
+                        <p>Загрузи выписку из банка, Акулка сама разложит операции по категориям.</p>
+                    </div>
+                </div>
             </div>
-            <div class="chart-bars" id="demo-bars"></div>
-            <div class="chart-legend">
-                <div class="legend-item"><div class="legend-dot" style="background:var(--income)"></div>Поступления</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--expense)"></div>Траты</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--deposit)"></div>Накопления</div>
+        </section>
+
+        <section class="banner">
+            <img src="assets/onb-scene.webp" alt="Акулка за столом с блокнотом: давай знакомиться" loading="lazy">
+            <div class="bt">
+                <h2>Акулка на связи каждый день</h2>
+                <p>Она считает дневной лимит, радуется удачным дням и вовремя предупреждает. Характер выбираешь сам.</p>
+                <ul>
+                    <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ddc97" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Совет дня и вечерний итог в карточке на главной</li>
+                    <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ddc97" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Чат «Спросить Акулку»: сколько осталось, куда ушли деньги</li>
+                    <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3ddc97" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Значки, звания и цель накопления</li>
+                </ul>
             </div>
+        </section>
+
+        <div class="foot">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9fb0d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+            <div>Данные хранятся только на этом устройстве. Раз в две недели Акулка напомнит сделать экспорт, чтобы ничего не потерялось.</div>
         </div>
-    </div>
-
-    <!-- Фичи -->
-    <div class="sec">
-        <div class="sec-label">Возможности</div>
-        <div class="sec-title">Минимум кликов</div>
-        <p class="sec-sub">Всё что нужно — уже под рукой</p>
-        <div class="feat-list">
-            <div class="feat-item">
-                <div class="feat-icon">&#x1F4F6;</div>
-                <div>
-                    <div class="feat-title">Работает офлайн</div>
-                    <div class="feat-desc">PWA с полным офлайн-режимом — данные никуда не исчезнут</div>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon">&#x1F512;</div>
-                <div>
-                    <div class="feat-title">Данные только у тебя</div>
-                    <div class="feat-desc">Всё хранится локально на устройстве. Никаких серверов, никакой слежки. Периодически делай экспорт — копия спасёт, если очистится браузер</div>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon">&#x1F4CA;</div>
-                <div>
-                    <div class="feat-title">Умная аналитика</div>
-                    <div class="feat-desc">Акулка рисует графики, категории и баланс — всё строится автоматически</div>
-                </div>
-            </div>
-            <div class="feat-item">
-                <div class="feat-icon">&#x1F4B8;</div>
-                <div>
-                    <div class="feat-title">Полностью бесплатно</div>
-                    <div class="feat-desc">Без подписок, рекламы и скрытых платежей — навсегда</div>
-                </div>
-            </div>
+        <div class="foot-links">
+            <button type="button" class="help-link" onclick="openHelpModal()">? &nbsp;Как это работает</button>
+            <span>budgetit.app</span>
         </div>
-    </div>
 
-    <!-- Акулка CTA -->
-    <div class="sec" style="margin-bottom:0">
-        <div class="shark-section">
-            <img src="assets/shark-import.png" alt="Акулка BudgetIt" class="shark-cta-img"
-                 onerror="this.style.display='none'"/>
-            <div class="shark-title">Акулка уже ждёт &#x1F988;</div>
-            <p class="shark-sub">Создай первый бюджет прямо сейчас<br>и начни контролировать деньги сегодня</p>
-            <button class="shark-btn" onclick="scrollToInput()">
-                Начать &mdash; это бесплатно &nbsp;&#x2192;
+        <div class="sticky" id="sticky">
+            <button type="button" class="btn-primary" id="sticky-cta">
+                <span class="cta-t">Создать бюджет</span>
+                <svg class="bobup" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06101f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
             </button>
         </div>
     </div>
 </div>
 
 <!-- Help modal -->
-<div id="help-modal" class="ob-modal" role="dialog" aria-modal="true">
+<div id="help-modal" class="ob-modal" role="dialog" aria-modal="true" aria-label="Как это работает">
     <div class="ob-modal-card">
         <div class="ob-modal-head">
-            <div class="ob-modal-title">Как это работает &#x1F988;</div>
+            <div class="ob-modal-title">Как это работает</div>
             <button class="ob-modal-close" onclick="closeHelpModal()" aria-label="Закрыть">&#x2715;</button>
         </div>
         <div class="ob-modal-step">
             <div class="ob-modal-num">1</div>
             <div>
                 <div class="ob-modal-step-title">Создай или импортируй бюджет</div>
-                <div class="ob-modal-step-desc">Каждый бюджет — отдельный учёт расходов, доходов, долгов и вкладов.</div>
+                <div class="ob-modal-step-desc">Каждый бюджет — отдельный учёт поступлений, трат, долгов и накоплений.</div>
             </div>
         </div>
         <div class="ob-modal-step">
             <div class="ob-modal-num">2</div>
             <div>
-                <div class="ob-modal-step-title">Добавляй транзакции</div>
-                <div class="ob-modal-step-desc">Записывай доходы, траты, долги и вклады — всё в одном месте.</div>
+                <div class="ob-modal-step-title">Добавляй операции</div>
+                <div class="ob-modal-step-desc">Записывай поступления, траты, долги и накопления — всё в одном месте.</div>
             </div>
         </div>
         <div class="ob-modal-step">
             <div class="ob-modal-num">3</div>
             <div>
                 <div class="ob-modal-step-title">Анализируй</div>
-                <div class="ob-modal-step-desc">Визуализации покажут, на что уходят деньги и сколько накоплено.</div>
+                <div class="ob-modal-step-desc">Графики покажут, на что уходят деньги и сколько накоплено.</div>
             </div>
         </div>
         <div class="ob-modal-step">
             <div class="ob-modal-num">4</div>
             <div>
                 <div class="ob-modal-step-title">Сохраняй данные</div>
-                <div class="ob-modal-step-desc">Все данные хранятся локально. Экспорт/импорт через JSON.</div>
+                <div class="ob-modal-step-desc">Все данные хранятся локально. Экспорт и импорт через JSON.</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    function scrollToInput() {
-        var input = document.getElementById('budget-name');
-        var field = document.getElementById('ob-field');
-        // Скроллим так чтобы поле оказалось в верхней трети экрана
-        // оставляя место для клавиатуры снизу
-        field.scrollIntoView({behavior: 'smooth', block: 'start'});
-        setTimeout(function() {
-            // Дополнительный отступ сверху чтобы поле не было вплотную к краю
-            window.scrollBy({top: -60, behavior: 'smooth'});
-            setTimeout(function() { input.focus(); }, 150);
-        }, 400);
+    var MOODS = {
+        kind:   'Потрачено 84 000 из 120 000. Всё спокойно, я рядом.',
+        normal: 'Потрачено 84 000 из 120 000. Лимит держим.',
+        strict: 'Уже 96 000 из 120 000. Дальше только по делу.'
+    };
+
+    function detectRegion() {
+        try {
+            var saved = localStorage.getItem('region');
+            if (saved && /^(UZ|RU|KZ|KG)$/.test(saved)) return saved;
+        } catch (e) {}
+        var tz = '';
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+        if (/Tashkent|Samarkand/.test(tz)) return 'UZ';
+        if (/Almaty|Aqtau|Aqtobe|Atyrau|Oral|Qostanay|Qyzylorda/.test(tz)) return 'KZ';
+        if (/Bishkek/.test(tz)) return 'KG';
+        if (/^Europe\/(Moscow|Kaliningrad|Samara|Volgograd|Kirov|Astrakhan|Saratov|Ulyanovsk)|^Asia\/(Yekaterinburg|Omsk|Novosibirsk|Krasnoyarsk|Irkutsk|Yakutsk|Vladivostok|Magadan|Kamchatka)/.test(tz)) return 'RU';
+        return 'UZ';
     }
 
-    (function() {
-        var data = [
-            {lbl:'Янв',inc:72,exp:48,dep:18},
-            {lbl:'Фев',inc:60,exp:55,dep:22},
-            {lbl:'Мар',inc:80,exp:42,dep:30},
-            {lbl:'Апр',inc:68,exp:50,dep:25},
-            {lbl:'Май',inc:90,exp:38,dep:35},
-            {lbl:'Июн',inc:85,exp:44,dep:28}
-        ];
-        var colors = {inc:'var(--income)',exp:'var(--expense)',dep:'var(--deposit)'};
-        var container = document.getElementById('demo-bars');
-        if (!container) return;
-        var maxVal = 0;
-        data.forEach(function(d){maxVal = Math.max(maxVal,d.inc,d.exp,d.dep);});
-        data.forEach(function(d) {
-            var wrap = document.createElement('div');
-            wrap.className = 'bar-wrap';
-            ['inc','exp','dep'].forEach(function(k) {
-                var bar = document.createElement('div');
-                bar.className = 'bar';
-                var pct = Math.round((d[k] / maxVal) * 80);
-                bar.style.height = pct + 'px';
-                bar.style.background = colors[k];
-                bar.style.opacity = '0.85';
-                wrap.appendChild(bar);
-            });
-            var lbl = document.createElement('div');
-            lbl.className = 'bar-lbl';
-            lbl.textContent = d.lbl;
-            wrap.appendChild(lbl);
-            container.appendChild(wrap);
-        });
-    })();
+    /* запрет выделения текста и сохранения картинок (кроме полей ввода) */
+    document.addEventListener('contextmenu', function(e) {
+        if (!(e.target.closest && e.target.closest('input,textarea'))) e.preventDefault();
+    });
+    document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+    document.addEventListener('selectstart', function(e) {
+        if (!(e.target.closest && e.target.closest('input,textarea'))) e.preventDefault();
+    });
+    Array.prototype.forEach.call(document.images, function(img) { img.setAttribute('draggable', 'false'); });
 
+    var state = { region: detectRegion(), mood: 'normal' };
+
+    var field     = document.getElementById('ob-field');
+    var nameEl    = document.getElementById('budget-name');
+    var countEl   = document.getElementById('name-count');
+    var createBtn = document.getElementById('ob-create-btn');
+    var sticky    = document.getElementById('sticky');
+
+    function setPressed(groupId, attr, value) {
+        var btns = document.getElementById(groupId).querySelectorAll('button');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].setAttribute('aria-pressed', btns[i].getAttribute(attr) === value ? 'true' : 'false');
+        }
+    }
+    function renderChoices() {
+        setPressed('region-grid', 'data-region', state.region);
+        setPressed('mood-grid', 'data-mood', state.mood);
+        document.getElementById('mood-say').textContent = MOODS[state.mood];
+    }
+    document.getElementById('region-grid').addEventListener('click', function(e) {
+        var b = e.target.closest('button[data-region]');
+        if (!b) return;
+        state.region = b.getAttribute('data-region');
+        renderChoices();
+    });
+    document.getElementById('mood-grid').addEventListener('click', function(e) {
+        var b = e.target.closest('button[data-mood]');
+        if (!b) return;
+        state.mood = b.getAttribute('data-mood');
+        renderChoices();
+    });
+    var EMOJIS = ['\uD83E\uDD88', '\uD83D\uDCB0', '\uD83C\uDFE0'];
+    function splitEmoji(v) {
+        for (var i = 0; i < EMOJIS.length; i++) {
+            if (v.indexOf(EMOJIS[i]) === 0) return { emo: EMOJIS[i], rest: v.slice(EMOJIS[i].length).replace(/^\s+/, '') };
+        }
+        return { emo: '', rest: v };
+    }
+    function joinName(emo, rest) {
+        rest = (rest || '').trim();
+        var s = emo ? (rest ? emo + ' ' + rest : emo) : rest;
+        while (s.length > 13 && rest) {
+            rest = Array.from(rest).slice(0, -1).join('').trim();
+            s = emo ? (rest ? emo + ' ' + rest : emo) : rest;
+        }
+        return s;
+    }
+    document.getElementById('suggest').addEventListener('click', function(e) {
+        var t = e.target.closest('button[data-name]');
+        var m = e.target.closest('button[data-emoji]');
+        if (!t && !m) return;
+        var p = splitEmoji(nameEl.value);
+        if (t) nameEl.value = joinName(p.emo, t.getAttribute('data-name'));
+        else nameEl.value = joinName(p.emo === m.getAttribute('data-emoji') ? '' : m.getAttribute('data-emoji'), p.rest);
+        field.classList.remove('ob-error');
+        updateCount();
+    });
+    function updateCount() {
+        countEl.textContent = nameEl.value.length + '/13';
+        var cur = splitEmoji(nameEl.value).emo;
+        var emos = document.querySelectorAll('#suggest button[data-emoji]');
+        for (var i = 0; i < emos.length; i++) emos[i].setAttribute('aria-pressed', emos[i].getAttribute('data-emoji') === cur ? 'true' : 'false');
+    }
+    nameEl.addEventListener('input', updateCount);
+    nameEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') createBudget(); });
+    renderChoices();
+    updateCount();
+
+    /* ---------- прокрутка кнопкой ---------- */
+    function goTo(id, focusName) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+        if (focusName) {
+            setTimeout(function() {
+                try { nameEl.focus({ preventScroll: true }); } catch (e) { nameEl.focus(); }
+            }, reduce ? 0 : 500);
+        }
+    }
+    function toForm() { goTo(window.innerWidth >= 960 ? 'ob-field' : 's1', true); }
+    document.getElementById('cta-setup').addEventListener('click', toForm);
+    document.getElementById('sticky-cta').addEventListener('click', toForm);
+    document.getElementById('next-1').addEventListener('click', function() { goTo('s2', false); });
+    document.getElementById('import-chip').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('file-input').click(); }
+    });
+
+    /* закреплённая кнопка прячется, пока форма на экране */
+    if ('IntersectionObserver' in window && sticky) {
+        var visible = {};
+        var seen = new IntersectionObserver(function(entries) {
+            entries.forEach(function(en) { visible[en.target.id] = en.isIntersecting; });
+            sticky.classList.toggle('hide', !!(visible['form-col'] || visible['cta-setup']));
+        }, { threshold: [0.12, 0.9] });
+        seen.observe(document.getElementById('form-col'));
+        seen.observe(document.getElementById('cta-setup'));
+    }
+
+    /* ---------- хранение ---------- */
     function saveStateToIndexedDB(newState) {
         if (!('indexedDB' in window)) return;
         var request = indexedDB.open('AkulkaVault', 1);
@@ -680,24 +734,20 @@
         request.onerror = function(ev) { console.warn('[Onboarding] IndexedDB error:', ev.target.error); };
     }
 
-    var field     = document.getElementById('ob-field');
-    var nameEl    = document.getElementById('budget-name');
-    var createBtn = document.getElementById('ob-create-btn');
-
-    nameEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') createBudget(); });
-
     function shakeField() {
+        field.classList.remove('ob-error');
+        void field.offsetWidth;
         field.classList.add('ob-error');
         nameEl.placeholder = 'Сначала дай имя...';
-        nameEl.focus();
+        goTo('s1', true);
         setTimeout(function() {
             field.classList.remove('ob-error');
-            nameEl.placeholder = 'Как назовём бюджет?';
+            nameEl.placeholder = 'Например, Личное';
         }, 2200);
     }
 
     function createBudget() {
-        var name = nameEl.value.trim();
+        var name = nameEl.value.replace(/\s+/g, ' ').trim();
         if (!name) return shakeField();
         var budgets = [{name:name, transactions:[]}];
         var currentBudgetIndex = 0;
@@ -705,12 +755,22 @@
         localStorage.setItem('budgets', JSON.stringify(budgets));
         localStorage.setItem('currentBudgetIndex', String(currentBudgetIndex));
         localStorage.setItem('productNames', JSON.stringify(productNames));
+        /* страна и характер Акулки — те же ключи, что читает приложение */
+        try { localStorage.setItem('region', state.region); } catch (e) {}
+        try {
+            var shark = JSON.parse(localStorage.getItem('budgetit:shark') || '{}') || {};
+            shark.character = state.mood;
+            localStorage.setItem('budgetit:shark', JSON.stringify(shark));
+        } catch (e) {}
         saveStateToIndexedDB({budgets:budgets, currentBudgetIndex:currentBudgetIndex, productNames:productNames});
-        try { window.trackSafe && window.trackSafe('onboarding-create-budget', {name:name}); } catch(e) {}
+        try { window.trackSafe && window.trackSafe('onboarding-create-budget', {name:name, region:state.region, character:state.mood}); } catch(e) {}
         createBtn.classList.add('ob-success');
-        createBtn.innerHTML = '&#x2713; &nbsp;Готово &mdash; открываем...';
+        createBtn.classList.remove('pulse');
+        document.getElementById('ob-create-label').innerHTML = '&#x2713; &nbsp;Готово &mdash; открываем...';
+        document.getElementById('ob-create-ico').style.display = 'none';
         setTimeout(function() { location.replace('index.html'); }, 600);
     }
+    createBtn.addEventListener('click', createBudget);
 
     function parseImportedBudgetData(parsed) {
         var budgets, currentBudgetIndex, productNames;
@@ -756,7 +816,13 @@
     function showModal(message) {
         var el = document.createElement('div');
         el.className = 'ob-alert';
-        el.innerHTML = '<div class="ob-alert-card"><div class="ob-alert-icon">&#x1F988;</div><div class="ob-alert-msg">' + message + '</div><button class="ob-alert-btn" onclick="this.closest(\'.ob-alert\').remove()">Понял</button></div>';
+        var card = document.createElement('div'); card.className = 'ob-alert-card';
+        var icon = document.createElement('div'); icon.className = 'ob-alert-icon'; icon.textContent = '🦈';
+        var msg = document.createElement('div'); msg.className = 'ob-alert-msg'; msg.textContent = message;
+        var btn = document.createElement('button'); btn.className = 'ob-alert-btn'; btn.textContent = 'Понял';
+        btn.addEventListener('click', function() { el.remove(); });
+        card.appendChild(icon); card.appendChild(msg); card.appendChild(btn);
+        el.appendChild(card);
         document.body.appendChild(el);
     }
 </script>

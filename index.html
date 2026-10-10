@@ -32,7 +32,7 @@
       } catch (e) {}
     })();
   </script>
-  <title>BudgetIt — учёт бюджета и трат</title>
+  <title>BudgetIt — Акулка: бесплатный учёт бюджета, траты, накопления, долги | Shark budget tracker</title>
   <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./theme.css">
     <link rel="stylesheet" href="./theme-polish-fixes.css">
@@ -46,7 +46,7 @@
 
 
 
-  <link rel="manifest" href="manifest.json?v=5.0.1">
+  <link rel="manifest" href="manifest.json?v=5.0.2">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -69,28 +69,36 @@
   <link rel="apple-touch-icon" href="assets/icon-512x512v4.png">
 
   <meta name="description"
-        content="BudgetIt — бесплатная PWA для учёта поступлений, трат, накоплений и долгов с офлайн-режимом, аналитикой и пуш-напоминаниями. Акулка позаботится о ваших финансах!">
-  <meta name="keywords" content="учёт бюджета, PWA приложение, финансы, траты, поступления, акулка, BudgetIt, личные финансы, трекер трат, офлайн бюджет">
+        content="BudgetIt (Акулка, Shark) — бесплатное PWA для учёта поступлений, трат, накоплений и долгов: офлайн-режим, аналитика, план месяца, напоминания. Акулка присмотрит за вашими финансами! Free budget & expense tracker with a Shark mascot.">
+  <meta name="keywords" content="учёт бюджета, акулка, акулка бюджета, бюджет с акулкой, PWA приложение, финансы, траты, поступления, личные финансы, трекер трат, офлайн бюджет, BudgetIt, akulka, akulka budget, budgetit shark, shark budget app, shark, budget tracker, expense tracker, personal finance, money tracker, savings and debts tracker, offline budget app">
   <meta name="author" content="BudgetIt by l1lG1tPain">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <meta name="application-name" content="BudgetIt">
+  <meta name="format-detection" content="telephone=no">
   <link rel="canonical" href="https://budgetit.app/">
 
   <!-- === OPEN GRAPH === -->
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://budgetit.app/">
   <meta property="og:site_name" content="BudgetIt">
-  <meta property="og:title"       content="BudgetIt — Track your money with Shark 🦈">
-  <meta property="og:description" content="Zero-friction budgeting PWA: incomes, expenses, deposits, debts, dark mode & offline. Install and let the Shark guard your wallet.">
+  <meta property="og:title"       content="BudgetIt — Акулка бюджета 🦈 Track your money with Shark">
+  <meta property="og:description" content="Поступления, траты, накопления и долги в одном приложении. План месяца, аналитика, тёмные темы и офлайн-режим. Пусть Акулка присмотрит за кошельком. Zero-friction budgeting PWA: incomes, expenses, deposits, debts, offline.">
   <meta property="og:image"       content="https://budgetit.app/assets/og-cover.png">
+  <meta property="og:image:alt"   content="Акулка в бордовом худи — талисман BudgetIt">
   <meta property="og:locale"      content="ru_RU">
   <meta property="og:locale:alternate" content="en_US">
-
+  
   <!-- === TWITTER === -->
   <meta name="twitter:site" content="@CyberSnit4">
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="BudgetIt — Акулка следит за твоим бюджетом">
+  <meta name="twitter:title"       content="BudgetIt — Акулка следит за твоим бюджетом | Shark budget tracker">
   <meta name="twitter:description" content="Бесплатная PWA для управления личными финансами. Установи и начни экономить уже сегодня.">
   <meta name="twitter:image"       content="https://budgetit.app/assets/og-cover.png">
+  <meta name="twitter:image:alt"   content="Акулка в бордовом худи — талисман BudgetIt">
+
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.2","image":"https://budgetit.app/assets/og-cover.png"}
+  </script>
 
   <style>
     /* ── Budget name button in header ── */
@@ -716,7 +724,7 @@
                   <img src="assets/icons/budgetit-icon.png" class="product-icon">
                   <h3>BudgetIt</h3>
                   <p>Учёт финансов с аналитикой</p>
-                  <span class="product-version">v5.0.1</span>
+                  <span class="product-version">v5.0.2</span>
               </div>
 
               <a href="https://migry-bice.vercel.app/" target="_blank" class="product-card link">
@@ -1064,7 +1072,7 @@
               <div class="about-hero">
                   <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
                   <div class="about-title">BudgetIt</div>
-                  <div class="about-version">Версия 5.0.1</div>
+                  <div class="about-version">Версия 5.0.2</div>
                   <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
               </div>
 
@@ -1144,11 +1152,20 @@
                   </div>
                   <div class="about-changelog">
                       <div class="about-changelog-row">
+                          <div class="about-changelog-ver">5.0.2</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Новый старт
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Новый вид онбординга, улучшения аналитики (остаток «как в Доступно», новые тренды: «Хватит на…», подписки, цена привычек), настоящий «Совет Акулки», обновлённые темы «Тёмная» и Burgundy, исправления визуальных багов и расчёта «Доступно»</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
                           <div class="about-changelog-ver">5.0.1</div>
                           <div class="about-changelog-info">
                               <div class="about-changelog-name">
                                   Акулка заговорила
-                                  <span class="about-badge-now">Сейчас</span>
                               </div>
                               <div class="about-changelog-desc">Акулка с разным видом и речью, настройка болтливости, свой дневной лимит, чат с помощью, цель накопления, значки и словарик, калькулятор валют</div>
                           </div>

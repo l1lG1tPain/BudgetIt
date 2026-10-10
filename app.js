@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (storageManager) {
         try {
             initialState = await storageManager.loadInitialState();
-            console.log('[BudgetIt] Initial state loaded (IDB migration OK):', initialState);
+            console.log('[BudgetIt] Initial state loaded (IDB migration OK)');
         } catch (e) {
             console.warn('[BudgetIt] Failed loadInitialState → fallback LS', e);
         }

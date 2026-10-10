@@ -93,8 +93,6 @@ import {
       retentionDays
     };
 
-    console.log('[Analytics] id:', userId);
-    console.log('[Analytics] Данные identify:', data);
 
     /* ---------- 6. Отправка в Umami ---------- */
     try {

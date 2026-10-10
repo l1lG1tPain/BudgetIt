@@ -116,17 +116,17 @@
 }
 
 :root[data-theme="dark"] {
-    --primary-color:  #3B82F6;      /* фирменный синий — бренд/акцент */
-    --income-color:   #27AE60;      /* зелёный только для доходов */
-    --expense-color:  #ff4b5c;      /* мягко-красный для расходов */
-    --deposit-color:  #9B59B6;      /* нежная сирень */
-    --debt-color:     #F1C40F;      /* тёплый жёлто-медовый */
+    --primary-color:  #5bb8ff;      /* Deep-glass: голубой акцент как в онбординге */
+    --income-color:   #3ddc97;      /* зелёный только для доходов */
+    --expense-color:  #ff6b81;      /* мягко-красный для расходов */
+    --deposit-color:  #ffc857;      /* накопления: янтарный */
+    --debt-color:     #c084fc;      /* долги: сиреневый */
 
-    --secondary-color:    #dcddde;
+    --secondary-color:    #eaf1ff;
     --bg-secondary-color: #000000;
-    --tertiary-color:     #000000;
-    --accent-color:       #1E2A3A;  /* тёмно-синеватый вместо серого */
-    --main-ground:        #0F1419;  /* чуть холоднее, в тон синему */
+    --tertiary-color:     #06101f;
+    --accent-color:       #121b31;  /* тёмно-синеватый вместо серого */
+    --main-ground:        #070d1c;  /* чуть холоднее, в тон синему */
 
     --shadow-sm: 0 2px 5px rgba(0,0,0,0.4);
     --shadow-md: 0 4px 8px rgba(0,0,0,0.5);
@@ -140,7 +140,7 @@
     --an-tertiary-color:  #1e1e1e;
     --an-accent-color:    var(--accent-color);
 
-    --linear-progress-bar: linear-gradient(135deg, #3B82F6, #6366F1);
+    --linear-progress-bar: linear-gradient(135deg, #5bb8ff, #2a6df0);
 
     .currency-chip {
         background-color: var(--bg-secondary-color);
@@ -1180,22 +1180,22 @@
 :root[data-theme="burgundy"] {
 
     /* 🧠 ОСНОВА — делаем темнее, почти black */
-    --main-ground:        #0f0a0d;
-    --sidebar-bg:         #12080c;
-    --bg-secondary-color: #1a0c11;
-    --tertiary-color:     #2a0f16;
+    --main-ground:        #12070a;
+    --sidebar-bg:         #0d0507;
+    --bg-secondary-color: #1b0a0f;
+    --tertiary-color:     #2a0f18;
 
-    --secondary-color:    #f3e8eb;
-    --text-muted:         #a07a84;
+    --secondary-color:    #f9edf0;
+    --text-muted:         #b69ca5;
 
     /* 🍷 АКЦЕНТЫ — приглушённые */
-    --primary-color:      #730c1e;
-    --income-color:       #a3203a;
-    --expense-color:      #ff4d6d;
-    --deposit-color:      #c75a6f;
-    --debt-color:         #ffb3c1;
+    --primary-color:      #dc3355;
+    --income-color:       #8fdcb4;
+    --expense-color:      #ff5d7a;
+    --deposit-color:      #e9c37f;
+    --debt-color:         #d3a6ff;
 
-    --accent-color:       #12080c;
+    --accent-color:       #1f0c12;
     --dark-color:         #000000;
 
     /* ✨ ТЕНИ — почти убираем glow */
@@ -1216,7 +1216,7 @@
 
     /* 💱 ЧИПЫ */
     .currency-chip {
-        background: #12080c;
+        background: #1f0c12;
         color: var(--secondary-color);
     }
 
@@ -1224,7 +1224,7 @@
     #add-btn {
         background: var(--primary-color);
         color: #fff;
-        box-shadow: none;
+        box-shadow: 0 8px 22px rgba(190,24,60,.45);
     }
 
     .add-btn,
@@ -1236,7 +1236,7 @@
 
     /* 📋 ТРАНЗАКЦИИ — мягкие */
     #transaction-list li.tx-item, .bi-kpi-row .bi-kpi, .bi-health, .bi-cards .bi-card, .open-subpage-btn, .theme-option {
-        background: #12080c;
+        background: #1f0c12;
         box-shadow: var(--shadow-sm);
         backdrop-filter: none;
     }
@@ -1271,7 +1271,7 @@
     main {
         background-color: var(--main-ground);
         background-image:
-                radial-gradient(circle at top, rgba(115,12,30,0.15), transparent 60%),
+                radial-gradient(circle at top, rgba(168,28,62,0.18), transparent 60%),
                 linear-gradient(135deg, #0a0507 0%, #0f0a0d 50%, #080405 100%);
     }
 }

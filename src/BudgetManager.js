@@ -317,7 +317,12 @@ export class BudgetManager {
         const getDateInfo = dateStr => {
             if (!dateStr) return null;
 
-            const raw = String(dateStr);
+            // ISO-метка времени (платежи по долгам: '2025-05-22T21:57:18Z') → локальная дата, иначе платёж ночью уезжает на «вчера»
+            let raw = String(dateStr);
+            if (raw.includes('T')) {
+                const dt = new Date(raw);
+                if (!Number.isNaN(dt.getTime())) raw = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            }
             const match = raw.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
 
             if (!match) return null;
@@ -473,6 +478,8 @@ export class BudgetManager {
             }
 
             if (tx.type === 'deposit') {
+                // «Уже лежало» — деньги, которые и так были на вкладе: из кошелька они не уходили
+                if (String(tx.status || '').includes('Уже лежало')) return;
                 const isWithdraw = String(tx.status || '').trim() === '➖ Снятие';
 
                 if (isWithdraw) {
@@ -511,10 +518,12 @@ export class BudgetManager {
             }
 
             const payments = Array.isArray(tx.payments) ? tx.payments : [];
+            let paidSoFar = 0; // платёж сверх остатка долга не должен «создавать» деньги из воздуха
 
             payments.forEach(payment => {
                 const paymentInfo = touchMonthByDate(payment.date);
-                const paymentAmount = toNumber(payment.amount);
+                const paymentAmount = Math.min(toNumber(payment.amount), Math.max(0, init - paidSoFar));
+                paidSoFar += paymentAmount;
 
                 if (!paymentInfo?.monthKey || paymentAmount <= 0) return;
 

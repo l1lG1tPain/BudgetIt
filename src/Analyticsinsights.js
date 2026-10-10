@@ -9,6 +9,9 @@
 let _bm = null;
 
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
+import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
+import { balanceDaily } from './analytics/stats.js';
+import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
 
@@ -682,6 +685,77 @@ function _render() {
         });
     }
 
+    // ── Новые карточки: остаток, привычки, подписки ───────────
+    try {
+        const today = localToday();
+        const available = balanceDaily(allTx, makePeriod({ keys: [today.slice(0, 7)] }), null).end; // то же число, что «Доступно» на главной
+
+        const rw = calcRunway(available, realExp, today);
+        if (rw) {
+            const [, mm, dd] = rw.until.split('-');
+            cards.push({
+                e: '🧭', t: 'Хватит на',
+                b: rw.empty
+                    ? `Остаток исчерпан, а в среднем уходит <b>${_f(rw.perDay)}</b> в день`
+                    : `При текущем темпе (<b>${_f(rw.perDay)}</b> в день за 2 недели) остатка <b>${_f(available)}</b> хватит до <b>${dd}.${mm}</b>`,
+                badge: rw.empty ? '0 дн.' : `${rw.days} дн.`,
+                col: rw.days < 7 ? '#ef4444' : rw.days < 14 ? '#f59e0b' : '#10b981',
+                priority: 99
+            });
+        }
+
+        const sp = calcSafePerDay(available, realExp, today);
+        cards.push({
+            e: '🎯', t: 'Можно тратить в день',
+            b: sp.over
+                ? `Остаток этого месяца исчерпан — до конца месяца <b>${sp.left}</b> дн. без бюджета`
+                : `Чтобы дотянуть до конца месяца (<b>${sp.left}</b> дн.), можно тратить <b>${_f(sp.perDay)}</b> в день.<br><span style="opacity:.6;font-size:11px">Сегодня потрачено ${_f(sp.todaySpent)}</span>`,
+            badge: sp.over ? '0' : _f(sp.perDay),
+            col: sp.over ? '#ef4444' : sp.todaySpent > sp.perDay ? '#f59e0b' : '#10b981',
+            priority: 98
+        });
+
+        const pw = calcPaydayWeek(incomeTx, realExp, today);
+        if (pw && pw.share > pw.even * 1.25) {
+            cards.push({
+                e: '💸', t: 'Неделя после поступления',
+                b: `В первые 7 дней после зарплаты уходит около <b>${pw.share.toFixed(0)}%</b> трат цикла — при равномерном темпе было бы ~${pw.even.toFixed(0)}%<br><span style="opacity:.6;font-size:11px">Среднее по ${pw.cycles} последним циклам</span>`,
+                badge: `${pw.share.toFixed(0)}%`, col: '#f59e0b', priority: 80
+            });
+        }
+
+        const ww = calcWeekdayWeekend(realExp, today);
+        if (ww && ww.ratio && Math.abs(ww.ratio - 1) >= 0.15) {
+            const more = ww.ratio > 1;
+            cards.push({
+                e: '📅', t: 'Будни и выходные',
+                b: `В выходные ты тратишь в среднем <b>${_f(ww.wePer)}</b> в день, в будни — <b>${_f(ww.wdPer)}</b>: на <b>${Math.abs(Math.round((ww.ratio - 1) * 100))}%</b> ${more ? 'больше' : 'меньше'} по выходным`,
+                badge: `${more ? '+' : '−'}${Math.abs(Math.round((ww.ratio - 1) * 100))}%`, col: '#06b6d4', priority: 79
+            });
+        }
+
+        const hb = calcHabits(realExp, today);
+        if (hb.length) {
+            const rows = hb.map(h => `<div class="bi-pd"><span>${h.cat}</span><span class="bi-pd-v">${_f(h.yearly)}/год · ~${_f(h.perMonth)}/мес</span></div>`).join('');
+            cards.push({
+                e: '🔁', t: 'Цена привычек за год',
+                b: `${rows}<span style="opacity:.6;font-size:11px">По последним 90 дням, умножено на год</span>`,
+                wide: true, col: '#ec4899', priority: 78
+            });
+        }
+
+        const subs = findSubscriptions(realExp, today);
+        if (subs.length) {
+            const sum = subs.reduce((s2, x) => s2 + x.amount, 0);
+            const rows = subs.slice(0, 4).map(x => `<div class="bi-pd"><span>${x.name.length > 24 ? x.name.slice(0, 23) + '…' : x.name}</span><span class="bi-pd-v">${_f(x.amount)}/мес</span></div>`).join('');
+            cards.push({
+                e: '🔔', t: 'Подписки',
+                b: `${rows}<span style="opacity:.6;font-size:11px">Всего ~${_f(sum)} в месяц, ~${_f(sum * 12)} в год</span>`,
+                badge: `${subs.length}`, wide: true, col: '#8b5cf6', priority: 77
+            });
+        }
+    } catch (e) { console.warn('[insights] extra cards', e); }
+
     _cards(_finalizeCards(cards));
     _health(M.health);
 
@@ -745,7 +819,7 @@ function _finalizeCards(cards) {
             ...card
         }))
         .sort((a, b) => b.priority - a.priority)
-        .slice(0, 10);
+        .slice(0, 16);
 }
 
 // ──────────────────────────────────────────────────────────────

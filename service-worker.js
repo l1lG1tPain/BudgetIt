@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.1';
+const CACHE_VERSION = 'v5.0.2';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -87,6 +87,7 @@ const STATIC_ASSETS = [
     '/src/analytics/stats.js',
     '/src/analytics/ui.js',
     '/src/utils/insightsMath.js',
+    '/src/utils/insightsExtra.js',
     '/src/utils/emojiMap.js',
     '/src/utils/loader.js',
     '/src/utils/tweakSystem.js',
@@ -157,6 +158,9 @@ const STATIC_ASSETS = [
     '/assets/wary-shark.png',
     '/assets/proud-shark.png',
     '/assets/angry-shark.png',
+    '/assets/onb-hello.webp',
+    '/assets/onb-think.webp',
+    '/assets/onb-scene.webp',
 
     // assets — аватары профиля
     '/assets/avatar/active.png',

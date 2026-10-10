@@ -598,7 +598,68 @@ function renderAnalyticsHero() {
     charts.hero = chart;
 }
 
-// «Совет Акулки»: самая «частая мелочь» за 14 дней, иначе главная статья расходов
+// «Совет Акулки» — именно СОВЕТ (что сделать), а не наблюдение. Правила по приоритету:
+// перерасход → резкий рост статьи → частая мелочь → доминирующая статья → низкая норма сбережений → похвала.
+// Факт «на что уходит больше всего» вынесен отдельной строкой-справкой под советом.
+// Порог «заметной» суммы ≈ 1,5–2 $ в местной валюте (для правила роста статьи)
+function sharkMinAmount() {
+    switch (localStorage.getItem('region') || 'UZ') { case 'RU': return 150; case 'KZ': return 800; case 'KG': return 150; default: return 20000; }
+}
+function pluralRaz(n) {
+    return n % 10 === 1 && n !== 11 ? 'раз' : (n % 10 >= 2 && n % 10 <= 4 && (n < 12 || n > 14)) ? 'раза' : 'раз';
+}
+function buildSharkAdvice(all) {
+    const cur = getCurrencyLabel(); const fmt = v => `${formatNumber(Math.round(v))} ${cur}`;
+    const exp = all.filter(t => t.type === 'expense' && t.date && !isFinancialCategory(t.category || ''));
+    if (!exp.length) return null;
+    const inc = all.filter(t => t.type === 'income' && t.date);
+    const lastIso = exp.reduce((m, t) => t.date.slice(0, 10) > m ? t.date.slice(0, 10) : m, '');
+    const shift = n => { const d = new Date(lastIso + 'T00:00:00'); d.setDate(d.getDate() - n); return isoOf(d); };
+    const f14 = shift(13), f28 = shift(27), f30 = shift(29);
+    const sumBy = (arr, from, to) => { const m = new Map(); let tot = 0;
+        for (const t of arr) { const d = t.date.slice(0, 10); if (d < from || d > to) continue;
+            const c = (t.category || '').trim() || 'Без категории'; const a = amtOf(t); m.set(c, (m.get(c) || 0) + a); tot += a; }
+        return { m, tot }; };
+    // сводка за 30 дней (для факта и для долей)
+    const p30 = sumBy(exp, f30, lastIso);
+    const top = [...p30.m.entries()].sort((a, b) => b[1] - a[1])[0];
+    const fact = top && p30.tot > 0 ? `Главная статья за 30 дней: ${top[0]} — ${Math.round(top[1] / p30.tot * 100)}% (${fmt(top[1])})` : '';
+    const inc30 = inc.reduce((s2, t) => { const d = t.date.slice(0, 10); return d >= f30 && d <= lastIso ? s2 + amtOf(t) : s2; }, 0);
+
+    let advice = '';
+    // 1) расходы больше поступлений
+    if (inc30 > 0 && p30.tot > inc30 * 1.02) {
+        advice = `За 30 дней трат на ${fmt(p30.tot - inc30)} больше, чем поступлений. Выбери одну необязательную статью и урежь её на этой неделе — разрыв закроется быстрее, чем кажется.`;
+    }
+    // 2) статья выросла к предыдущим двум неделям
+    if (!advice) {
+        const a = sumBy(exp, f14, lastIso).m, b = sumBy(exp, f28, shift(14)).m;
+        const grow = [...a.entries()].filter(([c, v]) => (b.get(c) || 0) > 0 && v > sharkMinAmount() && v / b.get(c) >= 1.4)
+            .sort((x, y) => (y[1] - b.get(y[0])) - (x[1] - b.get(x[0])))[0];
+        if (grow) advice = `${grow[0]}: за две недели +${Math.round((grow[1] / b.get(grow[0]) - 1) * 100)}% к предыдущим. Поставь себе лимит на эту статью до конца месяца — рост пока не стал привычкой.`;
+    }
+    // 3) частая мелочь
+    if (!advice) {
+        const by = new Map();
+        for (const t of exp) { const d = t.date.slice(0, 10); if (d < f14) continue; const c = (t.category || '').trim(); if (!c) continue;
+            const e = by.get(c) || { n: 0, sum: 0 }; e.n += 1; e.sum += amtOf(t); by.set(c, e); }
+        const fr = [...by.entries()].filter(([, e]) => e.n >= 3).sort((x, y) => y[1].sum - x[1].sum)[0];
+        if (fr) advice = `${fr[0]} — ${fr[1].n} ${pluralRaz(fr[1].n)} за две недели на ${fmt(fr[1].sum)}. Реже на один раз — и в кармане останется ещё ${fmt(fr[1].sum / fr[1].n)}.`;
+    }
+    // 4) одна статья съедает больше половины
+    if (!advice && top && p30.tot > 0 && top[1] / p30.tot >= 0.5) {
+        advice = `${top[0]} забирает больше половины трат. Пересмотри именно её: минус 10% здесь даст ${fmt(top[1] * 0.1)} в месяц — больше, чем экономия на мелочах.`;
+    }
+    // 5) мало откладываешь / 6) хорошо — закрепи
+    if (!advice && inc30 > 0) {
+        const rate = (inc30 - p30.tot) / inc30;
+        if (rate < 0.1) advice = `Остаётся меньше 10% дохода. Попробуй правило «сначала себе»: ${fmt(inc30 * 0.1)} в накопления сразу после поступления, а жить на остальное.`;
+        else if (rate >= 0.2) advice = `Ты сохраняешь около ${Math.round(rate * 100)}% дохода — отлично. Переведи часть в накопления, чтобы деньги работали, а не лежали на счёте.`;
+    }
+    if (!advice) advice = 'Записывай траты в день покупки — через месяц я смогу дать точные советы, где можно сэкономить.';
+    return { advice, fact };
+}
+
 function renderAnalyticsSharkTip() {
     const donutSection = document.querySelector('#analytics-page .analytics-scroll section:has(#expensesByCategoryChart)');
     if (!donutSection) return;
@@ -607,33 +668,10 @@ function renderAnalyticsSharkTip() {
         tip = document.createElement('section'); tip.id = 'an-tip'; tip.className = 'an-tip';
         donutSection.insertAdjacentElement('afterend', tip);
     }
-    const tx = getCurrentBudgetTransactions().filter(t => t.type === 'expense' && t.date && !isFinancialCategory(t.category || ''));
-    let text = '';
-    if (tx.length) {
-        const lastIso = tx.reduce((m, t) => t.date.slice(0, 10) > m ? t.date.slice(0, 10) : m, '');
-        const end = new Date(lastIso + 'T00:00:00'); const from = new Date(end); from.setDate(from.getDate() - 13);
-        const fromIso = isoOf(from);
-        const by = new Map();
-        for (const t of tx) {
-            const d = t.date.slice(0, 10); if (d < fromIso) continue;
-            const c = (t.category || '').trim(); if (!c) continue;
-            const e = by.get(c) || { n: 0, sum: 0 }; e.n += 1; e.sum += amtOf(t); by.set(c, e);
-        }
-        const frequent = [...by.entries()].filter(([, e]) => e.n >= 3).sort((a, b) => b[1].sum - a[1].sum)[0];
-        if (frequent) {
-            const [c, e] = frequent; const saved = Math.round(e.sum / e.n);
-            const times = e.n % 10 === 1 && e.n !== 11 ? 'раз' : (e.n % 10 >= 2 && e.n % 10 <= 4 && (e.n < 12 || e.n > 14)) ? 'раза' : 'раз';
-            text = `${c} — ${e.n} ${times} за две недели, всего ${formatNumber(Math.round(e.sum))} ${getCurrencyLabel()}. Если реже на один раз, останется ещё +${formatNumber(saved)}.`;
-        } else {
-            const m = new Map(); let tot = 0;
-            for (const t of tx) { const c = (t.category || 'Без категории'); m.set(c, (m.get(c) || 0) + amtOf(t)); tot += amtOf(t); }
-            const top = [...m.entries()].sort((a, b) => b[1] - a[1])[0];
-            if (top && tot > 0) text = `Больше всего уходит на ${top[0]} — ${Math.round(top[1] / tot * 100)}% трат (${formatNumber(Math.round(top[1]))} ${getCurrencyLabel()}).`;
-        }
-    }
-    if (!text) { tip.style.display = 'none'; return; }
+    const res = buildSharkAdvice(getCurrentBudgetTransactions());
+    if (!res) { tip.style.display = 'none'; return; }
     tip.style.display = '';
-    tip.innerHTML = `<img src="./assets/shark.png" alt=""><div><div class="an-tip-title">Совет Акулки</div><div class="an-tip-text">${escHtml(text)}</div></div>`;
+    tip.innerHTML = `<img src="./assets/shark.png" alt=""><div><div class="an-tip-title">Совет Акулки</div><div class="an-tip-text">${escHtml(res.advice)}</div>${res.fact ? `<div class="an-tip-fact">${escHtml(res.fact)}</div>` : ''}</div>`;
 }
 
 function destroyAllCharts(keep = []) {
@@ -1164,7 +1202,8 @@ function renderBalanceDynamicsChart() {
     const wrap = canvas.parentElement;
     const all = allAnalyticsTx();
     const daily = !period.all && periodSpan(period) <= 3;
-    const res = daily ? balanceDaily(all, period, todayISO()) : balanceSeries(all, period);
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const res = daily ? balanceDaily(raw, period, todayISO()) : balanceSeries(raw, period);
     const pts = res.points;
 
     if (!pts.length) {
@@ -1179,15 +1218,17 @@ function renderBalanceDynamicsChart() {
     const lbl = p => daily ? dm(p.date) : MONTHS_SHORT[keyMonth(p.key) - 1] + (multiYear ? ` ${String(keyYear(p.key)).slice(2)}` : '');
     const fullTitle = p => daily ? `${p.date.slice(8, 10)}.${p.date.slice(5, 7)}.${p.date.slice(0, 4)}` : `${MONTHS_FULL[keyMonth(p.key) - 1]} ${keyYear(p.key)}`;
     const sgn = n => n > 0 ? '+' : n < 0 ? '−' : '';
-    const col = res.change >= 0 ? PALETTE.income() : PALETTE.expense();
+    const col = PALETTE.primary(); // линия нейтральная: снижение остатка — норма, красным её не пугаем
+    const ranOut = res.min.balance <= 0;
 
     if (head) {
         head.innerHTML =
             `<div class="bal-top"><div class="bal-big"><b>${formatNumber(Math.round(res.end))}</b><small>${getCurrencyLabel()}</small></div>` +
-            `<span class="bal-chg ${res.change >= 0 ? 'good' : 'bad'}">${res.change >= 0 ? '▲' : '▼'} ${sgn(res.change)}${formatNumber(Math.abs(Math.round(res.change)))} за период</span></div>` +
+            `<span class="bal-chg ${res.change >= 0 ? 'good' : 'bad'}">${res.change >= 0 ? '▲ Выросло на' : '▼ Снизилось на'} ${formatNumber(Math.abs(Math.round(res.change)))}</span></div>` +
             `<div class="bal-mm"><span>Пик <b>${formatNumber(Math.round(res.max.balance))}</b><em>${lbl(res.max)}</em></span>` +
             `<span>Минимум <b>${formatNumber(Math.round(res.min.balance))}</b><em>${lbl(res.min)}</em></span></div>` +
-            `<div class="bal-note">Нарастающий итог: поступления минус траты (без вкладов и долгов)</div>`;
+            (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ Остаток ушёл в минус (${lbl(res.min)}: −${formatNumber(Math.abs(Math.round(res.min.balance)))}). Возможно, не внесены все поступления или начальный остаток` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
+            `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов</div>`;
     }
 
     const muted = getCssVar('--muted', '#8a93a6');
@@ -1228,8 +1269,12 @@ function renderBalanceDynamicsChart() {
                     ...buildTooltipDefaults(),
                     callbacks: {
                         title: items => { const p = pts[items[0]?.dataIndex]; return p ? fullTitle(p) : ''; },
-                        label: c => `Баланс: ${withCurrencyR(c.raw)}`,
-                        afterLabel: c => { const p = pts[c.dataIndex]; return p && p.net ? [`${daily ? 'За день' : 'За месяц'}: ${sgn(p.net)}${withCurrencyR(Math.abs(p.net))}`] : []; }
+                        label: c => `Остаток: ${withCurrencyR(c.raw)}`,
+                        afterLabel: c => {
+                            const p = pts[c.dataIndex]; if (!p || (!p.plus && !p.minus)) return [];
+                            const per = daily ? 'За день' : 'За месяц';
+                            return [`${per} +: ${withCurrencyR(p.plus)}`, `${per} −: ${withCurrencyR(p.minus)}`];
+                        }
                     }
                 }
             }

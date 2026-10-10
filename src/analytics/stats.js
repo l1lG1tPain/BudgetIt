@@ -175,50 +175,104 @@ export function categoryDetail(tx, p, name, { type = 'expense', todayISO, others
     };
 }
 
-/** Нарастающий баланс (поступления − траты) на конец каждого месяца окна */
-export function balanceSeries(tx, p) {
-    if (!tx.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
-    const { first, last } = dataRange(tx);
+/**
+ * Движения денег бюджета — ТЕ ЖЕ правила, что у «Доступно» на главной (BudgetManager.calculateTotals):
+ * доход +, расход −, пополнение вклада −, снятие +, новый долг «я должен» +, «мне должны» −, платежи по долгам наоборот.
+ */
+/** ISO-метка времени → локальная дата YYYY-MM-DD (дата без времени остаётся как есть) */
+function localYmd(s) {
+    const r = String(s || '');
+    if (!r.includes('T')) return r.slice(0, 10);
+    const d = new Date(r);
+    return Number.isNaN(d.getTime()) ? r.slice(0, 10) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function cashEvents(raw) {
+    const ev = [];
+    const push = (date, v) => { if (date && v) ev.push({ date: String(date).slice(0, 10), v }); };
+    for (const t of raw || []) {
+        const a = num(t.amount);
+        if (t.type === 'income') push(t.date, a);
+        else if (t.type === 'expense') push(t.date, -a);
+        else if (t.type === 'deposit') {
+            const st = String(t.status || '');
+            if (!st.includes('Уже лежало')) push(t.date, st.trim() === '➖ Снятие' ? a : -a); // «Уже лежало» кошелёк не трогает
+        }
+        else if (t.type === 'debt') {
+            const init = num(t.initialAmount ?? t.amount);
+            if (init > 0) push(t.date, t.direction === 'owe' ? init : -init);
+            let paid = 0; // платёж сверх остатка долга не считаем (как в «Доступно»)
+            for (const pm of Array.isArray(t.payments) ? t.payments : []) {
+                const pa = Math.min(num(pm.amount), Math.max(0, init - paid)); paid += pa;
+                if (pa > 0) push(localYmd(pm.date), t.direction === 'owe' ? -pa : pa);
+            }
+        }
+    }
+    return ev;
+}
+
+/** Остаток на начало месяца `key`: перенос из месяца в месяц, ушедший в минус месяц дальше начинается с 0 (как «Доступно»). */
+function openingFor(ev, key) {
+    const net = new Map();
+    for (const e of ev) { const k = keyOf(e.date); if (k < key) net.set(k, (net.get(k) || 0) + e.v); }
+    let run = 0;
+    for (const k of [...net.keys()].sort()) run = Math.max(0, run + net.get(k));
+    return run;
+}
+
+/** Остаток на конец каждого месяца окна. Стартует с переноса (как «Доступно» на главной), конец последнего месяца = «Доступно». */
+export function balanceSeries(raw, p) {
+    const ev = cashEvents(raw);
+    if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
+    const { first, last } = dataRange(ev);
     const a = p.all ? first : p.keys[0];
     const b = p.all ? last : p.keys[p.keys.length - 1];
     const keys = monthRange(a, b);
-    const net = new Map();
-    let start = 0;
-    for (const t of tx) {
-        const k = keyOf(t.date);
-        const v = t.type === 'income' ? num(t.amount) : -num(t.amount);
-        if (k < a) start += v; else if (k <= b) net.set(k, (net.get(k) || 0) + v);
+    const net = new Map(), plus = new Map(), minus = new Map();
+    for (const e of ev) {
+        const k = keyOf(e.date); if (k < a || k > b) continue;
+        net.set(k, (net.get(k) || 0) + e.v);
+        if (e.v > 0) plus.set(k, (plus.get(k) || 0) + e.v); else minus.set(k, (minus.get(k) || 0) - e.v);
     }
+    const start = openingFor(ev, a);
     let run = start;
-    const points = keys.map(k => { run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0 }; });
+    const points = keys.map((k, i) => { if (i) run = Math.max(0, run); run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0, plus: plus.get(k) || 0, minus: minus.get(k) || 0 }; });
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
     return { points, start, end: run, change: run - start, min, max };
 }
 
-/** Дневной нарастающий баланс (поступления − траты) для коротких периодов: от 1-го числа первого месяца до последнего дня периода (но не позже todayISO) */
-export function balanceDaily(tx, p, todayISO) {
+/** Дневной остаток для коротких периодов: от 1-го числа первого месяца (с переносом) до последнего дня периода. Последняя точка = «Доступно». */
+export function balanceDaily(raw, p, todayISO) {
     if (p.all || !p.keys.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
+    const ev = cashEvents(raw);
+    if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const a = p.keys[0], b = p.keys[p.keys.length - 1];
     const from = `${a}-01`;
     const dim = new Date(Date.UTC(keyYear(b), keyMonth(b), 0)).getUTCDate();
-    let to = `${b}-${String(dim).padStart(2, '0')}`;
+    const monthEnd = `${b}-${String(dim).padStart(2, '0')}`;
+    let to = monthEnd;
     if (todayISO && todayISO < to && todayISO >= from) to = todayISO;
-    const net = new Map();
-    let start = 0;
-    for (const t of tx) {
-        const d = String(t.date).slice(0, 10);
-        const v = t.type === 'income' ? num(t.amount) : -num(t.amount);
-        if (d < from) start += v; else if (d <= to) net.set(d, (net.get(d) || 0) + v);
+    const net = new Map(), plus = new Map(), minus = new Map();
+    let later = 0, laterPlus = 0, laterMinus = 0; // операции позже «сегодня» в последнем месяце — учитываем в последней точке, чтобы сошлось с «Доступно»
+    for (const e of ev) {
+        if (e.date < from) continue;
+        if (e.date <= to) {
+            net.set(e.date, (net.get(e.date) || 0) + e.v);
+            if (e.v > 0) plus.set(e.date, (plus.get(e.date) || 0) + e.v); else minus.set(e.date, (minus.get(e.date) || 0) - e.v);
+        } else if (e.date <= monthEnd) { later += e.v; if (e.v > 0) laterPlus += e.v; else laterMinus -= e.v; }
     }
+    const start = openingFor(ev, a);
     const points = [];
     let run = start;
     const end = Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)) - 1, Number(to.slice(8, 10)));
     for (let ms = Date.UTC(Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1, 1); ms <= end; ms += 86400000) {
         const d = new Date(ms).toISOString().slice(0, 10);
+        if (d.slice(8, 10) === '01' && d.slice(0, 7) !== a) run = Math.max(0, run);
         run += net.get(d) || 0;
-        points.push({ date: d, balance: run, net: net.get(d) || 0 });
+        points.push({ date: d, balance: run, net: net.get(d) || 0, plus: plus.get(d) || 0, minus: minus.get(d) || 0 });
     }
+    if (later && points.length) { const l = points[points.length - 1]; l.balance += later; l.net += later; l.plus += laterPlus; l.minus += laterMinus; run += later; }
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
     return { points, start, end: run, change: run - start, min, max };
