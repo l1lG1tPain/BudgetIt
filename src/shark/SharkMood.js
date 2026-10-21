@@ -9,6 +9,7 @@ import { EMOTION_TEXTS, EMOTION_TITLES } from './texts/emotion.js';
 import { RUDE_TEXTS, RUDE_TITLES } from './texts/rude.js';
 import { LIVE_TEXTS, EMOTION_MORE } from './texts/live.js';
 import { LIVE_MORE } from './texts/live2.js';
+import { LIVE_FUN, EMOTION_FUN, FLOW_TEXTS, FLOW_TITLES, LIVE_VARIETY } from './texts/live3.js';
 
 export const LIMIT_MODES = ['auto', 'median', 'plan', 'custom'];
 
@@ -334,13 +335,30 @@ for (const key of Object.keys(EMOTION_TEXTS)) {
 
 // Дополнительные реплики к особым эмоциям и «живые» реплики под остальные эмоции (Акулка в худи)
 for (const key of Object.keys(EMOTION_MORE)) {
-    for (const ch of Object.keys(EMOTION_MORE[key])) TEXTS[key][ch] = [...(TEXTS[key][ch] || []), ...EMOTION_MORE[key][ch].map(fillMood)];
+    for (const ch of Object.keys(EMOTION_MORE[key])) TEXTS[key][ch] = [...(TEXTS[key][ch] || []), ...EMOTION_MORE[key][ch].map(fillMood), ...(EMOTION_FUN[key]?.[ch] || []).map(fillMood)];
 }
 for (const key of Object.keys(LIVE_TEXTS)) {
     TEXTS[`live:${key}`] = {};
     for (const ch of Object.keys(LIVE_TEXTS[key])) {
-        TEXTS[`live:${key}`][ch] = [...LIVE_TEXTS[key][ch], ...(LIVE_MORE[key]?.[ch] || [])].map(fillMood);
+        TEXTS[`live:${key}`][ch] = [...LIVE_TEXTS[key][ch], ...(LIVE_MORE[key]?.[ch] || []), ...(LIVE_FUN[key]?.[ch] || [])].map(fillMood);
     }
+}
+// Эмоции, у которых раньше не было своих «живых» реплик (например broke), берут их целиком из live3.js
+for (const key of Object.keys(LIVE_FUN)) {
+    if (LIVE_TEXTS[key]) continue;
+    TEXTS[`live:${key}`] = {};
+    for (const ch of Object.keys(LIVE_FUN[key])) TEXTS[`live:${key}`][ch] = LIVE_FUN[key][ch].map(fillMood);
+}
+
+// Календарные поводы и «остывание» (особые тексты карточки) и живые реплики для эмоций-вкраплений
+for (const key of Object.keys(FLOW_TEXTS)) {
+    TEXTS[key] = {};
+    for (const ch of Object.keys(FLOW_TEXTS[key])) TEXTS[key][ch] = FLOW_TEXTS[key][ch].map(fillMood);
+}
+Object.assign(EMOTION_TITLES, FLOW_TITLES);
+for (const key of Object.keys(LIVE_VARIETY)) {
+    TEXTS[`live:${key}`] = {};
+    for (const ch of Object.keys(LIVE_VARIETY[key])) TEXTS[`live:${key}`][ch] = LIVE_VARIETY[key][ch].map(fillMood);
 }
 
 // «Дерзкая» (18+): отдельные наборы под каждую эмоцию, плоские списки без деления по характеру
@@ -407,6 +425,19 @@ export function countStreakInLimit({ transactions = [], planner = null, limit, t
     return streak;
 }
 
+// Сколько дней подряд до сегодняшнего был перерасход лимита (до 7): нужен, чтобы злость росла, а утром после перебора Акулка «остывала»
+export function countOverStreak({ transactions = [], planner = null, limit, today = isoDay(), normalize } = {}) {
+    if (!limit) return 0;
+    let n = 0;
+    for (let i = 1; i <= 7; i++) {
+        const day = shiftDay(today, -i);
+        if (!transactions.some(t => t.type === 'expense' && t.date === day)) break;
+        if (getSpentOnDay({ transactions, planner, day, normalize }) <= limit) break;
+        n++;
+    }
+    return n;
+}
+
 export function computeMood({ spent, limit, character = 'normal', hasData = true, streak = 0 }, opts = {}) {
     const [warnAt, angryAt] = getThresholds(character);
     if (!hasData || !limit) {
@@ -435,16 +466,26 @@ const daySeed = (today, n) => {
 };
 
 // Возвращает { emotion, textKey }: textKey — ключ особого текста (sleep/tired/bored/shock/celebrate) или null.
+// Детерминированный «бросок» 0..99 по строке: один и тот же день и блок часов дают одну и ту же эмоцию без мигания
+const roll = str => { let h = 7; for (const ch of String(str)) h = (h * 33 + ch.charCodeAt(0)) >>> 0; return h % 100; };
+const VARIETY_EMOTIONS = ['laugh', 'cheeky', 'idea', 'smart'];
+export const VARIETY_CHANCE = 14;   // % блоков по 4 часа, в которых в спокойный день проскакивает другая эмоция
+
 export function emotionFor({ mood = 'ok', ratio = 0, character = 'normal', streak = 0, hasData = true, hasToday = false,
-    spent = 0, hour = 12, quietHours = true, rude = false, source = null, today = '' } = {}) {
+    spent = 0, hour = 12, quietHours = true, rude = false, source = null, today = '',
+    prevEmotion = null, overStreak = 0, weekday = null, variety = false } = {}) {
     if (!hasData || mood === 'new') return { emotion: source === 'noplan' || source === 'plan-empty' ? 'think' : 'welcome', textKey: null };
     if (source === 'plan-empty') return { emotion: 'broke', textKey: null };   // по плану ничего не остаётся
     if (mood === 'angry') {
         // «Дерзкая»: чем сильнее перерасход, тем грубее жест (гопник → стойка/«серьёзно» → присед)
-        if (rude && ratio >= 3) return { emotion: 'rage-squat', textKey: 'shock' };
-        if (rude && ratio >= 2) return { emotion: RUDE_EMOTIONS[daySeed(today, RUDE_EMOTIONS.length)], textKey: 'shock' };
-        if (rude && ratio >= 1.3) return { emotion: 'gopnik', textKey: ratio >= 1.6 ? 'shock' : null };
+        // повторный перерасход подряд поднимает ступень злости: «Дерзкая» считает его как +0,25 к силе за каждый день (до двух)
+        const eff = rude ? ratio + 0.25 * Math.min(overStreak, 2) : ratio;
+        if (rude && eff >= 3) return { emotion: 'rage-squat', textKey: 'shock' };
+        if (rude && eff >= 2) return { emotion: RUDE_EMOTIONS[daySeed(today, RUDE_EMOTIONS.length)], textKey: 'shock' };
+        if (rude && eff >= 1.3) return { emotion: 'gopnik', textKey: eff >= 1.6 ? 'shock' : null };
         if (ratio >= 1.6) return { emotion: 'shock', textKey: 'shock' };
+        // «Опять?!»: строгая и «Дерзкая» после вчерашнего перерасхода не сердятся впервые, а сжимают суровый кулак
+        if (overStreak >= 1 && (character === 'strict' || rude)) return { emotion: 'grim-fist', textKey: null };
         // злится: кулак при заметном перерасходе (у строгой — сразу), совсем слегка — обычная злая
         return { emotion: character === 'strict' || ratio > 1.2 ? 'fist' : 'angry', textKey: null };
     }
@@ -458,7 +499,21 @@ export function emotionFor({ mood = 'ok', ratio = 0, character = 'normal', strea
     if (quietHours && (hour >= 23 || hour < 4)) return { emotion: 'sleep', textKey: 'sleep' };
     if (hour >= 4 && hour < 8 && !hasToday) return { emotion: 'tired', textKey: 'tired' };
     if (!hasToday && spent === 0 && hour >= 19) return { emotion: 'bored', textKey: 'bored' };
-    if (spent > 0 && ratio < 0.5) return { emotion: 'calm', textKey: null };
+    // день после перерасхода: с утра и до обеда Акулка «остывает», но присматривает
+    if (overStreak >= 1 && hour >= 8 && hour < 15 && ratio < 0.7) {
+        return { emotion: character === 'kind' ? 'sympathy' : 'stern-smile', textKey: 'calCool' };
+    }
+    // календарные поводы: понедельник утром, пятничный вечер, воскресный вечер (в 60–70% четырёхчасовых блоков)
+    const block = `${today}:${Math.floor(hour / 4)}`;
+    if (weekday === 1 && hour >= 8 && hour < 12 && roll('mon' + block) < 60) return { emotion: 'tired', textKey: 'calMonday' };
+    if (weekday === 5 && hour >= 17 && hour < 23 && roll('fri' + block) < 70) return { emotion: 'cheeky', textKey: 'calFriday' };
+    if (weekday === 0 && hour >= 18 && hour < 23 && roll('sun' + block) < 60) return { emotion: 'think', textKey: 'calSunday' };
+    // вкрапления: изредка в спокойный день проскакивает смех, хитрый взгляд, идея или «умничает»
+    if (variety && hour >= 8 && hour < 23 && roll('var' + block) < VARIETY_CHANCE) {
+        return { emotion: VARIETY_EMOTIONS[roll('pick' + block) % VARIETY_EMOTIONS.length], textKey: null, forceLive: true };
+    }
+    // гистерезис: «спокойствие» держится до 56% лимита (а входит на 50%), чтобы картинка не мигала на границе
+    if (spent > 0 && ratio < (prevEmotion === 'calm' ? 0.56 : 0.5)) return { emotion: 'calm', textKey: null };
     return { emotion: 'smile', textKey: null };
 }
 
@@ -467,10 +522,13 @@ export function computeCard(args, opts = {}) {
     const m = computeMood(args, opts);
     const now = opts.now || new Date();
     const character = args.character || 'normal';
+    const sharkId = opts.shark || currentShark();
     const e = emotionFor({
         mood: m.key, ratio: m.ratio, character, streak: args.streak || 0, hasData: args.hasData !== false,
         hasToday: !!args.hasToday, spent: args.spent || 0, hour: now.getHours(), quietHours: args.quietHours !== false,
-        rude: !!args.rude, source: args.source || null, today: opts.today || isoDay(now)
+        rude: !!args.rude, source: args.source || null, today: opts.today || isoDay(now),
+        prevEmotion: args.prevEmotion || null, overStreak: args.overStreak || 0, weekday: now.getDay(),
+        variety: sharkId === 'hoodie' && opts.variety !== false
     });
     let { title, text } = m;
     if (e.textKey && TEXTS[e.textKey]) {
@@ -481,7 +539,6 @@ export function computeCard(args, opts = {}) {
     }
     // «Живая» реплика: у Акулки в худи часть карточек говорит не из общего набора, а из набора своей эмоции
     // (и по времени суток); доля подобрана так, чтобы общий набор тоже оставался в ходу.
-    const sharkId = opts.shark || currentShark();
     if (!e.textKey && sharkId === 'hoodie' && opts.live !== false && m.key !== 'new') {
         const hour = now.getHours();
         const tod = hour < 11 ? 'morning' : hour < 17 ? 'day' : 'evening';
@@ -489,7 +546,7 @@ export function computeCard(args, opts = {}) {
         const todKey = `live:${e.emotion}@${tod}`;
         let liveKey = TEXTS[`live:${e.emotion}`] ? `live:${e.emotion}` : null;
         if (TEXTS[todKey] && (hour >= 5 && hour < 23) && rnd() < 0.5) liveKey = todKey;
-        if (liveKey && rnd() < 0.7) {
+        if (liveKey && (e.forceLive || rnd() < 0.7)) {
             const left = Math.max(0, (args.limit || 0) - (args.spent || 0));
             const over = Math.max(0, (args.spent || 0) - (args.limit || 0));
             text = pickText(liveKey, { left, over, days: args.streak || 0, spent: args.spent || 0, limit: args.limit || 0 }, opts.storage, opts.today, character);
@@ -547,7 +604,7 @@ function reactBase({ type, amount, before = 0, after = 0, limit = 0, character =
     if (before / limit < 0.9 && after / limit >= 0.9) return { text: make(REACT.ninety, { left: limit - after }), color: colors.warn, mood: 'tense', emotion: 'stern-smile' };
     if (before / limit < 0.5 && after / limit >= 0.5 && after / limit <= warnAt) return { text: make(REACT.half, { left: limit - after }), color: colors.ok, mood: 'ok', emotion: 'calm' };
     if (after / limit > warnAt) return { text: make(REACT.warn, { left: limit - after }), color: colors.warn, mood: 'tense', emotion: 'stern-smile' };
-    return { text: make(REACT.ok, { left: limit - after }), color: colors.ok, mood: 'ok', emotion: after / limit < 0.5 ? 'calm' : 'smile' };
+    return { text: make(REACT.ok, { left: limit - after }), color: colors.ok, mood: 'ok', emotion: amount >= limit * 0.4 ? 'cheeky' : after / limit < 0.5 ? 'calm' : 'smile' };
 }
 
 // Тихие часы: после 23:00 и до 6:00 без анимации и вибрации

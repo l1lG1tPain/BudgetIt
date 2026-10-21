@@ -4,7 +4,7 @@
 // ===============================
 import {
     getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, computeMood,
-    countStreakInLimit, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
+    countStreakInLimit, countOverStreak, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
 } from './SharkMood.js';
 import { buildExtra, describeLimit, planHint, answerQuestion, greeting, QUESTIONS, MENUS, menuIntro, topicAnswer, richHtml, evaluateChallenge, hintText, challengeText, badgeText, flavorLine, tailLine, goalDoneText, countDaysInLimit, rankInfo } from './SharkTalk.js';
 import { goalCalc, earnedBadges, BADGES, getFlags, markFlag } from './SharkExtra.js';
@@ -16,12 +16,30 @@ const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;'
 const digits = s => String(s || '').replace(/\D/g, '');
 const group = s => digits(s).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
+// Смена картинки: короткое «растворение» старой и проявление новой (без анимации при reduced-motion и пока картинка не показана)
 function setSharkImg(img, key) {
     if (!img) return;
     const src = sharkImage(key);
     if (img.getAttribute('src') === src) return;
     img.onerror = () => { img.onerror = null; img.src = sharkImage('ok'); };
-    img.src = src;
+    const calm = !img.getAttribute('src') || !img.isConnected || !img.offsetParent
+        || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (calm) { img.src = src; return; }
+    const id = (img._swap = (img._swap || 0) + 1);
+    const pre = new Image();
+    const go = () => {
+        if (img._swap !== id) return;
+        img.style.transition = 'opacity .14s ease';
+        img.style.opacity = '0';
+        setTimeout(() => {
+            if (img._swap !== id) return;
+            img.src = src;
+            requestAnimationFrame(() => { img.style.opacity = ''; });
+            setTimeout(() => { if (img._swap === id) img.style.transition = ''; }, 200);
+        }, 150);
+    };
+    pre.onload = pre.onerror = go;
+    pre.src = src;
 }
 
 // Эмоция Акулки в ответах чата (остальные — по текущему настроению карточки)
@@ -320,6 +338,7 @@ export class SharkUI {
         return {
             now: new Date(), today: c.today, character: c.settings.character, limit: c.limit, spent: c.spent,
             transactions: c.transactions, planner: c.planner, normalize: c.normalize, streak, info: c.info,
+            overStreak: countOverStreak({ transactions: c.transactions, planner: c.planner, limit: c.limit, today: c.today, normalize: c.normalize }),
             challenge: this.challengeNow(c),
             planStatus: c.planStatus,
             talk: c.settings.talk, goalState: this.loadGoal(), goal: this.goalNow(c), badges: [...this.badgesNow(c)],
@@ -337,8 +356,14 @@ export class SharkUI {
             spent: c.spent, limit: c.limit, character: c.settings.character,
             hasData: c.transactions.length > 0, streak: tctx.streak,
             hasToday: c.transactions.some(t => t.date === c.today),
-            quietHours: c.settings.quietHours, rude: c.settings.rude, source: c.source
+            quietHours: c.settings.quietHours, rude: c.settings.rude, source: c.source,
+            prevEmotion: card.dataset.base || null, overStreak: tctx.overStreak
         }, { now: tctx.now, today: c.today });
+        // Реакция на только что сохранённую операцию: картинка на несколько секунд меняется, потом возвращается к базовой эмоции
+        const reacting = this.reaction && Date.now() < this.reaction.until;
+        const baseEmotion = mood.emotion;
+        if (reacting) mood.emotion = this.reaction.emotion;
+        else this.reaction = null;
         // Режим «По плану», а плана нет — вместо знакомства подсказываем, что добавить
         if (c.source === 'noplan' || c.source === 'plan-empty') {
             mood.text = planHint({ source: c.source, status: c.planStatus, character: c.settings.character, waiting: c.info?.waiting });
@@ -346,7 +371,7 @@ export class SharkUI {
         const extra = c.settings.dailyTip ? buildExtra(tctx) : null;
         if (extra?.kind === 'backup' && tctx.backupNudgeLast !== c.today) { try { localStorage.setItem('budgetit:shark:backupNudge', c.today); } catch (e) { /* ignore */ } }
         // антиповтор текста: не перерисовываем карточку, если настроение и числа не менялись
-        const sig = `${sharkScope()?.id || ''}:${mood.key}:${mood.emotion}:${c.settings.shark}:${c.spent}:${c.limit}:${c.source}:${c.planStatus?.state}:${c.settings.character}:${Math.floor(Date.now() / 1800000)}:${extra?.kind || ''}:${extra?.text || ''}`;
+        const sig = `${sharkScope()?.id || ''}:${mood.key}:${mood.emotion}:${reacting ? 'r' : ''}:${c.settings.shark}:${c.spent}:${c.limit}:${c.source}:${c.planStatus?.state}:${c.settings.character}:${Math.floor(Date.now() / 1800000)}:${extra?.kind || ''}:${extra?.text || ''}`;
         if (card.dataset.sig === sig) return;
         card.dataset.sig = sig;
         this.mood = mood;
@@ -362,6 +387,7 @@ export class SharkUI {
         if (ex) { ex.textContent = extra ? forShark(extra.text) : ''; ex.hidden = !extra; }
         card.dataset.shark = c.settings.shark;
         card.dataset.emotion = mood.emotion;
+        card.dataset.base = baseEmotion;
         setSharkImg(document.getElementById('akulka-img'), mood.emotion);
         card.classList.toggle('no-limit', !c.limit);
         this.syncLiveCard(card, mood, extra);
@@ -430,7 +456,16 @@ export class SharkUI {
         }
         this.showToast(r, c.settings);
         this.animateCard(r, c.settings);
+        this.startReaction(r, c.settings);
         this.refreshCard();
+    }
+
+    // Картинка-реакция на карточке: 7 секунд, затем снова эмоция по состоянию дня
+    startReaction(r, settings) {
+        if (!r?.emotion || r.repeat || isQuietNow(settings)) return;
+        this.reaction = { emotion: r.emotion, until: Date.now() + 7000 };
+        clearTimeout(this.reactionTimer);
+        this.reactionTimer = setTimeout(() => { this.reaction = null; this.refreshCard(); }, 7100);
     }
 
     showToast(r, settings) {

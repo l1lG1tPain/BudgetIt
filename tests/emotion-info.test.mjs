@@ -46,7 +46,7 @@ test('«Дерзкая»: подставляется только у Акулк�
     const rude = computeCard({ ...args, rude: true }, opts(0.1));
     assert.ok(RUDE_TEXTS[rude.emotion].some(t => rude.text === t.replace('{over}', '200').replace('{spent}', '300').replace('{limit}', '100').replace('{left}', '0')), rude.text);
     const calm = computeCard({ ...args, rude: false }, opts(0.1));
-    assert.ok(!RUDE_TEXTS[calm.emotion].some(t => calm.text.includes(t.slice(0, 12))));
+    assert.ok(!RUDE_TEXTS[calm.emotion].some(t => calm.text === t.replace('{over}', '200').replace('{spent}', '300').replace('{limit}', '100').replace('{left}', '0')));   // точное совпадение: по префиксу тест случайно срабатывал на общих началах фраз
     const classic = computeCard({ ...args, rude: true }, { ...opts(0.1), shark: 'classic' });
     assert.notEqual(classic.text, rude.text);
 });
