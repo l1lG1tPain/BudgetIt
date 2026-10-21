@@ -201,6 +201,59 @@ export function weekRecapData({ transactions = [], planner = null, today = isoDa
     return { total, daysWith, inLimit, avg: daysWith ? Math.round(total / daysWith) : 0, top };
 }
 
+// Подробный разбор последних 7 дней (включая сегодня) для ответа «Как моя неделя?».
+// Траты считаются так же, как расход дня: без плановых «Основных» и «Регулярных» категорий.
+const WD = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+const BLOCKS = '▁▂▃▄▅▆▇█';
+export function weekReport({ transactions = [], planner = null, today = isoDay(), limit = 0, normalize = c => c } = {}) {
+    const planned = new Set();
+    if (planner) [...(planner.mainExpenses || []), ...(planner.regularExpenses || [])].forEach(i => planned.add(normalize(i.category || i.name || '')));
+    const days = [];
+    const cats = new Map();
+    for (let i = 6; i >= 0; i--) {
+        const day = shiftDay(today, -i);
+        const has = transactions.some(t => t.date === day);
+        const spent = getSpentOnDay({ transactions, planner, day, normalize });
+        days.push({ day, wd: WD[new Date(`${day}T00:00:00`).getDay()], has, spent });
+        for (const t of transactions) {
+            if (t.type !== 'expense' || t.date !== day || planned.has(normalize(t.category || ''))) continue;
+            const c = t.category || 'Без категории';
+            cats.set(c, (cats.get(c) || 0) + num(t.amount));
+        }
+    }
+    const rec = days.filter(d => d.has);
+    const total = rec.reduce((s, d) => s + d.spent, 0);
+    const daysWith = rec.length;
+    const inLimit = limit ? rec.filter(d => d.spent <= limit).length : 0;
+    const overDays = limit ? rec.filter(d => d.spent > limit).length : 0;
+    let prev = 0, prevHas = false;
+    for (let i = 7; i < 14; i++) {
+        const day = shiftDay(today, -i);
+        prev += getSpentOnDay({ transactions, planner, day, normalize });
+        if (transactions.some(t => t.date === day)) prevHas = true;
+    }
+    const deltaPct = prevHas && prev > 0 ? Math.round((total - prev) / prev * 100) : null;
+    const spent = rec.filter(d => d.spent > 0);
+    const worst = spent.length ? spent.reduce((a, b) => (b.spent > a.spent ? b : a)) : null;
+    const best = spent.length > 1 ? spent.reduce((a, b) => (b.spent < a.spent ? b : a)) : null;
+    // тренд: средний расход второй половины записанных дней против первой
+    let trend = 'flat';
+    if (rec.length >= 4) {
+        const h = Math.floor(rec.length / 2);
+        const a = rec.slice(0, h).reduce((s, d) => s + d.spent, 0) / h;
+        const b = rec.slice(-h).reduce((s, d) => s + d.spent, 0) / h;
+        if (a > 0 && b / a >= 1.25) trend = 'up'; else if (a > 0 && b / a <= 0.75) trend = 'down';
+        else if (a === 0 && b > 0) trend = 'up';
+    }
+    const max = Math.max(...days.map(d => d.spent), 0);
+    const spark = days.map(d => (!d.has ? '·' : max > 0 ? BLOCKS[Math.min(7, Math.round((d.spent / max) * 7))] : BLOCKS[0])).join('');
+    const catTotal = [...cats.values()].reduce((s, v) => s + v, 0);
+    const topCats = [...cats.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .map(([name, sum]) => ({ name, sum, pct: catTotal ? Math.round(sum / catTotal * 100) : 0 }));
+    return { days, spark, total, daysWith, avg: daysWith ? Math.round(total / daysWith) : 0, prev, prevHas, deltaPct,
+        diff: total - prev, inLimit, overDays, limit, worst, best, trend, topCats };
+}
+
 // Праздники (ключи соответствуют PROACTIVE.holiday_*)
 export function holidayKey(now = new Date()) {
     const m = now.getMonth() + 1, d = now.getDate();

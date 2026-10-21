@@ -12,10 +12,10 @@ import { ANSWERS_B } from './answers-b.js';
 import { PROACTIVE } from './proactive.js';
 import { FUN } from './fun.js';
 import { FLAVOR } from './flavor.js';
-import { ANSWERS_C } from './answers-c.js';
+import { ANSWERS_C as ANSWERS_C_BASE } from './answers-c.js';
+import { STATS_MORE } from './stats-more.js';
 import { GLOSSARY } from './glossary.js';
-export { PROACTIVE, FUN, FLAVOR, ANSWERS_C, GLOSSARY };
-export const ANSWERS = { ...ANSWERS_BASE, ...ANSWERS_A, ...ANSWERS_B };
+export { PROACTIVE, FUN, FLAVOR, GLOSSARY };
 export { BACKUP_NUDGES } from './extras-more-a.js';
 
 // { pool: { kind:[…], … } } + { pool: { kind:[…], … } }
@@ -26,6 +26,11 @@ export const mergeChars = (base, more = {}) => {
 };
 // { key: { kind:[…] } }
 export const mergePools = (base, more = {}) => Object.fromEntries(Object.keys(base).map(k => [k, mergeChars(base[k], more[k])]));
+
+// Варианты «Моих цифр» (stats-more.js) добавляются к базовым ответам
+const withMore = base => Object.fromEntries(Object.entries(base).map(([k, v]) => [k, STATS_MORE[k] ? mergeChars(v, STATS_MORE[k]) : v]));
+export const ANSWERS_C = withMore(ANSWERS_C_BASE);
+export const ANSWERS = withMore({ ...ANSWERS_BASE, ...ANSWERS_A, ...ANSWERS_B });
 
 export const MOOD_TEXTS = mergePools(MOOD_BASE, MOOD_MORE);
 export const TOAST_TEXTS = mergePools(TOAST_BASE, TOAST_MORE);

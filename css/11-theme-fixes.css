@@ -28,9 +28,7 @@
 /* 3. Инпуты: не меняем стиль, только читаемость */
 input,
 select,
-textarea,
-.custom-select-button,
-.custom-select {
+textarea {
     color: var(--secondary-color);
 }
 
@@ -45,7 +43,6 @@ textarea::placeholder {
 .ei-map-label,
 .ei-preview-table td,
 .ei-done-text,
-.eip-title,
 .eip-stat-value,
 .eip-chart-title,
 .eip-budgets-title,
@@ -59,10 +56,8 @@ textarea::placeholder {
 .ei-desc-hint,
 .ei-preview-table th,
 .ei-more-rows,
-.eip-subtitle,
 .eip-stat-label,
 .eip-chart-total,
-.eip-budget-meta,
 .eip-action-text small {
     color: var(--text-muted);
 }
@@ -93,37 +88,31 @@ textarea::placeholder {
 }
 
 /* 6. Planner: только светлые темы, убираем слишком тёмные карточки */
-:root:not([data-theme]) .planner-empty-card,
 :root:not([data-theme]) .planner-stat-card,
 :root:not([data-theme]) .planner-mini-card,
 :root:not([data-theme]) .planner-section-card,
 :root:not([data-theme]) .planner-insight-card,
 :root:not([data-theme]) .planner-day-card,
-:root[data-theme="light"] .planner-empty-card,
 :root[data-theme="light"] .planner-stat-card,
 :root[data-theme="light"] .planner-mini-card,
 :root[data-theme="light"] .planner-section-card,
 :root[data-theme="light"] .planner-insight-card,
 :root[data-theme="light"] .planner-day-card,
-:root[data-theme="light-classic"] .planner-empty-card,
 :root[data-theme="light-classic"] .planner-stat-card,
 :root[data-theme="light-classic"] .planner-mini-card,
 :root[data-theme="light-classic"] .planner-section-card,
 :root[data-theme="light-classic"] .planner-insight-card,
 :root[data-theme="light-classic"] .planner-day-card,
-:root[data-theme="dolphin"] .planner-empty-card,
 :root[data-theme="dolphin"] .planner-stat-card,
 :root[data-theme="dolphin"] .planner-mini-card,
 :root[data-theme="dolphin"] .planner-section-card,
 :root[data-theme="dolphin"] .planner-insight-card,
 :root[data-theme="dolphin"] .planner-day-card,
-:root[data-theme="sage"] .planner-empty-card,
 :root[data-theme="sage"] .planner-stat-card,
 :root[data-theme="sage"] .planner-mini-card,
 :root[data-theme="sage"] .planner-section-card,
 :root[data-theme="sage"] .planner-insight-card,
 :root[data-theme="sage"] .planner-day-card,
-:root[data-theme="yogurt"] .planner-empty-card,
 :root[data-theme="yogurt"] .planner-stat-card,
 :root[data-theme="yogurt"] .planner-mini-card,
 :root[data-theme="yogurt"] .planner-section-card,
@@ -371,40 +360,12 @@ textarea::placeholder {
 /* 11. Planner empty state — light theme visual improvements */
 
 /* Empty card: soft gradient instead of plain white */
-:root:not([data-theme]) .planner-empty-card,
-:root[data-theme="dolphin"] .planner-empty-card,
-:root[data-theme="sage"] .planner-empty-card,
-:root[data-theme="yogurt"] .planner-empty-card {
-    background: linear-gradient(160deg,
-        color-mix(in srgb, var(--primary-color) 8%, var(--tertiary-color)) 0%,
-        var(--tertiary-color) 60%
-    );
-}
 
 /* Feature icon cards: dark-friendly backgrounds */
-:root:not([data-theme]) .planner-empty-feature,
-:root[data-theme="dolphin"] .planner-empty-feature,
-:root[data-theme="sage"] .planner-empty-feature,
-:root[data-theme="yogurt"] .planner-empty-feature {
-    background: color-mix(in srgb, var(--secondary-color) 5%, transparent);
-    border: 1px solid var(--border-color);
-}
 
 /* Feature text colors */
-:root:not([data-theme]) .planner-empty-feature-title,
-:root[data-theme="dolphin"] .planner-empty-feature-title,
-:root[data-theme="sage"] .planner-empty-feature-title,
-:root[data-theme="yogurt"] .planner-empty-feature-title {
-    color: var(--secondary-color);
-}
 
 /* Create button text: ensure dark text on light theme green button */
-:root:not([data-theme]) .planner-empty-create-btn,
-:root[data-theme="dolphin"] .planner-empty-create-btn,
-:root[data-theme="sage"] .planner-empty-create-btn,
-:root[data-theme="yogurt"] .planner-empty-create-btn {
-    color: #fff;
-}
 
 /* Planner topbar quick-create and form submit on light themes */
 :root:not([data-theme]) #planner-quick-create-btn,

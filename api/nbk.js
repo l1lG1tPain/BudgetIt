@@ -6,7 +6,7 @@ module.exports = withCORS(async (req, res) => {
     const symbols = (req.query.symbols || '')
       .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
-    const r = await fetch('https://nationalbank.kz/rss/rates_all.xml');
+    const r = await fetch('https://nationalbank.kz/rss/rates_all.xml', { signal: AbortSignal.timeout(7000) });
     if (!r.ok) throw new Error('NBK upstream failed');
     const xml = await r.text();
 

@@ -178,7 +178,11 @@ export function initAnalyticsInsights(budgetManager) {
 
     _injectHTML();
 
-    window.addEventListener('themechange', () => _render());
+    // тема меняется на открытой странице — перерисовать сразу, иначе страница обновится при открытии
+    window.addEventListener('themechange', () => {
+        const page = document.getElementById('analytics-page');
+        if (page && !page.classList.contains('hidden')) _render();
+    });
     window.addEventListener('budgetit:region-changed', () => _render());
 
     document.addEventListener('click', e => {

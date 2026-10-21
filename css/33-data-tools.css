@@ -539,8 +539,7 @@
     gap: 8px;
 }
 
-.eip-backup-card,
-.eip-batch-card {
+.eip-backup-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -552,8 +551,7 @@
     box-sizing: border-box;
 }
 
-.eip-backup-main,
-.eip-batch-main {
+.eip-backup-main {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -562,22 +560,19 @@
     overflow: hidden;
 }
 
-.eip-backup-main b,
-.eip-batch-main b {
+.eip-backup-main b {
     font-size: 0.78rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.eip-backup-main span,
-.eip-batch-main span {
+.eip-backup-main span {
     font-size: 0.7rem;
     color: var(--text-muted, #666);
 }
 
-.eip-backup-actions,
-.eip-batch-actions {
+.eip-backup-actions {
     display: flex;
     gap: 5px;
     flex-shrink: 0;
@@ -680,13 +675,11 @@
     .eip-tool-label,
     .eip-month-summary,
     .eip-empty-note,
-    .eip-backup-main span,
-    .eip-batch-main span {
+    .eip-backup-main span {
         color: color-mix(in srgb, var(--secondary-color) 55%, transparent);
     }
 
-    .eip-backup-main b,
-    .eip-batch-main b {
+    .eip-backup-main b {
         color: var(--secondary-color);
     }
 
@@ -776,8 +769,7 @@
     }
 
     /* ── Карточки бэкапов / пачек ── */
-    .eip-backup-card,
-    .eip-batch-card {
+    .eip-backup-card {
         background: color-mix(in srgb, var(--secondary-color) 4%, var(--tertiary-color));
     }
 

@@ -211,13 +211,10 @@
 }
 
 /* ── Убираем старые стили чтобы не конфликтовали ── */
-.achievement-grid,
-.achievements-summary,
 .achievement,
 .achievement.unlocked,
 .achievement.locked,
 .achievement span,
-.achievement::after,
-.load-more-achievements {
+.achievement::after {
     /* переопределяются новыми классами выше */
 }

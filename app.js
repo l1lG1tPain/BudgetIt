@@ -14,6 +14,8 @@ import { AccountsPage } from './src/ui/AccountsPage.js';
 import { DesktopWidgets } from './src/ui/DesktopWidgets.js';
 import { PlannerPage } from './src/planner/PlannerPage.js';
 import { PlannerSheet } from './src/planner/PlannerSheet.js';
+import { initPwaInstall } from './src/ui/PwaInstall.js';
+import { setSharkScopeProvider } from './src/shark/SharkMood.js';
 
 // ===============================================================
 // 1. Создаём StorageManager (если есть IndexedDB)
@@ -111,6 +113,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window._budgetPlannerRef = { plannerManager, plannerPage, plannerSheet };
 
+    // Акулка считает отдельно для каждого бюджета: лимит, цель, челлендж, значки
+    setSharkScopeProvider(() => {
+        const b = budgetManager.getCurrentBudget();
+        return b ? { id: b.id, first: budgetManager.currentBudgetIndex === 0 } : null;
+    });
     new SharkUI({ budgetManager, plannerManager, uiManager }).init();
     new AccountsPage({ budgetManager, uiManager }).init();
     const desktopWidgets = new DesktopWidgets({ budgetManager, plannerManager, uiManager });
@@ -118,6 +125,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     uiManager.desktopWidgets = desktopWidgets;
 
     initSettings(budgetManager, uiManager);
+    initPwaInstall();
+    // Картинки нельзя сохранить: блокируем меню по долгому нажатию и перетаскивание
+    const isImg = e => e.target instanceof Element && e.target.closest('img, picture, canvas');
+    document.addEventListener('contextmenu', e => { if (isImg(e)) e.preventDefault(); }, true);
+    document.addEventListener('dragstart', e => { if (isImg(e)) e.preventDefault(); }, true);
 
     const searchManager = new SearchManager(budgetManager, uiManager);
     searchManager.init();

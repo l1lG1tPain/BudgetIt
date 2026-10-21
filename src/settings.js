@@ -1,7 +1,7 @@
 // settings.js  —  ESM-модуль
 import { initThemeSelector, THEMES, getSavedTheme } from './ThemeManager.js';
 import { markFlag } from './shark/SharkExtra.js';
-import { getSharkSettings, CHARACTER_LABELS, findActivePlanner, isoDay } from './shark/SharkMood.js';
+import { getSharkSettings, CHARACTER_LABELS, SHARK_NAMES, findActivePlanner, isoDay } from './shark/SharkMood.js';
 import { ALL_ACHIEVEMENTS } from '../constants/achievementList.js';
 import { initializeAnalytics } from './widgets/charts.js';
 import { FAQ_ITEMS }           from '../constants/faq-constants.js';
@@ -10,7 +10,9 @@ import { showTweak } from './utils/tweakSystem.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
 import { calculateAchievementContext, calculateAchievementPoints } from './utils/achievementUtils.js';
 import { refreshUserProfile } from './profileAnalytics.js';
-import { openProfilePage, refreshHeroName } from './profilePage.js';
+import { openProfilePage, renderProfilePage, refreshHeroName } from './profilePage.js';
+import { canOfferInstall, openInstall } from './ui/PwaInstall.js';
+import { sanitizeDeep } from './utils/sanitize.js';
 import { getNumberFormat, NUMBER_FORMAT_KEY } from './utils/utils.js';
 
 let localBudgetManager = null;
@@ -61,6 +63,11 @@ function openSubPage(pageId) {
 
     if (pageId === 'region-page') {
         renderRegionCards();
+    }
+
+    // Профиль рисуется при открытии: из строки меню настроек он раньше открывался пустым
+    if (pageId === 'profile-page') {
+        renderProfilePage(localBudgetManager);
     }
 
     if (pageId === 'faq-page') {
@@ -312,7 +319,7 @@ export function initSettings(budgetManager, ui) {
 
     document.querySelectorAll('.open-subpage-btn[data-page]')
         .forEach(btn => {
-            if (btn.dataset.page === '__import') return; // обрабатывается в renderSettingsList
+            if (btn.dataset.page === '__import' || btn.dataset.page === '__install') return; // обрабатывается в renderSettingsList
             btn.onclick = () => openSubPage(btn.dataset.page);
         });
 }
@@ -1239,12 +1246,16 @@ export function createAutoBackup(reason = 'manual') {
     const backups = getAutoBackups();
     backups.unshift(backup);
 
-    const sliced = backups.slice(0, MAX_BACKUPS);
-
-    try {
-        localStorage.setItem(BACKUP_KEY, JSON.stringify(sliced));
-    } catch (err) {
-        console.warn('[DataTools] Failed to save auto backup', err);
+    // Если место в хранилище кончается, храним меньше копий (но не меньше одной), а не теряем свежую
+    let keep = Math.min(MAX_BACKUPS, backups.length);
+    for (;;) {
+        try {
+            localStorage.setItem(BACKUP_KEY, JSON.stringify(backups.slice(0, keep)));
+            break;
+        } catch (err) {
+            if (keep <= 1) { console.warn('[DataTools] Failed to save auto backup', err); break; }
+            keep = Math.max(1, Math.floor(keep / 2));
+        }
     }
 
     renderAutoBackups();
@@ -1512,7 +1523,9 @@ function buildFullExportPayload(budgetManager) {
     };
 }
 
-function normalizeImportedData(parsed, budgetManager) {
+function normalizeImportedData(rawParsed, budgetManager) {
+    // Файл может прийти откуда угодно: чистим строки, отбрасываем опасные ключи
+    const parsed = sanitizeDeep(rawParsed);
     let budgets = [];
     let importedUserId = null;
     let currentBudgetIndex = 0;
@@ -1936,9 +1949,9 @@ function renderSettingsList() {
             row('export-import-page', '🗄️', 'Данные и бэкапы', 'Экспорт, импорт, дубли, откат'),
             row('planner-page',       '📅', 'План месяца', planner?.name || 'Нет активного плана'),
             row('__import',           '⚡', 'Залётом', 'Импорт выписки из банка'),
+            ...(canOfferInstall() ? [row('__install', '📲', 'Установить приложение', 'Как обычное приложение на экране «Домой»')] : []),
         ],
         [
-            row('shark-page',         '🦈', 'Акулка', `${CHARACTER_LABELS[shark.character] || 'Обычная'} · реакции ${shark.reactions ? 'вкл' : 'выкл'}`),
             row('achievements-page',  '🏆', 'Достижения', `${unlocked.length} из ${ALL_ACHIEVEMENTS.length} открыто`),
             row('profile-page',       '👤', 'Мой профиль', 'Статистика и активность'),
         ],
@@ -1966,18 +1979,16 @@ function renderSettingsList() {
     settingsList.querySelectorAll('.open-subpage-btn[data-page]').forEach(btn => {
         btn.addEventListener('click', () => {
             if (btn.dataset.page === '__import') { btn.onclick = null; openImportSheet(); return; }
+            if (btn.dataset.page === '__install') { openInstall(); return; }
             openSubPage(btn.dataset.page);
         });
     });
 
-    // мини-статистика над меню
-    const stats = document.getElementById('sp-stats');
-    if (stats) {
-        const txCount = localBudgetManager?.getTotalTransactions?.() ?? 0;
-        const bonus = calculateAchievementPoints(unlocked, ALL_ACHIEVEMENTS);
-        const budgets = localBudgetManager?.budgets?.length ?? 0;
-        stats.innerHTML = [['🏆', unlocked.length, 'Достижений'], ['⚡', txCount + bonus, 'Всего очков'], ['💼', budgets, 'Бюджетов'], ['🔄', txCount, 'Операций']]
-            .map(([e, v, l]) => `<div class="sp-stat"><div class="sp-stat-e">${e}</div><div class="sp-stat-v">${v}</div><div class="sp-stat-l">${l}</div></div>`).join('');
+    // карточка «Настрой Акулку» над меню
+    const sharkSub = document.getElementById('sp-shark-sub');
+    if (sharkSub) {
+        const bits = [SHARK_NAMES[shark.shark] || 'Акулка', CHARACTER_LABELS[shark.character] || 'Обычная', `реакции ${shark.reactions ? 'вкл' : 'выкл'}`];
+        sharkSub.textContent = bits.join(' · ');
     }
 }
 

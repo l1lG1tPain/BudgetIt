@@ -2,7 +2,7 @@
 //   SharkExtra.js — расчёты для новых «разговорных» функций Акулки (чистая логика без DOM):
 //   цель накопления, «что я зря трачу», итог месяца, правило 50/30/20, значки, флаги событий.
 // ===============================
-import { isoDay, shiftDay } from './SharkMood.js';
+import { isoDay, shiftDay, readScoped, writeScoped } from './SharkMood.js';
 
 const num = v => Number(v) || 0;
 const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
@@ -10,14 +10,14 @@ const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}
 // ───────── флаги событий (экспорт, выполненный челлендж, достигнутая цель) ─────────
 export const FLAGS_KEY = 'budgetit:shark:flags';
 export function getFlags(storage = globalThis.localStorage) {
-    try { return JSON.parse(storage?.getItem(FLAGS_KEY) || '{}') || {}; } catch (e) { return {}; }
+    try { return JSON.parse(readScoped(FLAGS_KEY, storage) || '{}') || {}; } catch (e) { return {}; }
 }
 export function markFlag(name, storage = globalThis.localStorage) {
     try {
         const f = getFlags(storage);
         if (f[name]) return;
         f[name] = isoDay();
-        storage?.setItem(FLAGS_KEY, JSON.stringify(f));
+        writeScoped(FLAGS_KEY, f, storage);
     } catch (e) { /* ignore */ }
 }
 

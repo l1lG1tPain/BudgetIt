@@ -488,5 +488,5 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.addEventListener('budgetit:region-changed', () => { state = { fiat:null, crypto:null, series:{}, updatedAt:null, offline:false }; restoreLast(); renderMain(); loadAndRender(); });
-  setInterval(loadAndRender, 15*60*1000);
+  setInterval(() => { if (!document.hidden) loadAndRender(); }, 15*60*1000);
 })();

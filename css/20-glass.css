@@ -46,15 +46,13 @@
 }
 
 /* ── Стекло ─────────────────────────────────────────────────────────── */
-.glass,
-.glass-2 {
+.glass {
   background: var(--glass);
   border: 1px solid var(--stroke);
   box-shadow: inset 0 1px 0 var(--hi);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   backdrop-filter: blur(24px) saturate(170%);
 }
-.glass-2 { background: var(--glass2); }
 
 .sheet {
   background: var(--sticky);
@@ -66,46 +64,26 @@
 }
 
 /* Липкий заголовок дня: обёртка дня = containing block, поэтому «прилипает», пока не доскроллишь до следующего дня */
-.sticky-day {
-  position: sticky; top: 0; z-index: 2;
-  background: var(--sticky);
-  border-bottom: 1px solid var(--faint);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
 
 /* ── Фон с бликами (подключается классом .glass-bg на контейнер экрана) ─ */
-.glass-bg { position: relative; background: var(--bg); overflow: hidden; isolation: isolate; }
-.glass-bg::before,
-.glass-bg::after,
-.glass-bg > .orb {
-  content: ''; position: absolute; border-radius: 50%; z-index: -1; pointer-events: none;
-}
-.glass-bg::before { width: 360px; height: 360px; top: -120px; left: -120px; background: var(--orb1); filter: blur(80px); }
-.glass-bg::after  { width: 300px; height: 300px; top: 240px; right: -140px; background: var(--orb2); filter: blur(80px); }
-.glass-bg > .orb  { width: 260px; height: 260px; bottom: -60px; left: 20px; background: var(--orb3); filter: blur(70px); }
 
 /* ── Типографика редизайна (opt-in классами) ────────────────────────── */
-.ff-ui  { font-family: var(--font-ui); }
-.ff-num { font-family: var(--font-num); letter-spacing: -.03em; }
 .num    { font-variant-numeric: tabular-nums; }
 
 /* ── Деградация: слабые устройства / пользовательские настройки ─────── */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass   { background: color-mix(in srgb, var(--bg) 80%, white 8%); }
-  .glass-2 { background: color-mix(in srgb, var(--bg) 70%, white 12%); }
-  .sheet, .sticky-day { background: var(--bg); }
+  .sheet { background: var(--bg); }
 }
 @media (prefers-reduced-transparency: reduce) {
   /* blur оставляем только у навбара и шторок; у карточек — сплошной фон */
-  .glass, .glass-2 { -webkit-backdrop-filter: none; backdrop-filter: none; background: color-mix(in srgb, var(--bg) 85%, white 6%); }
+  .glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: color-mix(in srgb, var(--bg) 85%, white 6%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .glass-bg::before, .glass-bg::after, .glass-bg > .orb { filter: blur(60px); }
   * { scroll-behavior: auto !important; }
 }
 /* Низкая производительность: класс .low-fx вешается на <html> (JS, этап 9) */
-:root.low-fx .glass, :root.low-fx .glass-2 { -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root.low-fx .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
 
 /* ── Этап 3: главный экран ─────────────────────────────── */
 #transaction-list li.tx-day-head {
@@ -422,7 +400,6 @@ header .header-button { gap: 8px; }
     color: var(--text, inherit); font-size: 15px; font-weight: 700;
 }
 #transaction-sheet .transaction-form > input[type=date] { min-height: 50px; }
-#transaction-sheet .quick-dates { margin-top: 8px; }
 #transaction-sheet .transaction-form > .add-btn { order: 20; min-height: 58px; border-radius: 29px; margin-top: 18px; font-size: 17px; }
 #transaction-sheet .transaction-form > .close-form { display: none; } /* закрытие — крестик в шапке */
 
@@ -738,8 +715,10 @@ header .search-open-btn {
 #delete-transaction-modal .modal-content::before, #delete-budget-modal .modal-content::before,
 #clear-data-modal .modal-content::before, #clear-cache-modal .modal-content::before {
     content: ''; display: block; width: 96px; height: 96px; margin: -6px auto 4px;
-    background: url('./assets/shark.png') center / contain no-repeat;
+    background: var(--shark-modal, url('/assets/shark.png')) center / contain no-repeat;
 }
+html[data-shark="hoodie"] #delete-transaction-modal .modal-content::before, html[data-shark="hoodie"] #delete-budget-modal .modal-content::before,
+html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-shark="hoodie"] #clear-cache-modal .modal-content::before { height: 118px; margin-top: -14px; }
 .modal .modal-content h3 { color: var(--text, inherit); font-size: 18px; font-weight: 800; }
 .modal .modal-content p { color: var(--muted, inherit); font-size: 13.5px; line-height: 1.45; }
 .modal .modal-buttons { gap: 10px; }
@@ -854,11 +833,11 @@ header .search-open-btn {
 .akulka-card[data-mood="proud"] { --mood: var(--save, #9b6dff); }
 .akulka-card.no-limit .ak-bar { opacity: .35; }
 .akulka-card img { transform-origin: 50% 90%; }
-@keyframes btBob   { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-1.5deg); } }
-@keyframes btTense { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.02); } }
+@keyframes btBob   { 0%,60%,100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-4px) rotate(-1.5deg); } }
+@keyframes btTense { 0%,70%,100% { transform: translateY(0) scale(1); } 35% { transform: translateY(-2px) scale(1.02); } }
 @keyframes btShake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-5deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(4deg); } }
-.akulka-card[data-state="ok"] img, .akulka-card[data-state="proud"] img { animation: btBob 4s ease-in-out infinite; }
-.akulka-card[data-state="tense"] img { animation: btTense 1.6s ease-in-out infinite; }
+.akulka-card[data-state="ok"] img, .akulka-card[data-state="proud"] img { animation: btBob 9s ease-in-out infinite; }
+.akulka-card[data-state="tense"] img { animation: btTense 4s ease-in-out infinite; }
 .akulka-card[data-state="angry"] img { animation: btShake .9s ease-in-out 2; }
 .akulka-card.react-ok img, .akulka-card.react-proud img { animation: btBob .9s ease-in-out 1; }
 .akulka-card.react-tense img { animation: btTense .9s ease-in-out 1; }
@@ -871,21 +850,13 @@ header .search-open-btn {
 .tweak:has(.shark-toast) .tweak-close { display: none; }
 
 /* ===== Настройки Акулки ===== */
-#shark-page .shark-set-card { margin: 12px 16px; padding: 14px 16px; border-radius: 22px; background: var(--glass, rgba(255,255,255,.06)); border: 1px solid var(--stroke, rgba(255,255,255,.1)); }
-#shark-page .shark-set-title { font-size: 13px; font-weight: 800; color: var(--muted, inherit); margin-bottom: 10px; }
-#shark-page .shark-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); }
-#shark-page .shark-seg button { flex: 1; min-height: 40px; border: none; border-radius: 12px; background: transparent; color: var(--muted, inherit); font-weight: 800; }
-#shark-page .shark-seg button.active { background: var(--text, #fff); color: var(--bg, #111); }
-#shark-page .shark-set-hint { margin-top: 10px; font-size: 13px; color: var(--muted, inherit); }
 #shark-page .shark-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font-weight: 700; }
 #shark-page .shark-row + .shark-row { border-top: 1px solid var(--stroke, rgba(255,255,255,.08)); }
 #shark-page .shark-row small { display: block; font-weight: 500; font-size: 12px; color: var(--muted, inherit); margin-top: 2px; }
 #shark-page .shark-row input { width: 22px; height: 22px; accent-color: var(--accent, #3ddc97); }
 
 /* ===== План месяца: стекло, hero, полоса дней ===== */
-#planner-page .planner-stat-card, #planner-page .planner-mini-card, #planner-page .planner-section-card,
-#planner-page .planner-insight-card, #planner-page .planner-day-card, #planner-page .planner-empty-card,
-#planner-page .planner-dropdown-trigger {
+#planner-page .planner-stat-card, #planner-page .planner-mini-card, #planner-page .planner-section-card, #planner-page .planner-insight-card, #planner-page .planner-day-card, #planner-page .planner-dropdown-trigger {
     background: var(--glass, rgba(255,255,255,.06)) !important;
     border: 1px solid var(--stroke, rgba(255,255,255,.1)) !important;
     border-radius: 22px !important;
@@ -924,11 +895,6 @@ header .search-open-btn {
 .accounts-row { width: 100%; display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 14px; text-align: left; border-radius: 22px;
     background: var(--glass, rgba(255,255,255,.06)); border: 1px solid var(--stroke, rgba(255,255,255,.1)); color: var(--text, inherit);
     -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); cursor: pointer; }
-.accounts-row-icon { width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: var(--faint, rgba(255,255,255,.08)); flex: none; }
-.accounts-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.accounts-row-main b { font-size: 15px; }
-.accounts-row-main small { font-size: 12px; color: var(--muted, inherit); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.accounts-row-arr { color: var(--muted, inherit); font-size: 20px; }
 #accounts-page { z-index: 1100 !important; }
 #accounts-page .subpage-content { padding-top: 68px; padding-bottom: 108px; }
 #accounts-page .acc-hero { text-align: center; padding: 18px; border-radius: 26px; background: var(--glass2, rgba(255,255,255,.08)); border: 1px solid var(--stroke, rgba(255,255,255,.12)); }
@@ -1005,7 +971,6 @@ header .search-open-btn {
 .sw input:checked + span { background: var(--accent, #3ddc97); }
 .sw input:checked + span::after { transform: translateX(18px); }
 #shark-page .subpage-content, #region-page .subpage-content { padding-top: 68px; padding-bottom: 108px; }
-#shark-page #shark-live { margin: 28px 16px 8px; }
 #region-page .numfmt-seg { margin: 4px 0 12px; }
 
 /* ===== Курсы: чипы на главной и шторка ===== */
@@ -1201,7 +1166,7 @@ footer.liquid-footer #add-btn.fab-btn .budgetit-fab-svg path{stroke-width:2.2 !i
 
   /* сайдбар */
   footer.liquid-footer{left:16px !important;right:auto !important;top:16px !important;bottom:16px !important;width:248px;flex-direction:column !important;align-items:stretch !important;justify-content:flex-start !important;gap:4px !important;padding:20px 14px !important;pointer-events:auto;border-radius:24px}
-  footer.liquid-footer::before{content:'BudgetIt';order:0;display:flex;align-items:center;height:44px;padding-left:52px;margin:0 6px 16px;font-family:var(--font-num);font-weight:700;font-size:20px;color:var(--text);background:url(./assets/shark.png) 0 50% / 40px 40px no-repeat}
+  footer.liquid-footer::before{content:'BudgetIt';order:0;display:flex;align-items:center;height:44px;padding-left:52px;margin:0 6px 16px;font-family:var(--font-num);font-weight:700;font-size:20px;color:var(--text);background:url(/assets/shark.png) 0 50% / 40px 40px no-repeat}
   footer.liquid-footer::after{content:'';position:absolute;inset:0;z-index:-1;border-radius:24px;background:var(--glass);border:1px solid var(--stroke);box-shadow:inset 0 1px 0 var(--hi);backdrop-filter:blur(28px) saturate(170%);-webkit-backdrop-filter:blur(28px) saturate(170%)}
   footer.liquid-footer .liquid-nav{order:1;flex:0 0 auto !important;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;width:auto !important;min-height:0;padding:0 !important;background:none !important;border:none !important;box-shadow:none !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;animation:none}
   .lnav-desk{display:flex !important}
@@ -1328,7 +1293,6 @@ header .search-open-btn::after{content:'';position:absolute;width:2px;height:6px
 #analytics-page #expensesByCategoryCenterText .center-label{font-size:11px;color:var(--muted)}
 #analytics-page .donut-legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 #analytics-page .dn-leg{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:10px;border:none;background:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;text-align:left}
-#analytics-page .dn-leg.is-on{background:var(--chip)}
 #analytics-page .dn-leg i{width:8px;height:8px;border-radius:50%;flex:none}
 #analytics-page .dn-leg span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #analytics-page .dn-leg b{font-weight:700;color:var(--muted);font-size:12.5px}
@@ -1339,11 +1303,6 @@ header .search-open-btn::after{content:'';position:absolute;width:2px;height:6px
 .an-hero-sum{font-family:var(--font-num);font-size:32px;font-weight:700;margin-top:6px;color:var(--text)}
 .an-hero-sum small{font-family:inherit;font-size:15px;font-weight:600;color:var(--muted)}
 .an-hero-delta{margin-top:6px;font-size:13px;font-weight:700;color:var(--muted)}
-.an-hero-delta.is-good{color:var(--in)} .an-hero-delta.is-bad{color:var(--out)}
-.an-hero-bars{display:flex;align-items:flex-end;gap:6px;height:110px;margin-top:16px}
-.an-hero-bars i{flex:1;border-radius:6px;background:var(--faint);min-height:6px}
-.an-hero-bars i.is-now{background:var(--accent)}
-.an-hero-axis{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:600;color:var(--muted)}
 #analytics-page .an-tip{display:flex;gap:12px;align-items:center;margin:12px 4px 0;padding:14px !important;border-radius:22px;background:var(--glass);border:1px solid var(--stroke);box-shadow:inset 0 1px 0 var(--hi)}
 .an-tip img{width:56px;height:56px;object-fit:contain;flex:none}
 .an-tip-title{font-size:13px;font-weight:800;color:var(--debt)}
@@ -1384,7 +1343,6 @@ header .search-open-btn::after{content:'';position:absolute;width:2px;height:6px
 #settings-page .settings-header h2{font-family:var(--font-num);font-size:24px;font-weight:600;margin:0;color:var(--text)}
 #settings-page .sp-hero-wrap{margin:14px 0 0 !important;padding:0 16px !important}
 #settings-page .sp-hero-card{display:flex !important;gap:14px;align-items:center;padding:18px !important;border-radius:26px !important;background:var(--glass2) !important;border:1px solid var(--stroke) !important;box-shadow:inset 0 1px 0 var(--hi) !important;-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%)}
-#settings-page .sp-hero-glow{display:none !important}
 #settings-page .sp-hero-avatar{width:68px !important;height:68px !important;border-radius:34px !important;background:var(--faint) !important;border:2px solid var(--accent) !important;overflow:hidden;flex:none;padding:0 !important;box-shadow:none !important}
 #settings-page .sp-hero-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;transform:scale(1.28);transform-origin:center}
 #settings-page .sp-hero-right{flex:1;min-width:0}
@@ -1395,9 +1353,6 @@ header .search-open-btn::after{content:'';position:absolute;width:2px;height:6px
 #settings-page .sp-hero-progress-bar{height:6px !important;border-radius:3px !important;background:var(--faint) !important;margin-top:10px !important;overflow:hidden}
 #settings-page .sp-hero-progress-fill{height:100%;border-radius:3px !important;background:var(--accent) !important}
 #settings-page .sp-hero-pts{font-size:12px !important;color:var(--muted) !important;font-weight:700;margin-top:6px !important}
-#settings-page .sp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 16px 0 !important}
-.sp-stat{padding:12px 6px;border-radius:16px;background:var(--glass);border:1px solid var(--stroke);text-align:center}
-.sp-stat-e{font-size:16px}.sp-stat-v{font-size:16px;font-weight:800;margin-top:4px;color:var(--text)}.sp-stat-l{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:2px}
 #settings-page .banner-carousel.wrapper-sm{margin:12px 16px 0 !important;padding:0 !important;border-radius:22px !important;width:auto !important}
 #settings-page .hr-spacing{display:none}
 #settings-page .sp-nav-list.settings-nav-list{padding:0 !important}
@@ -1443,7 +1398,7 @@ header .search-open-btn::after{content:'';position:absolute;width:2px;height:6px
 }
 
 /* Страница тем: плитки как в макете */
-#theme-options-container{grid-template-columns:repeat(2,1fr) !important;gap:10px !important;padding:4px 16px 24px !important}
+#theme-options-container{grid-template-columns:repeat(2,1fr) !important;gap:10px !important;padding:4px 0 24px !important}
 #theme-options-container .theme-card{background:var(--glass) !important;border:2px solid var(--stroke) !important;border-radius:20px !important;box-shadow:inset 0 1px 0 var(--hi) !important;padding:6px;display:block;text-align:left;color:var(--text)}
 #theme-options-container .theme-card.active{border-color:var(--accent) !important;box-shadow:inset 0 1px 0 var(--hi) !important}
 #theme-options-container .tp-preview.tp-glass{position:relative;display:block !important;height:96px !important;border-radius:14px !important;padding:0 !important;overflow:hidden}
@@ -1509,21 +1464,20 @@ main{overflow-x:clip}
       один фиксированный слой body::before.
    3) Тяжёлые списки: content-visibility.
    4) :root.low-fx (ставится автоматически на слабых устройствах) убирает и остальной blur. */
-.glass, .glass-2, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row,
-#transaction-list li.tx-item, #settings-page .sp-hero-card, #settings-page .sp-nav-group,
-.faq-item, .set-card, .empty-card, .about-hero, .budget-ctx-menu,
-#analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .analytics-scroll section,
-#analytics-page .bi-card, #analytics-page .bi-ob-progress-block, #analytics-page .bi-ob-feat,
-#planner-page .planner-stat-card, #planner-page .planner-mini-card, #planner-page .planner-section-card,
-#planner-page .planner-insight-card, #planner-page .planner-hero, #planner-page .planner-day-card,
-.planner-empty-card, .planner-stat-card, .planner-mini-card, .planner-section-card, .planner-insight-card, .planner-day-card,
-.bi-kpi-row .bi-kpi, .bi-health, .bi-cards .bi-card, .open-subpage-btn, .theme-option{
+.glass, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row, #transaction-list li.tx-item, #settings-page .sp-hero-card, #settings-page .sp-nav-group, .faq-item, .set-card, .empty-card, .about-hero, .budget-ctx-menu, #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .analytics-scroll section, #analytics-page .bi-card, #analytics-page .bi-ob-progress-block, #analytics-page .bi-ob-feat, #planner-page .planner-stat-card, #planner-page .planner-mini-card, #planner-page .planner-section-card, #planner-page .planner-insight-card, #planner-page .planner-hero, #planner-page .planner-day-card, .planner-stat-card, .planner-mini-card, .planner-section-card, .planner-insight-card, .planner-day-card, .bi-kpi-row .bi-kpi, .bi-health, .bi-cards .bi-card, .open-subpage-btn, .theme-option{
   -webkit-backdrop-filter:none !important; backdrop-filter:none !important}
 
 /* оставшийся blur — дешевле: меньше радиус, без saturate там, где он незаметен */
 header{-webkit-backdrop-filter:blur(14px) !important;backdrop-filter:blur(14px) !important}
 footer.liquid-footer::after{-webkit-backdrop-filter:blur(16px) !important;backdrop-filter:blur(16px) !important}
 .bottom-sheet:not(.fullscreen-sheet), .sheet, .modal .modal-content{-webkit-backdrop-filter:blur(22px) saturate(150%) !important;backdrop-filter:blur(22px) saturate(150%) !important}
+/* меню бюджета (долгое нажатие): короткоживущий слой, поэтому blur можно; фон плотный, цвет берётся из темы */
+.budget-ctx-menu{
+  background:color-mix(in srgb, var(--bg) 78%, transparent) !important;
+  -webkit-backdrop-filter:blur(24px) saturate(160%) !important;backdrop-filter:blur(24px) saturate(160%) !important;
+  border:1px solid var(--stroke, rgba(255,255,255,.12)) !important}
+@supports not (background:color-mix(in srgb, red 50%, blue)){.budget-ctx-menu{background:var(--bg) !important}}
+:root.low-fx .budget-ctx-menu{background:var(--bg) !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
 /* заголовки дней: без backdrop-blur (сотни липких слоёв дают лаг при прокрутке) — плотная заливка */
 #transaction-list li.tx-day-head{-webkit-backdrop-filter:none !important;backdrop-filter:none !important;background:color-mix(in srgb, var(--bg) 93%, transparent) !important}
 @supports not (background:color-mix(in srgb, red 50%, blue)){#transaction-list li.tx-day-head{background:var(--bg) !important}}
@@ -1571,11 +1525,22 @@ footer.liquid-footer::after{-webkit-backdrop-filter:blur(16px) !important;backdr
 /* ═══════════ Подстраницы: Достижения, О приложении, Мой профиль, Данные и бэкапы → стекло ═══════════ */
 /* общий «стеклянный» блок */
 #achievements-page .ach-summary-card,
-#about-page .about-card, #about-page .about-stat-card, #about-page .about-hero,
-#profile-page .pp-level-block, #profile-page .pp-stat-card, #profile-page .pp-detail-block, #profile-page .pp-activity-block, #profile-page .pp-achievements-btn,
-#export-import-page .eip-stat-card, #export-import-page .eip-chart-block, #export-import-page .eip-activity-block, #export-import-page .eip-budgets-block,
-#export-import-page .eip-data-tools, #export-import-page .eip-tool-card, #export-import-page .eip-import-batches, #export-import-page .eip-backups-block,
-#export-import-page .eip-maintenance-block{
+#about-page .about-card,
+#about-page .about-stat-card,
+#about-page .about-hero,
+#profile-page .pp-level-block,
+#profile-page .pp-stat-card,
+#profile-page .pp-detail-block,
+#profile-page .pp-activity-block,
+#profile-page .pp-achievements-btn,
+#export-import-page .eip-stat-card,
+#export-import-page .eip-chart-block,
+#export-import-page .eip-activity-block,
+#export-import-page .eip-budgets-block,
+#export-import-page .eip-data-tools,
+#export-import-page .eip-tool-card,
+#export-import-page .eip-import-batches,
+#export-import-page .eip-backups-block{
   background:var(--glass) !important;background-image:none !important;border:1px solid var(--stroke) !important;
   box-shadow:inset 0 1px 0 var(--hi) !important;color:var(--text) !important}
 #achievements-page .ach-summary-card, #about-page .about-hero, #profile-page .pp-level-block{background:var(--glass2) !important;border-radius:24px !important}
@@ -2015,3 +1980,248 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
 .sc-form-goal { gap: 6px; flex-wrap: wrap; }
 .sc-form-goal input { min-width: 0; flex: 1 1 120px; }
 .sc-form-goal input[type="date"] { flex: 1 1 140px; }
+
+
+/* ═══════════ Тема «Тиффани»: бирюзовое глубокое стекло, жемчужные блики, серебристая «лента» ═══════════
+   Без backdrop-blur на карточках и списках (см. правила производительности выше): всё делается градиентами и тенями. */
+:root[data-theme="tiffany"] {
+  --tf-a: #81d8d0; --tf-b: #0abab5; --tf-pearl: #f2fffd;
+  --tf-grad: linear-gradient(135deg, #b4f3ed 0%, #81d8d0 38%, #2cc6bd 74%, #0abab5 100%);
+  --tf-sheen: linear-gradient(145deg, rgba(255,255,255,.11) 0%, rgba(255,255,255,0) 34%, rgba(10,186,181,.08) 100%);
+}
+/* фон: к трём бликам добавляется диагональный «атласный» отлив */
+@media (max-width:1099px){
+  :root[data-theme="tiffany"] main{
+    background-image:
+      radial-gradient(circle 360px at -40px 40px, var(--orb1), transparent 72%),
+      radial-gradient(circle 320px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
+      radial-gradient(circle 280px at 60px calc(100% - 10px), var(--orb3), transparent 72%),
+      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.045) 46%, transparent 54% 100%) !important}
+}
+@media (min-width:1100px){
+  :root[data-theme="tiffany"] body{
+    background-image:
+      radial-gradient(circle 420px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
+      radial-gradient(circle 380px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
+      radial-gradient(circle 340px at 40% calc(100% + 40px), var(--orb3), transparent 72%),
+      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.04) 46%, transparent 54% 100%) !important}
+}
+/* карточки: стеклянный отлив, холодная кромка и бирюзовое свечение снизу */
+:root[data-theme="tiffany"] :is(.glass, .glass-2, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row,
+  #settings-page .sp-hero-card, #settings-page .sp-nav-group, .faq-item, .set-card, .empty-card, .about-hero,
+  #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .bi-card,
+  #planner-page .planner-hero, #planner-page .planner-stat-card, #planner-page .planner-section-card, #planner-page .planner-day-card) {
+  background-image: var(--tf-sheen);
+  border-color: var(--stroke);
+  box-shadow: inset 0 1px 0 rgba(235,255,253,.22), inset 0 -1px 0 rgba(10,186,181,.14), 0 14px 32px -18px rgba(10,186,181,.45);
+}
+/* строки операций: только отлив (сотни элементов, тени не добавляем) */
+:root[data-theme="tiffany"] #transaction-list li.tx-item{ background-image: var(--tf-sheen); border-color: var(--stroke); }
+/* шторки и шапка: тонкая светящаяся кромка */
+:root[data-theme="tiffany"] .bottom-sheet:not(.fullscreen-sheet), :root[data-theme="tiffany"] .sheet{
+  border-top-color: rgba(170,255,246,.3);
+  box-shadow: inset 0 1px 0 rgba(235,255,253,.28), 0 -22px 60px rgba(0,0,0,.45), 0 -2px 30px rgba(10,186,181,.16);
+}
+/* главные кнопки: градиент «Тиффани» с мягким свечением */
+:root[data-theme="tiffany"] footer.liquid-footer #add-btn.fab-btn,
+:root[data-theme="tiffany"] .add-btn, :root[data-theme="tiffany"] .chip-btn.active,
+:root[data-theme="tiffany"] .sl-save, :root[data-theme="tiffany"] .sl-seg button.active{
+  background: var(--tf-grad) !important; color: var(--ink) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -6px rgba(10,186,181,.65);
+}
+:root[data-theme="tiffany"] footer.liquid-footer .lnav-item.active{
+  background: linear-gradient(180deg, rgba(129,216,208,.22), rgba(129,216,208,.08));
+  box-shadow: inset 0 1px 0 rgba(235,255,253,.25), 0 0 18px rgba(129,216,208,.2);
+}
+/* Акулка: индикатор с градиентом (общий блик карточки — в конце файла, для всех тем) */
+:root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 55%, #fff)); }
+/* заголовки сумм: лёгкое свечение, чтобы цифры «светились» изнутри */
+:root[data-theme="tiffany"] #summary-blocks .block-value{ text-shadow: 0 0 18px rgba(129,216,208,.28); }
+
+
+/* Пауза анимации Акулки, когда карточки не видно (SharkUI.watchCardVisibility) */
+.akulka-card.ak-paused img{ animation-play-state: paused !important }
+
+/* ===== Акулка в худи: портретные картинки ===== */
+.akulka-card img[src*="/hoodie-"] { width: 96px; height: 132px; top: -45px; bottom: auto; left: 6px; object-position: 50% 100%; }
+.akulka-card[data-shark="hoodie"] { min-height: 104px; padding-left: 112px; }
+/* совет дня — на всю ширину карточки, под Акулкой */
+.akulka-card[data-shark="hoodie"] .ak-extra { margin-left: -96px; margin-top: 14px; }
+.akulka-card[data-shark="hoodie"] .ak-bar { margin-left: -96px; margin-top: 12px; }
+.tweak .shark-toast img[src*="/hoodie-"] { width: 30px; height: 38px; margin: -6px 0; }
+.sc-msg img[src*="/hoodie-"] { width: 40px; height: 52px; object-position: 50% 100%; }
+#planner-page .planner-shark-tip img[src*="/hoodie-"] { width: 36px; height: 46px; }
+.an-tip img[src*="/hoodie-"] { width: 58px; height: 74px; }
+.empty-card .empty-shark[src*="/hoodie-"] { width: 100px; height: 128px; }
+
+/* ===== Страница Акулки: редизайн ===== */
+#shark-page .sk-hero { --mood: var(--in, #27AE60); position: relative; margin: 12px 16px 14px; padding: 16px; border-radius: 26px;
+    display: grid; grid-template-columns: 112px 1fr; column-gap: 12px; align-items: end;
+    background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--mood) 22%, transparent), transparent 60%), var(--glass2, var(--glass, rgba(255,255,255,.06)));
+    border: 1px solid color-mix(in srgb, var(--mood) 35%, var(--stroke, rgba(255,255,255,.12))); }
+#shark-page .sk-hero[data-mood="new"]   { --mood: var(--accent, #6cf); }
+#shark-page .sk-hero[data-mood="proud"] { --mood: var(--save, #9b6dff); }
+#shark-page .sk-hero[data-mood="warn"]  { --mood: #ff9f43; }
+#shark-page .sk-hero[data-mood="bad"]   { --mood: var(--out, #ff4b5c); }
+#shark-page .sk-hero-pic { grid-row: 1; align-self: end; margin: -34px 0 -4px -4px; }
+#shark-page .sk-hero-pic img { display: block; width: 112px; height: 156px; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 8px 14px rgba(0,0,0,.35)); }
+#shark-page .sk-hero-pic img:not([src*="/hoodie-"]) { height: 112px; }
+#shark-page .sk-hero-body { grid-column: 2; align-self: center; padding: 4px 0 6px; }
+#shark-page .sk-hero .ak-title { font-size: 13px; font-weight: 800; color: var(--mood); }
+#shark-page .sk-hero .ak-text { font-size: 15px; line-height: 1.4; margin-top: 4px; font-weight: 600; color: var(--text, inherit); }
+#shark-page .sk-hero .ak-extra { grid-column: 1 / -1; margin-top: 12px; padding: 8px 11px; border-radius: 12px; font-size: 12.5px; line-height: 1.2; font-weight: 600;
+    background: var(--faint, rgba(255,255,255,.07)); border: 1px solid var(--stroke, rgba(255,255,255,.08)); }
+#shark-page .sk-hero .ak-extra[hidden] { display: none; }
+#shark-page .sk-hero .ak-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; margin-top: 12px; background: var(--faint, rgba(255,255,255,.1)); overflow: hidden; }
+#shark-page .sk-hero .ak-bar span { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--mood); transition: width .5s; }
+#shark-page .sk-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+#shark-page .sk-stat { padding: 9px 6px; border-radius: 14px; text-align: center; background: var(--faint, rgba(255,255,255,.06)); }
+#shark-page .sk-stat b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+#shark-page .sk-stat small { display: block; margin-top: 2px; font-size: 11px; color: var(--muted, inherit); }
+#shark-page .sk-ask { grid-column: 1 / -1; margin-top: 12px; height: 44px; border: none; border-radius: 14px; font-size: 14.5px; font-weight: 800; cursor: pointer;
+    background: var(--accent, #3ddc97); color: var(--ink, #032624); }
+#shark-page .sk-ask:active { transform: scale(.98); }
+#shark-page .sk-limit-card { margin-top: 0; }
+
+#shark-page .sk-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 16px; }
+#shark-page .sk-pick-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px 12px; border-radius: 20px; text-align: center; cursor: pointer;
+    color: inherit; background: var(--glass, rgba(255,255,255,.06)); border: 1.5px solid var(--stroke, rgba(255,255,255,.1)); }
+#shark-page .sk-pick-card img { width: 72px; height: 96px; object-fit: contain; object-position: 50% 100%; }
+#shark-page .sk-pick-card img:not([src*="/hoodie-"]) { height: 72px; margin-top: 24px; }
+#shark-page .sk-pick-card b { font-size: 14.5px; }
+#shark-page .sk-pick-card small { font-size: 11.5px; line-height: 1.25; color: var(--muted, inherit); }
+#shark-page .sk-pick-card.is-active { border-color: var(--accent, #3ddc97); background: color-mix(in srgb, var(--accent, #3ddc97) 14%, var(--glass, transparent)); }
+#shark-page .sk-pick-card.is-active b { color: var(--accent, #3ddc97); }
+
+#shark-page .sk-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 8px 16px 0; padding: 4px; border-radius: 18px;
+    background: var(--glass, rgba(255,255,255,.06)); border: 1px solid var(--stroke, rgba(255,255,255,.1)); }
+#shark-page .sk-seg button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 4px; border: none; border-radius: 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; margin-top:0;
+    background: transparent; color: var(--muted, inherit); }
+#shark-page .sk-seg button span { font-size: 18px; }
+#shark-page .sk-seg button.is-active { background: var(--accent, #3ddc97); color: var(--ink, #032624); }
+#shark-page .sk-desc { margin: 8px 22px 4px; min-height: 2.6em; font-size: 12.5px; line-height: 1.3; color: var(--muted, inherit); }
+
+.planner-form-hint { margin: -4px 4px 12px; font-size: 12px; line-height: 1.35; color: var(--muted, inherit); }
+
+/* ===== Установка PWA ===== */
+.pwa-install { position: fixed; left: 12px; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 1100; max-width: 460px; margin-inline: auto;
+    padding: 14px 14px 10px; border-radius: 26px; color: var(--text, inherit);
+    background: radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--accent, #3ddc97) 20%, transparent), transparent 60%), color-mix(in srgb, var(--bg, #0b1214) 90%, transparent);
+    -webkit-backdrop-filter: blur(26px) saturate(150%); backdrop-filter: blur(26px) saturate(150%);
+    border: 1px solid color-mix(in srgb, var(--accent, #3ddc97) 40%, var(--stroke, rgba(255,255,255,.14)));
+    box-shadow: 0 14px 40px rgba(0,0,0,.55);
+    opacity: 100; transform: translateY(24px); pointer-events: none; transition: transform .3s ease, opacity .3s ease; }
+.pwa-install.is-open { opacity: 1; transform: none; pointer-events: auto; }
+.pwa-top { display: flex; gap: 10px; align-items: flex-start; }
+.pwa-shark { width: 64px; height: 88px; object-fit: contain; object-position: 50% 100%; flex: none; margin: -30px 0 -4px -2px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+.pwa-head { flex: 1; min-width: 0; padding-top: 2px; }
+.pwa-head b { display: block; font-size: 15px; line-height: 1.25; }
+.pwa-head small { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.35; color: var(--muted, inherit); }
+.pwa-x { flex: none; border: none; border-radius: 15px; font-size: 20px; line-height: 1; cursor: pointer; background: var(--faint, rgba(255,255,255,.08)); color: var(--muted, inherit); }
+.pwa-steps { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.pwa-steps li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; font-size: 13px; line-height: 1.3; background: var(--faint, rgba(255,255,255,.06)); }
+.pwa-steps li i { flex: none; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-style: normal; font-weight: 800; color: var(--accent, #3ddc97); background: color-mix(in srgb, var(--accent, #3ddc97) 16%, transparent); }
+.pwa-note { margin: 8px 4px 0; font-size: 11.5px; color: var(--muted, inherit); }
+.pwa-actions { display: flex; gap: 8px; margin-top: 12px; }
+.pwa-main { flex: 1; height: 44px; border: none; border-radius: 14px; font-size: 14.5px; font-weight: 800; cursor: pointer; background: var(--accent, #3ddc97); color: var(--ink, #032624); }
+.pwa-ghost { height: 44px; padding: 0 18px; border: none; border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--faint, rgba(255,255,255,.08)); color: inherit; }
+.pwa-main:active, .pwa-ghost:active { transform: scale(.98); }
+.pwa-never { display: block; margin: 6px auto 0; padding: 6px 10px; border: none; background: transparent; font-size: 11.5px; color: var(--muted, inherit); cursor: pointer; text-decoration: underline; }
+@media (min-width: 901px) { .pwa-install { left: auto; right: 24px; bottom: 24px; width: 380px; } }
+@media (prefers-reduced-motion: reduce) { .pwa-install { transition: none; } }
+
+/* ===== Карточка накопления ===== */
+#transaction-detail-sheet .tx-detail-amount[data-kind="deposit"] { color: var(--save, var(--accent, #3ddc97)); }
+#transaction-detail-sheet .deposit-meta-block { padding: 14px 14px 4px; }
+#transaction-detail-sheet .dep-card { display: block; }
+#transaction-detail-sheet .dep-hero { padding: 14px 14px 12px; border-radius: 20px; text-align: center; margin-bottom: 10px;
+    background: radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--save, var(--accent, #3ddc97)) 22%, transparent), transparent 70%), var(--faint, rgba(255,255,255,.06)); }
+#transaction-detail-sheet .dep-hero small { display: block; font-size: 12px; color: var(--muted, inherit); }
+#transaction-detail-sheet .dep-hero b { display: block; margin-top: 2px; font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--save, var(--accent, #3ddc97)); }
+#transaction-detail-sheet .dep-hero-gain { display: block; margin-top: 4px; font-size: 12.5px; font-weight: 700; color: var(--in, #27AE60); }
+#transaction-detail-sheet .dep-hero-gain.dep-muted { font-weight: 600; color: var(--muted, inherit); }
+#transaction-detail-sheet .dep-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#transaction-detail-sheet .dep-stat { padding: 10px 12px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.06)); min-width: 0; }
+#transaction-detail-sheet .dep-stat small { display: block; font-size: 11.5px; color: var(--muted, inherit); }
+#transaction-detail-sheet .dep-stat b { display: block; margin-top: 2px; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#transaction-detail-sheet .dep-stat-accent { background: color-mix(in srgb, var(--accent, #3ddc97) 14%, transparent); }
+#transaction-detail-sheet .dep-stat-accent b { color: var(--accent, #3ddc97); }
+#transaction-detail-sheet .dep-progress { margin: 12px 2px 8px; }
+#transaction-detail-sheet .dep-progress-top, #transaction-detail-sheet .dep-progress-dates { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+#transaction-detail-sheet .dep-progress-top span, #transaction-detail-sheet .dep-progress-dates { color: var(--muted, inherit); }
+#transaction-detail-sheet .dep-progress-dates { font-size: 11.5px; margin-top: 4px; }
+#transaction-detail-sheet .dep-bar { height: 8px; margin-top: 6px; border-radius: 4px; overflow: hidden; background: var(--faint, rgba(255,255,255,.1)); }
+#transaction-detail-sheet .dep-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent, #3ddc97), var(--save, #9b6dff)); }
+#transaction-detail-sheet .dep-section-title { margin: 4px 4px 8px; font-size: 13px; font-weight: 800; color: var(--muted, inherit); }
+#transaction-detail-sheet #detail-deposit-table { padding: 12px 14px; }
+#transaction-detail-sheet .dep-ops { display: grid; gap: 6px; }
+#transaction-detail-sheet .dep-op { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--faint, rgba(255,255,255,.05)); }
+#transaction-detail-sheet .dep-op-ico { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-size: 14px; background: var(--faint, rgba(255,255,255,.08)); }
+#transaction-detail-sheet .dep-op-main { flex: 1; min-width: 0; }
+#transaction-detail-sheet .dep-op-main b { display: block; font-size: 13.5px; }
+#transaction-detail-sheet .dep-op-main small { color: var(--muted, inherit); font-size: 11.5px; }
+#transaction-detail-sheet .dep-op-sum { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+#transaction-detail-sheet .dep-op-in .dep-op-sum, #transaction-detail-sheet .dep-op-open .dep-op-sum { color: var(--in, #27AE60); }
+#transaction-detail-sheet .dep-op-out .dep-op-sum { color: var(--out, #ff4b5c); }
+#transaction-detail-sheet .dep-sched { margin-top: 14px; }
+#transaction-detail-sheet .dep-sched summary { cursor: pointer; padding: 8px 4px; font-size: 13px; font-weight: 800; color: var(--muted, inherit); list-style: none; }
+#transaction-detail-sheet .dep-sched summary::-webkit-details-marker { display: none; }
+#transaction-detail-sheet .dep-sched summary::after { content: '›'; float: right; font-size: 18px; transition: transform .2s; }
+#transaction-detail-sheet .dep-sched[open] summary::after { transform: rotate(90deg); }
+#transaction-detail-sheet .dep-months { display: grid; gap: 6px; margin-top: 4px; }
+#transaction-detail-sheet .dep-month { padding: 9px 12px; border-radius: 14px; background: var(--faint, rgba(255,255,255,.05)); }
+#transaction-detail-sheet .dep-month.is-past { opacity: .75; }
+#transaction-detail-sheet .dep-month.is-current { background: color-mix(in srgb, var(--accent, #3ddc97) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent, #3ddc97) 40%, transparent); opacity: 1; }
+#transaction-detail-sheet .dep-month-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; }
+#transaction-detail-sheet .dep-month-top b { font-variant-numeric: tabular-nums; }
+#transaction-detail-sheet .dep-month small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted, inherit); }
+#transaction-detail-sheet .deposit-meta-block div { margin-bottom: 0; }
+#transaction-detail-sheet .deposit-meta-block .dep-hero { margin-bottom: 10px; }
+#transaction-detail-sheet .deposit-meta-block .dep-progress { margin: 12px 2px 8px; }
+#transaction-detail-sheet .detail-deposit-actions { gap: 10px; margin: 4px 0 6px; }
+#transaction-detail-sheet .detail-deposit-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; border-radius: 16px; font-size: 14.5px; font-weight: 800;
+    background: var(--accent, #3ddc97); color: var(--ink, #032624); }
+#transaction-detail-sheet .detail-deposit-actions button#deposit-withdraw-btn { background: var(--faint, rgba(255,255,255,.1)); color: var(--text, inherit); }
+#transaction-detail-sheet .detail-deposit-actions button svg { width: 18px; height: 18px; fill: currentColor; stroke: currentColor; }
+#transaction-detail-sheet .detail-deposit-actions button svg path { fill: currentColor; }
+
+/* ===== Профиль: карточка «Настрой Акулку» ===== */
+#settings-page .sp-shark-wrap { padding: 8px 16px 0; }
+#settings-page .sp-shark-card { display: block; width: 100%; padding: 10px 14px 12px; border-radius: 22px; text-align: left; cursor: pointer; color: inherit;
+    background: radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--accent, #3ddc97) 18%, transparent), transparent 70%), var(--glass, rgba(255,255,255,.06));
+    border: 1px solid color-mix(in srgb, var(--accent, #3ddc97) 32%, var(--stroke, rgba(255,255,255,.1))); }
+#settings-page .sp-shark-card:active { transform: scale(.99); }
+#settings-page .sp-shark-pics { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; height: 84px; padding: 0 4px; }
+#settings-page .sp-shark-pics img { height: 78px; width: auto; max-width: 25%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+#settings-page .sp-shark-pics img:nth-child(2) { height: 84px; }
+#settings-page .sp-shark-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+#settings-page .sp-shark-text { flex: 1; min-width: 0; }
+#settings-page .sp-shark-text b { display: block; font-size: 16px; font-weight: 800; }
+#settings-page .sp-shark-text small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted, inherit); }
+
+/* размытая подложка: отделяет карточку установки от остального экрана */
+.pwa-scrim { position: fixed; inset: 0; z-index: 1090; background: rgba(0,0,0,.38); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); opacity: 0; transition: opacity .3s ease; }
+.pwa-scrim.is-open { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .pwa-scrim { transition: none; } }
+
+/* Накопление: без вложенных контейнеров и внутренней прокрутки — прокручивается только сам лист */
+#transaction-detail-sheet .tx-detail-card.dep-flat { background: transparent !important; border: none !important; border-radius: 0 !important;
+    max-height: none !important; overflow: visible !important; padding: 0 !important; margin-top: 10px; }
+#transaction-detail-sheet #detail-deposit-table.dep-flat { padding: 0 !important; max-height: none !important; overflow: visible !important; }
+#transaction-detail-sheet .dep-flat .dep-hero { margin-bottom: 8px; }
+#transaction-detail-sheet .dep-flat .di-row { padding: 12px 4px 4px; }
+#transaction-detail-sheet .dep-flat .dep-ops { padding: 0; }
+#transaction-detail-sheet .dep-flat .dep-section-title { margin-top: 14px; }
+
+/* Картинки нельзя сохранить: ни долгим нажатием, ни перетаскиванием, ни выделением */
+img, picture, svg image {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* бюджет, по которому считает Акулка */
+#shark-page .sk-budget{margin:10px 16px -4px;padding:7px 12px;border-radius:999px;width:fit-content;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:700;color:var(--muted);background:var(--faint)}
+#shark-chat-sheet .sc-budget{display:block;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

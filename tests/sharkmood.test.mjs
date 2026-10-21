@@ -11,8 +11,8 @@ const mem = () => { const m = {}; return { getItem: k => m[k] ?? null, setItem: 
 const day = (n, base = '2026-10-10') => { const d = new Date(base + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA'); };
 const exp = (date, amount, category = 'Еда') => ({ type: 'expense', date, amount, category });
 
-test('лимит из плана = сумма ежедневных трат', () => {
-    const r = getDailyLimit({ planner: { dailyExpenses: [{ amountPerDay: 100000 }, { amountPerDay: 50000 }] } });
+test('лимит из плана = средний лимит в день, который даёт план', () => {
+    const r = getDailyLimit({ planner: { dailyExpenses: [{ amountPerDay: 100000 }, { amountPerDay: 50000 }] }, planLimit: 150000 });
     assert.deepEqual(r, { limit: 150000, source: 'plan' });
 });
 
@@ -126,19 +126,21 @@ test('«Добрая» при превышении лимита не злитс�
     assert.doesNotMatch(m.text, /осталось/i);
 });
 
-test('картинки настроений', () => {
-    assert.match(sharkImage('tense'), /wary-shark/);
-    assert.match(sharkImage('angry'), /angry-shark/);
-    assert.match(sharkImage('proud'), /proud-shark/);
-    assert.match(sharkImage('ok'), /shark\.png$/);
-    assert.match(sharkImage('что-то'), /shark\.png$/);
+test('картинки настроений: Акул (classic)', () => {
+    assert.match(sharkImage('tense', 'classic'), /wary-shark/);
+    assert.match(sharkImage('angry', 'classic'), /angry-shark/);
+    assert.match(sharkImage('proud', 'classic'), /proud-shark/);
+    assert.match(sharkImage('ok', 'classic'), /shark\.png$/);
+    assert.match(sharkImage('что-то', 'classic'), /shark\.png$/);
+    assert.match(sharkImage('shock', 'classic'), /angry-shark/);   // эмоция без своей картинки → ближайшее настроение
+    assert.match(sharkImage('sleep', 'classic'), /shark\.png$/);
 });
 
 test('лимит: авто или своя сумма', () => {
     const planner = { dailyExpenses: [{ amountPerDay: 100000 }] };
-    const auto = getLimitInfo({ planner, settings: { limitMode: 'auto', customLimit: 50000 } });
+    const auto = getLimitInfo({ planner, planLimit: 100000, settings: { limitMode: 'auto', customLimit: 50000 } });
     assert.equal(auto.limit, 100000); assert.equal(auto.source, 'plan');
-    const custom = getLimitInfo({ planner, settings: { limitMode: 'custom', customLimit: 50000 } });
+    const custom = getLimitInfo({ planner, planLimit: 100000, settings: { limitMode: 'custom', customLimit: 50000 } });
     assert.equal(custom.limit, 50000); assert.equal(custom.source, 'custom'); assert.equal(custom.auto.limit, 100000);
     const empty = getLimitInfo({ settings: { limitMode: 'custom', customLimit: 0 } });
     assert.equal(empty.source, 'none');

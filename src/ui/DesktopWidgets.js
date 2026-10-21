@@ -2,7 +2,7 @@
 //   DesktopWidgets.js — виджеты правой колонки на десктопе
 //   «Куда ушли деньги» и «Можно тратить в день». На мобильном скрыты CSS-ом.
 // ===============================
-import { getLimitInfo, getSharkSettings, getSpentOnDay, findActivePlanner, isoDay } from '../shark/SharkMood.js';
+import { getLimitInfo, getSharkSettings, getSpentOnDay, findActivePlanner, planAverageLimit, isoDay } from '../shark/SharkMood.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const COLORS = ['var(--accent)', 'var(--out)', 'var(--save)', 'var(--debt)', 'var(--in)'];
@@ -94,7 +94,7 @@ export class DesktopWidgets {
         const planners = this.pm?.getAllPlanners?.() || [];
         const planner = findActivePlanner(planners, budget?.id || this.pm?.getCurrentBudgetId?.(), today);
         const normalize = c => this.pm?.normalizeCategory?.(c) ?? String(c || '').trim();
-        const { limit } = getLimitInfo({ transactions, planner, today, settings: getSharkSettings() });
+        const { limit } = getLimitInfo({ transactions, planner, today, settings: getSharkSettings(), normalize, planLimit: planner ? planAverageLimit(this.pm, planner) : 0 });
         const now = new Date();
         const dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         const left = dim - now.getDate();

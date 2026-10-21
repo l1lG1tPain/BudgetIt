@@ -28,7 +28,7 @@ export function normalizeCustomCategories(raw) {
 
 // Собирает значение категории из эмодзи и названия; возвращает { value } или { error }
 export function buildCustomCategory(emoji, name, existingValues = []) {
-    const n = String(name || '').replace(/\s+/g, ' ').trim();
+    const n = String(name || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
     if (!n) return { error: 'Введите название' };
     if (n.length > CUSTOM_CATEGORY_NAME_MAX) return { error: `Не длиннее ${CUSTOM_CATEGORY_NAME_MAX} символов` };
     const e = String(emoji || '').trim() || '🏷️';

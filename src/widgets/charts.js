@@ -1,3 +1,4 @@
+import { sharkImage } from '../shark/SharkMood.js';
 // ===============================
 // Chart.js: аналитика BudgetIt — с кликом по подписям и фиксами списка
 // ===============================
@@ -671,7 +672,7 @@ function renderAnalyticsSharkTip() {
     const res = buildSharkAdvice(getCurrentBudgetTransactions());
     if (!res) { tip.style.display = 'none'; return; }
     tip.style.display = '';
-    tip.innerHTML = `<img src="./assets/shark.png" alt=""><div><div class="an-tip-title">Совет Акулки</div><div class="an-tip-text">${escHtml(res.advice)}</div>${res.fact ? `<div class="an-tip-fact">${escHtml(res.fact)}</div>` : ''}</div>`;
+    tip.innerHTML = `<img src="${sharkImage('idea')}" alt=""><div><div class="an-tip-title">Совет Акулки</div><div class="an-tip-text">${escHtml(res.advice)}</div>${res.fact ? `<div class="an-tip-fact">${escHtml(res.fact)}</div>` : ''}</div>`;
 }
 
 function destroyAllCharts(keep = []) {
@@ -1649,8 +1650,19 @@ export {
 };
 
 // перерисовка при смене темы/региона
+// Смена темы: графики перерисовываем только если страница аналитики открыта, иначе при следующем открытии
+let chartsStale = false;
+const analyticsIsOpen = () => { const p = document.getElementById('analytics-page'); return !!p && !p.classList.contains('hidden'); };
 window.addEventListener('themechange', () => {
     transactionsCache.clear();
+    if (!analyticsIsOpen()) { chartsStale = true; return; }
+    chartsStale = false;
+    destroyAllCharts();
+    renderCharts();
+});
+window.addEventListener('budgetit:analytics-open', () => {
+    if (!chartsStale) return;
+    chartsStale = false;
     destroyAllCharts();
     renderCharts();
 });

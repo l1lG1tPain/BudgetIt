@@ -6,7 +6,7 @@ module.exports = withCORS(async (req, res) => {
     const symbols = (req.query.symbols || '')
       .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
-    const r = await fetch('https://www.nbkr.kg/XML/daily.xml');
+    const r = await fetch('https://www.nbkr.kg/XML/daily.xml', { signal: AbortSignal.timeout(7000) });
     if (!r.ok) throw new Error('NBKR upstream failed');
     const xml = await r.text();
 

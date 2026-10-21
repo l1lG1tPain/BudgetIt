@@ -54,9 +54,10 @@ test('ANSWERS_C: плейсхолдеры только допустимые', ()
     }
 });
 
-test('настройка болтливости: по умолчанию «normal», мусор сбрасывается', () => {
+test('настройка болтливости: «Акулка» по умолчанию болтушка, «Акул» обычная, мусор сбрасывается', () => {
     const mem = v => ({ getItem: () => v, setItem() {} });
-    assert.equal(getSharkSettings(mem('{}')).talk, 'normal');
+    assert.equal(getSharkSettings(mem('{}')).talk, 'chatty');
+    assert.equal(getSharkSettings(mem('{"shark":"classic"}')).talk, 'normal');
     assert.equal(getSharkSettings(mem('{"talk":"chatty"}')).talk, 'chatty');
     assert.equal(getSharkSettings(mem('{"talk":"zzz"}')).talk, 'normal');
 });

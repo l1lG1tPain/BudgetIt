@@ -168,8 +168,9 @@ export function validatePlannerPayload(payload = {}) {
     const name = String(payload.name || '').trim();
     if (!name) errors.name = 'Введите название планирования';
 
-    const incomeAmount = Number(payload?.incomePlan?.amount) || 0;
-    if (incomeAmount <= 0) errors.incomeAmount = 'Введите сумму поступления';
+    // Сумма может быть пустой: тогда план считается по факту поступлений выбранной категории
+    if ((Number(payload?.incomePlan?.amount) || 0) < 0) errors.incomeAmount = 'Сумма не может быть отрицательной';
+    if (!String(payload?.incomePlan?.category || '').trim()) errors.incomeAmount = 'Выберите категорию поступления';
 
     const incomeDate = normalizeISODate(payload?.incomePlan?.incomeDate);
     if (!incomeDate) errors.incomeDate = 'Выберите дату поступления';

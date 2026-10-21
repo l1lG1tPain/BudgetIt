@@ -3,10 +3,10 @@
 //   шторка «Дневной лимит» и мини-чат «Спросить Акулку»
 // ===============================
 import {
-    getSharkSettings, saveSharkSettings, findActivePlanner, getLimitInfo, getSpentOnDay, computeMood,
-    countStreakInLimit, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, MOOD_IMAGES, getThresholds, fmt, CHARACTER_LABELS, limitSetText
+    getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, computeMood,
+    countStreakInLimit, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
 } from './SharkMood.js';
-import { buildExtra, describeLimit, answerQuestion, greeting, QUESTIONS, MENUS, menuIntro, topicAnswer, richHtml, evaluateChallenge, hintText, challengeText, badgeText, flavorLine, tailLine, goalDoneText, countDaysInLimit, rankInfo } from './SharkTalk.js';
+import { buildExtra, describeLimit, planHint, answerQuestion, greeting, QUESTIONS, MENUS, menuIntro, topicAnswer, richHtml, evaluateChallenge, hintText, challengeText, badgeText, flavorLine, tailLine, goalDoneText, countDaysInLimit, rankInfo } from './SharkTalk.js';
 import { goalCalc, earnedBadges, BADGES, getFlags, markFlag } from './SharkExtra.js';
 import { showTweak } from '../utils/tweakSystem.js';
 
@@ -19,8 +19,30 @@ function setSharkImg(img, key) {
     if (!img) return;
     const src = sharkImage(key);
     if (img.getAttribute('src') === src) return;
-    img.onerror = () => { img.onerror = null; img.src = MOOD_IMAGES.ok; };
+    img.onerror = () => { img.onerror = null; img.src = sharkImage('ok'); };
     img.src = src;
+}
+
+// Эмоция Акулки в ответах чата (остальные — по текущему настроению карточки)
+const CHAT_EMOTION = {
+    today: 'think', whatif: 'think', week: 'count-cold', topcat: 'count-cold', limit: 'idea', fact: 'smart',
+    cheer: 'laugh', joke: 'laugh', left: 'count-happy', goalnew: 'idea', goaldone: 'celebrate'
+};
+
+// Картинки-заглушки в разметке: <img data-shark-emotion="welcome"> получает файл выбранной Акулки
+export function applyStaticSharkImages(root = document) {
+    root.querySelectorAll('img[data-shark-emotion]').forEach(img => setSharkImg(img, img.dataset.sharkEmotion));
+}
+
+// Выбранная Акулка для окон подтверждения (удаление, очистка данных): картинка идёт через CSS-переменную
+export function applySharkTheme() {
+    try {
+        const root = document.documentElement;
+        const st = getSharkSettings();
+        root.dataset.shark = st.shark;
+        const abs = new URL(sharkImage('think', st.shark), document.baseURI).href;
+        root.style.setProperty('--shark-modal', `url("${abs}")`);
+    } catch (e) { /* ignore */ }
 }
 
 export class SharkUI {
@@ -41,7 +63,11 @@ export class SharkUI {
         this.initSettingsPage();
         this.initCardActions();
         this.initHints();
+        applyStaticSharkImages();
+        applySharkTheme();
         this.refreshCard();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) this.refreshCard(); });
+        try { this.watchCardVisibility(); } catch (e) { /* ignore */ }
     }
 
     // ───── подсказки Акулки при первом открытии разделов ─────
@@ -71,12 +97,30 @@ export class SharkUI {
         setTimeout(() => showTweak(`<span class="shark-toast" style="--tc:var(--accent)"><img src="${sharkImage('ok')}" alt=""><span>${esc(text)}</span></span>`, 'info', 6500), 700);
     }
 
+    // ───── экономия ресурсов: анимации карточки только пока она видна ─────
+    watchCardVisibility() {
+        const cards = [...document.querySelectorAll('.akulka-card')];
+        if (!cards.length) return;
+        const state = new Map(cards.map(c => [c, true]));
+        const apply = () => cards.forEach(c => c.classList.toggle('ak-paused', document.hidden || !state.get(c)));
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver(entries => {
+                entries.forEach(e => state.set(e.target, e.isIntersecting));
+                apply();
+            }, { threshold: 0.05 });
+            cards.forEach(c => io.observe(c));
+        }
+        document.addEventListener('visibilitychange', apply);
+        apply();
+    }
+
     // ───── действия на карточке ─────
     initCardActions() {
         // весь блок Акулки на главной открывает чат; лимит меняется только в настройках Акулки
         document.addEventListener('click', e => {
             if (e.target.closest('#akulka-card')) { this.openChat(); return; }
             if (e.target.closest('#shark-limit-open')) this.openLimitSheet();
+            if (e.target.closest('#shark-ask-btn')) this.openChat();
         });
         document.getElementById('akulka-card')?.addEventListener('keydown', e => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openChat(); }
@@ -99,8 +143,19 @@ export class SharkUI {
                 const chk = b.querySelector('.set-check');
                 if (chk) chk.textContent = on ? '✓' : '';
             });
-            const map = { 'shark-opt-reactions': 'reactions', 'shark-opt-vibration': 'vibration', 'shark-opt-quiet': 'quietHours', 'shark-opt-tip': 'dailyTip' };
+            document.querySelectorAll('#shark-which-seg button').forEach(b => {
+                const on = b.dataset.shark === st.shark;
+                b.classList.toggle('is-active', on);
+                const chk = b.querySelector('.set-check');
+                if (chk) chk.textContent = on ? '✓' : '';
+            });
+            const map = { 'shark-opt-reactions': 'reactions', 'shark-opt-vibration': 'vibration', 'shark-opt-quiet': 'quietHours', 'shark-opt-tip': 'dailyTip', 'shark-opt-rude': 'rude' };
             Object.entries(map).forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.checked = !!st[key]; });
+            document.querySelectorAll('.sk-seg[data-desc]').forEach(seg => {
+                const on = seg.querySelector('button.is-active');
+                const d = document.querySelector(seg.dataset.desc);
+                if (d) d.textContent = on?.dataset.descText || '';
+            });
             this.syncLimitRow();
         };
         this.syncSettingsPage = sync;
@@ -111,6 +166,15 @@ export class SharkUI {
             sync();
             this.forceRefresh();
         });
+        document.getElementById('shark-which-seg')?.addEventListener('click', e => {
+            const b = e.target.closest('button[data-shark]');
+            if (!b) return;
+            saveSharkSettings({ shark: b.dataset.shark });
+            sync();
+            applyStaticSharkImages();
+            applySharkTheme();
+            this.forceRefresh();
+        });
         document.getElementById('shark-talk-seg')?.addEventListener('click', e => {
             const b = e.target.closest('button[data-talk]');
             if (!b) return;
@@ -118,11 +182,11 @@ export class SharkUI {
             sync();
             this.forceRefresh();
         });
-        const map = { 'shark-opt-reactions': 'reactions', 'shark-opt-vibration': 'vibration', 'shark-opt-quiet': 'quietHours', 'shark-opt-tip': 'dailyTip' };
+        const map = { 'shark-opt-reactions': 'reactions', 'shark-opt-vibration': 'vibration', 'shark-opt-quiet': 'quietHours', 'shark-opt-tip': 'dailyTip', 'shark-opt-rude': 'rude' };
         Object.entries(map).forEach(([id, key]) => {
             document.getElementById(id)?.addEventListener('change', e => {
                 saveSharkSettings({ [key]: e.target.checked });
-                if (key === 'dailyTip') this.forceRefresh();
+                if (key === 'dailyTip' || key === 'rude' || key === 'quietHours') this.forceRefresh();
             });
         });
         sync();
@@ -133,8 +197,10 @@ export class SharkUI {
         if (!sub) return;
         try {
             const c = this.context();
-            sub.textContent = !c.limit ? 'Пока нет — задай свой или подожди данных'
-                : `${fmt(c.limit)} в день · ${c.source === 'custom' ? 'твоя сумма' : c.source === 'plan' ? 'из плана' : 'по твоим тратам'}`;
+            sub.textContent = c.source === 'noplan' ? 'Нет действующего плана — добавь план месяца'
+                : c.source === 'plan-empty' ? (c.info?.waiting ? 'Ждём поступление по плану' : 'По плану на оставшиеся дни ничего не остаётся')
+                : !c.limit ? 'Пока нет — задай свой или подожди данных'
+                : `${fmt(c.limit)} в день · ${c.source === 'custom' ? 'твоя сумма' : c.source === 'plan' ? 'из плана' : 'медиана трат'}`;
         } catch (e) { /* ignore */ }
     }
 
@@ -149,36 +215,34 @@ export class SharkUI {
         const transactions = budget?.transactions || [];
         const planners = this.pm?.getAllPlanners?.() || [];
         const today = isoDay();
-        const planner = findActivePlanner(planners, budget?.id || this.pm?.getCurrentBudgetId?.(), today);
+        const bid = budget?.id || this.pm?.getCurrentBudgetId?.();
+        const status = planStatus(planners, bid, today);
+        const planner = status.state === 'active' ? status.planner : null;
         const normalize = c => this.pm?.normalizeCategory?.(c) ?? String(c || '').trim();
         const settings = getSharkSettings();
-        const info = getLimitInfo({ transactions, planner, today, settings });
+        const planLimit = planner ? planAverageLimit(this.pm, planner) : 0;
+        const planWaiting = planner ? planIncomeWaiting(this.pm, planner) : false;
+        const info = getLimitInfo({ transactions, planner, today, settings, normalize, planLimit, planWaiting });
         const spent = getSpentOnDay({ transactions, planner, day: today, normalize });
-        return { transactions, planner, today, normalize, limit: info.limit, source: info.source, info, spent, settings };
+        return { transactions, planner, planStatus: status, today, normalize, limit: info.limit, source: info.source, info, spent, settings };
     }
 
     // ───── челлендж (состояние на устройстве) ─────
     loadChallenge() {
-        try { return JSON.parse(localStorage.getItem('budgetit:shark:challenge') || 'null'); } catch (e) { return null; }
+        try { return JSON.parse(readScoped('budgetit:shark:challenge') || 'null'); } catch (e) { return null; }
     }
 
     saveChallenge(state) {
-        try {
-            if (state) localStorage.setItem('budgetit:shark:challenge', JSON.stringify(state));
-            else localStorage.removeItem('budgetit:shark:challenge');
-        } catch (e) { /* ignore */ }
+        writeScoped('budgetit:shark:challenge', state || null);
     }
 
     // ───── цель накопления ─────
     loadGoal() {
-        try { return JSON.parse(localStorage.getItem('budgetit:shark:goal') || 'null'); } catch (e) { return null; }
+        try { return JSON.parse(readScoped('budgetit:shark:goal') || 'null'); } catch (e) { return null; }
     }
 
     saveGoal(g) {
-        try {
-            if (g) localStorage.setItem('budgetit:shark:goal', JSON.stringify(g));
-            else localStorage.removeItem('budgetit:shark:goal');
-        } catch (e) { /* ignore */ }
+        writeScoped('budgetit:shark:goal', g || null);
     }
 
     goalNow(c) {
@@ -204,16 +268,16 @@ export class SharkUI {
     // ───── значки ─────
     badgesNow(c) {
         const flags = getFlags();
-        const sig = `${c.today}:${c.transactions.length}:${c.limit}:${Object.keys(flags).join(',')}`;
+        const sig = `${sharkScope()?.id || ''}:${c.today}:${c.transactions.length}:${c.limit}:${Object.keys(flags).join(',')}`;
         if (this._badgeSig === sig && this._badges) return this._badges;
         const days = countDaysInLimit({ transactions: c.transactions, planner: c.planner, limit: c.limit, today: c.today, normalize: c.normalize });
         const earned = earnedBadges({ transactions: c.transactions, daysInLimit: days, rankIdx: rankInfo(days).idx, flags });
         let stored = null;
-        try { stored = JSON.parse(localStorage.getItem('budgetit:shark:badges') || 'null'); } catch (e) { stored = null; }
+        try { stored = JSON.parse(readScoped('budgetit:shark:badges') || 'null'); } catch (e) { stored = null; }
         const cur = { ...(stored || {}) };
         const fresh = [...earned].filter(id => !cur[id]);
         fresh.forEach(id => { cur[id] = c.today; });
-        if (!stored || fresh.length) { try { localStorage.setItem('budgetit:shark:badges', JSON.stringify(cur)); } catch (e) { /* ignore */ } }
+        if (!stored || fresh.length) writeScoped('budgetit:shark:badges', cur);
         // первый запуск (ничего не было сохранено) — тихо, без тостов про старые заслуги
         if (stored && fresh.length && c.settings.reactions && !isQuietNow(c.settings)) {
             const b = BADGES.find(x => x.id === fresh[0]);
@@ -249,6 +313,7 @@ export class SharkUI {
             now: new Date(), today: c.today, character: c.settings.character, limit: c.limit, spent: c.spent,
             transactions: c.transactions, planner: c.planner, normalize: c.normalize, streak, info: c.info,
             challenge: this.challengeNow(c),
+            planStatus: c.planStatus,
             talk: c.settings.talk, goalState: this.loadGoal(), goal: this.goalNow(c), badges: [...this.badgesNow(c)],
             backupNudgeLast: (() => { try { return localStorage.getItem('budgetit:shark:backupNudge'); } catch (e) { return null; } })()
         };
@@ -260,14 +325,20 @@ export class SharkUI {
         if (!card) return;
         const c = this.context();
         const tctx = this.talkContext(c);
-        const mood = computeMood({
+        const mood = computeCard({
             spent: c.spent, limit: c.limit, character: c.settings.character,
-            hasData: c.transactions.length > 0, streak: tctx.streak
-        });
+            hasData: c.transactions.length > 0, streak: tctx.streak,
+            hasToday: c.transactions.some(t => t.date === c.today),
+            quietHours: c.settings.quietHours, rude: c.settings.rude, source: c.source
+        }, { now: tctx.now, today: c.today });
+        // Режим «По плану», а плана нет — вместо знакомства подсказываем, что добавить
+        if (c.source === 'noplan' || c.source === 'plan-empty') {
+            mood.text = planHint({ source: c.source, status: c.planStatus, character: c.settings.character, waiting: c.info?.waiting });
+        }
         const extra = c.settings.dailyTip ? buildExtra(tctx) : null;
         if (extra?.kind === 'backup' && tctx.backupNudgeLast !== c.today) { try { localStorage.setItem('budgetit:shark:backupNudge', c.today); } catch (e) { /* ignore */ } }
         // антиповтор текста: не перерисовываем карточку, если настроение и числа не менялись
-        const sig = `${mood.key}:${c.spent}:${c.limit}:${c.settings.character}:${extra?.kind || ''}`;
+        const sig = `${sharkScope()?.id || ''}:${mood.key}:${mood.emotion}:${c.settings.shark}:${c.spent}:${c.limit}:${c.source}:${c.planStatus?.state}:${c.settings.character}:${Math.floor(Date.now() / 1800000)}:${extra?.kind || ''}:${extra?.text || ''}`;
         if (card.dataset.sig === sig) return;
         card.dataset.sig = sig;
         this.mood = mood;
@@ -277,13 +348,22 @@ export class SharkUI {
         const x = document.getElementById('akulka-text');
         const bar = document.getElementById('akulka-bar');
         const ex = document.getElementById('akulka-extra');
-        if (t) t.textContent = mood.title;
-        if (x) x.textContent = mood.text;
+        if (t) t.textContent = forShark(mood.title);
+        if (x) x.textContent = forShark(mood.text);
         if (bar) bar.style.width = Math.min(100, Math.round(mood.ratio * 100)) + '%';
-        if (ex) { ex.textContent = extra ? extra.text : ''; ex.hidden = !extra; }
-        setSharkImg(document.getElementById('akulka-img'), mood.key);
+        if (ex) { ex.textContent = extra ? forShark(extra.text) : ''; ex.hidden = !extra; }
+        card.dataset.shark = c.settings.shark;
+        card.dataset.emotion = mood.emotion;
+        setSharkImg(document.getElementById('akulka-img'), mood.emotion);
         card.classList.toggle('no-limit', !c.limit);
         this.syncLiveCard(card, mood, extra);
+        const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        const bName = this.bm?.getCurrentBudget?.()?.name || '';
+        const bChip = document.getElementById('sk-budget');
+        if (bChip) { bChip.hidden = !bName; bChip.textContent = bName ? `📒 Считаю по бюджету «${bName}»` : ''; }
+        setTxt('sk-st-limit', c.limit ? fmt(c.limit) : '—');
+        setTxt('sk-st-spent', fmt(c.spent));
+        setTxt('sk-st-streak', String(tctx.streak || 0));
         this.syncLimitRow();
     }
 
@@ -296,11 +376,12 @@ export class SharkUI {
         const x = document.getElementById('shark-live-text');
         const b = document.getElementById('shark-live-bar');
         const ex = document.getElementById('shark-live-extra');
-        if (t) t.textContent = mood.title;
-        if (x) x.textContent = mood.text;
+        if (t) t.textContent = forShark(mood.title);
+        if (x) x.textContent = forShark(mood.text);
         if (b) b.style.width = Math.min(100, Math.round(mood.ratio * 100)) + '%';
-        if (ex) { ex.textContent = extra ? extra.text : ''; ex.hidden = !extra; }
-        setSharkImg(live.querySelector('img'), mood.key);
+        if (ex) { ex.textContent = extra ? forShark(extra.text) : ''; ex.hidden = !extra; }
+        live.dataset.shark = card?.dataset.shark || 'hoodie';
+        setSharkImg(live.querySelector('img'), mood.emotion || mood.key);
     }
 
     // ───── реакции ─────
@@ -344,9 +425,9 @@ export class SharkUI {
     }
 
     showToast(r, settings) {
-        const img = sharkImage(r.mood);
+        const img = sharkImage(r.emotion || r.mood);
         showTweak(
-            `<span class="shark-toast" style="--tc:${r.color}"><img src="${img}" alt=""><span>${esc(r.text)}</span></span>`,
+            `<span class="shark-toast" style="--tc:${r.color}"><img src="${img}" alt=""><span>${esc(forShark(r.text))}</span></span>`,
             'info', 3200
         );
         if (settings.vibration && !isQuietNow(settings) && navigator.vibrate) {
@@ -383,10 +464,12 @@ export class SharkUI {
           <div class="sheet-title-row"><h2>Дневной лимит</h2><button type="button" class="sheet-x" id="sl-x" aria-label="Закрыть">✕</button></div>
           <div class="sl-hero"><div class="sl-num" id="sl-num">—</div><div class="sl-sub" id="sl-sub"></div></div>
           <div class="sl-seg" id="sl-seg" role="group">
-            <button type="button" data-mode="auto">Акулка считает</button>
-            <button type="button" data-mode="custom">Своя сумма</button>
+            <button type="button" data-mode="auto">Авто</button>
+            <button type="button" data-mode="median">Медиана</button>
+            <button type="button" data-mode="plan">План</button>
+            <button type="button" data-mode="custom">Своя</button>
           </div>
-          <div id="sl-auto" class="sl-panel"><div id="sl-explain" class="sl-explain"></div></div>
+          <div id="sl-auto" class="sl-panel"><div id="sl-explain" class="sl-explain"></div><button type="button" id="sl-plan-btn" class="sc-act" hidden>Добавить план ›</button></div>
           <div id="sl-custom" class="sl-panel" hidden>
             <label class="sl-input"><input id="sl-input" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Лимит в день"><span>в день</span></label>
             <div class="sl-quick">
@@ -431,6 +514,10 @@ export class SharkUI {
             this.paintLimit(true);
         });
         sheet.querySelector('#sl-save').addEventListener('click', () => this.saveLimit());
+        sheet.querySelector('#sl-plan-btn').addEventListener('click', () => {
+            this.closeSheet('shark-limit-sheet');
+            document.getElementById('lnav-planner')?.click();
+        });
         return sheet;
     }
 
@@ -450,20 +537,27 @@ export class SharkUI {
         if (!sheet) return;
         const d = this.draft;
         const auto = c.info.auto;
-        const eff = d.mode === 'custom' ? d.custom : auto.limit;
+        const view = d.mode === 'median' ? c.info.median : d.mode === 'plan' ? c.info.plan : auto;
+        const eff = d.mode === 'custom' ? d.custom : view.limit;
         sheet.querySelectorAll('#sl-seg button').forEach(b => b.classList.toggle('active', b.dataset.mode === d.mode));
-        sheet.querySelector('#sl-auto').hidden = d.mode !== 'auto';
+        sheet.querySelector('#sl-auto').hidden = d.mode === 'custom';
         sheet.querySelector('#sl-custom').hidden = d.mode !== 'custom';
         sheet.querySelector('#sl-num').textContent = eff ? fmt(eff) : '—';
         const planName = c.planner?.name ? ` «${c.planner.name}»` : '';
         sheet.querySelector('#sl-sub').textContent = d.mode === 'custom'
             ? 'в день · твоя сумма'
-            : auto.source === 'plan' ? `в день · из плана${planName}`
-            : auto.source === 'median' ? 'в день · по твоим тратам за 30 дней'
+            : view.source === 'plan' ? `в день · из плана${planName}`
+            : view.source === 'median' ? `в день · медиана трат за 30 дней`
+            : view.source === 'noplan' ? 'нет действующего плана'
+            : view.source === 'plan-empty' ? (view.waiting ? 'ждём поступление по плану' : 'по плану ничего не остаётся')
             : 'пока недостаточно данных';
         sheet.querySelector('#sl-explain').innerHTML = describeLimit({
-            info: { ...auto, auto }, planner: c.planner, character: c.settings.character
+            info: { ...view, auto, plan: c.info.plan, median: c.info.median }, planner: c.planner, character: c.settings.character, status: c.planStatus
         }).map(l => `<p>${esc(l)}</p>`).join('');
+        const needPlan = d.mode !== 'custom' && (view.source === 'noplan' || view.source === 'plan-empty');
+        const pb = sheet.querySelector('#sl-plan-btn');
+        pb.hidden = !needPlan;
+        pb.textContent = view.source === 'plan-empty' ? 'Открыть план ›' : 'Добавить план ›';
         const qa = sheet.querySelector('#sl-q-auto');
         qa.textContent = auto.limit ? `Как у Акулки: ${fmt(auto.limit)}` : 'Как у Акулки';
         qa.hidden = !auto.limit;
@@ -494,7 +588,7 @@ export class SharkUI {
         sheet.id = 'shark-chat-sheet';
         sheet.className = 'bottom-sheet hidden';
         sheet.innerHTML = `
-          <div class="sheet-title-row"><h2>Спросить Акулку</h2><button type="button" class="sheet-x" id="sc-x" aria-label="Закрыть">✕</button></div>
+          <div class="sheet-title-row"><h2>Спросить Акулку<small id="sc-budget" class="sc-budget"></small></h2><button type="button" class="sheet-x" id="sc-x" aria-label="Закрыть">✕</button></div>
           <div id="sc-log" class="sc-log" aria-live="polite"></div>
           <form id="sc-form" class="sc-form" hidden autocomplete="off"><input id="sc-amount" inputmode="numeric" placeholder="Сумма, например 50 000" maxlength="14"><button type="submit">Посчитать</button></form>
           <form id="sc-goal" class="sc-form sc-form-goal" hidden autocomplete="off"><input id="sc-goal-sum" inputmode="numeric" placeholder="Сумма цели" maxlength="14"><input id="sc-goal-date" type="date" aria-label="Дата цели"><button type="submit">Поставить</button></form>
@@ -513,7 +607,7 @@ export class SharkUI {
             const qb = e.target.closest('.sc-act[data-q]');
             if (qb) { this.ask(qb.dataset.q, qb.textContent); return; }
             const act = e.target.closest('[data-act]');
-            if (act) { this.runAction(act.dataset.act); return; }
+            if (act) { this.runAction(act.dataset.act, act.dataset.amt); return; }
             if (e.target.closest('[data-ch-stop]')) { this.ask('chstop', '✖ Отказаться от челленджа'); return; }
             const av = e.target.closest('.sc-msg.shark img');
             if (av) { av.classList.remove('sc-wiggle'); void av.offsetWidth; av.classList.add('sc-wiggle'); this.reply(richHtml(answerQuestion('fact', this.talkContext()).text), 300); }
@@ -540,13 +634,13 @@ export class SharkUI {
         return sheet;
     }
 
-    bubble(who, html) {
+    bubble(who, html, emotion = null) {
         const log = document.getElementById('sc-log');
-        const mood = this.mood?.key || 'ok';
+        const mood = emotion || this.mood?.emotion || this.mood?.key || 'ok';
         const el = document.createElement('div');
         el.className = `sc-msg ${who}`;
         el.innerHTML = who === 'shark'
-            ? `<img src="${sharkImage(mood)}" alt=""><div class="sc-bub">${html}</div>`
+            ? `<img src="${sharkImage(mood)}" alt=""><div class="sc-bub">${forShark(html)}</div>`
             : `<div class="sc-bub">${html}</div>`;
         log.appendChild(el);
         log.scrollTop = log.scrollHeight;
@@ -556,6 +650,8 @@ export class SharkUI {
     openChat() {
         const sheet = this.ensureChat();
         this.refreshCard();
+        const bn = sheet.querySelector('#sc-budget');
+        if (bn) bn.textContent = this.bm?.getCurrentBudget?.()?.name ? `Бюджет «${this.bm.getCurrentBudget().name}»` : '';
         const log = sheet.querySelector('#sc-log');
         log.innerHTML = '';
         this.chatMenu = null;
@@ -598,10 +694,11 @@ export class SharkUI {
         const buttons = (ans.action === 'limit' ? '<button type="button" class="sc-act" data-act="limit">Настроить лимит ›</button>' : '') +
             (ans.canStop ? '<button type="button" class="sc-act" data-ch-stop>✖ Отказаться</button>' : '') +
             (ans.goalButtons ? '<button type="button" class="sc-act" data-q="goalnew">🎯 Новая цель</button><button type="button" class="sc-act" data-q="goalstop">✖ Убрать цель</button>' : '') +
+            (ans.acts ? ans.acts.map(a => `<button type="button" class="sc-act" data-act="${a.id}"${a.amt ? ` data-amt="${Math.round(a.amt)}"` : ''}>${esc(a.label)}</button>`).join('') : '') +
             (ans.choices ? ans.choices.map(ch => `<button type="button" class="sc-act" data-q="${ch.id}">${esc(ch.label)}</button>`).join('') : '');
         const quiet = !['joke', 'dialog'].includes(id) && !id.startsWith('dlg:') && !ans.input && !ans.choices;
         const aside = quiet && ctx.talk === 'chatty' && Math.random() < 0.5 ? `<p class="sc-aside">${esc(tailLine(ctx.character))}</p>` : '';
-        this.reply(richHtml(ans.text) + aside + buttons);
+        this.reply(richHtml(ans.text) + aside + buttons, 380, CHAT_EMOTION[id] || null);
     }
 
     renderChips() {
@@ -629,10 +726,10 @@ export class SharkUI {
     }
 
     // Ответ Акулки с «печатью»: возвращает пузырь, в который кладётся html
-    reply(html, delay = 380) {
-        const typing = this.bubble('shark', '<span class="sc-dots"><i></i><i></i><i></i></span>');
+    reply(html, delay = 380, emotion = null) {
+        const typing = this.bubble('shark', '<span class="sc-dots"><i></i><i></i><i></i></span>', emotion);
         setTimeout(() => {
-            typing.querySelector('.sc-bub').innerHTML = html;
+            typing.querySelector('.sc-bub').innerHTML = forShark(html);
             const log = document.getElementById('sc-log');
             log.scrollTop = log.scrollHeight;
         }, delay);
@@ -666,9 +763,23 @@ export class SharkUI {
         setTimeout(() => this.bubble('shark', `<p>${esc(ans.outro)}</p>`), 1100);
     }
 
-    runAction(id) {
+    runAction(id, amt) {
         if (id === 'limit') { this.closeSheet('shark-chat-sheet'); this.openLimitSheet(); return; }
         this.closeSheet('shark-chat-sheet');
+        if (id === 'deposit' || id === 'debt' || id === 'income') {
+            setTimeout(() => {
+                document.getElementById('add-btn')?.click();
+                setTimeout(() => {
+                    document.querySelector(`#transaction-sheet .chip-btn[data-type="${id}"]`)?.click();
+                    const input = document.getElementById(id === 'deposit' ? 'deposit-amount' : 'debt-amount');
+                    if (input && amt) {
+                        input.value = String(amt).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }, 140);
+            }, 150);
+            return;
+        }
         if (id === 'add') { setTimeout(() => document.getElementById('add-btn')?.click(), 150); return; }
         const click = sel => setTimeout(() => document.querySelector(sel)?.click(), 150);
         if (id === 'analytics') { click('[data-nav="analytics"]'); return; }

@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.2';
+const CACHE_VERSION = 'v5.0.3-r3';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -15,17 +15,10 @@ const STATIC_ASSETS = [
     '/500.html',
     '/offline.html',
 
-    // стили — корень
-    '/style.css',
-    '/theme.css',
-    '/theme-polish-fixes.css',
-    '/glass.css',
-    '/Achievements.css',
-    '/Search.css',
-    '/analytics-insights.css',
-    '/excel-import.css',
-    '/export-import-page.css',
-    '/planner.css',
+    // стили: единый бандл (сборка из css/) и исходники для страниц ошибок
+    '/app.css',
+    '/css/00-base.css',
+    '/css/10-themes.css',
 
     // точка входа и миграция
     '/app.js',
@@ -64,9 +57,26 @@ const STATIC_ASSETS = [
     '/src/shark/texts/toasts.js',
     '/src/shark/texts/extras.js',
     '/src/shark/texts/help.js',
+    '/src/shark/texts/week.js',
+    '/src/shark/texts/emotion.js',
+    '/src/shark/texts/live.js',
+    '/src/shark/texts/live2.js',
+    '/src/shark/texts/stats-more.js',
+    '/src/ui/PwaInstall.js',
+    '/assets/onb-scene-cut.webp',
+    '/assets/hoodie/hoodie-cheeky.webp',
+    '/assets/hoodie/hoodie-welcome.webp',
+    '/assets/hoodie/hoodie-smile.webp',
+    '/assets/hoodie/hoodie-stern-smile.webp',
+    '/assets/hoodie/hoodie-angry.webp',
+    '/assets/hoodie/hoodie-proud.webp',
+    '/assets/hoodie/hoodie-calm.webp',
+    '/assets/hoodie/hoodie-think.webp',
+    '/assets/hoodie/hoodie-sympathy.webp',
     '/src/ui/AccountsPage.js',
     '/src/ui/DesktopWidgets.js',
     '/src/utils/customCategories.js',
+    '/src/utils/sanitize.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
     '/src/profilePage.js',
@@ -137,6 +147,7 @@ const STATIC_ASSETS = [
     '/assets/icons/LG.png',
     '/assets/icons/budgetit-icon.png',
     '/assets/icons/ludomania-icon.png',
+    '/assets/icons/TeaTimer-l.png',
     '/assets/icons/migri-icon.png',
     '/assets/icons/trackit-icon.png',
 
@@ -225,7 +236,7 @@ const STATIC_ASSETS = [
 /* Внешние библиотеки (CDN): кладём в кэш, чтобы графики, импорт Excel/PDF работали без сети */
 const CDN_ASSETS = [
     'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2',
+    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0',
     'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
@@ -352,10 +363,24 @@ async function cacheFirst(event, request) {
     return loose || Response.error();
 }
 
+// Кэш не должен расти бесконечно: ссылки с разными ?v= и прочие разовые файлы вытесняются (сначала старые)
+const CACHE_MAX_ENTRIES = 500;
+let putsSinceTrim = 0;
+async function trimCache(cache) {
+    const keys = await cache.keys();
+    if (keys.length <= CACHE_MAX_ENTRIES) return;
+    const precached = new Set(STATIC_ASSETS.map(a => new URL(a, self.location.origin).href));
+    const extra = keys.filter(k => !precached.has(k.url) && !CDN_ASSETS.includes(k.url));
+    for (const k of extra.slice(0, Math.max(0, keys.length - CACHE_MAX_ENTRIES))) await cache.delete(k);
+}
+
 function cacheIfAllowed(request, response) {
     if (response.ok && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
         caches.open(CACHE_NAME)
-            .then(c => c.put(request, response))
+            .then(async c => {
+                await c.put(request, response);
+                if (++putsSinceTrim >= 25) { putsSinceTrim = 0; await trimCache(c); }
+            })
             .catch(err => console.warn('[SW] put error:', err, request.url));
     }
 }

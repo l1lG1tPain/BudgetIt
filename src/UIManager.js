@@ -1,3 +1,4 @@
+import { sharkImage } from './shark/SharkMood.js';
 // UIManager.js
 import { formatNumber, formatDate, getTypeColor, getTypeName, getNumberFormat } from './utils/utils.js';
 import {
@@ -693,7 +694,7 @@ export class UIManager {
         };
         list.innerHTML = `
       <li class="empty-card">
-        <img class="empty-shark" src="./assets/shark.png" alt="">
+        <img class="empty-shark" src="${sharkImage('welcome')}" alt="">
         <div class="empty-text">${msgByType[type] || msgByType.all}</div>
       </li>
     `;
@@ -834,12 +835,15 @@ export class UIManager {
         }
 
         // 🧹 Сброс вкладов
+        detailAmount.classList.remove('hidden');
         if (depositMeta) {
             depositMeta.classList.add('hidden');
+            depositMeta.classList.remove('dep-flat');
             depositMeta.innerHTML = '';
         }
         if (depositTable) {
             depositTable.classList.add('hidden');
+            depositTable.classList.remove('dep-flat');
             depositTable.innerHTML = '';
         }
         if (depositTopup)    depositTopup.classList.add('hidden');
@@ -1019,46 +1023,33 @@ export class UIManager {
                 detailStatus.classList.add('hidden');
 
                 const { rows, meta } = this.buildDepositSchedule(root);
+                const view = this.buildDepositView(root, group, rows, meta);
+
+                // Эта карточка уже содержит категорию/дату/бюджет, отдельная инфо-строка не нужна
+                const infoEl = document.getElementById('detail-info');
+                if (infoEl) { infoEl.classList.add('hidden'); infoEl.innerHTML = ''; }
+
+                // В шапке — сама операция, под ней — состояние накопления
+                const isRootTx = transaction.id === root.id;
+                const st = (transaction.status || '').trim();
+                const opName = isRootTx ? 'открытие' : st === '➖ Снятие' ? 'снятие' : 'пополнение';
+                detailType.textContent = `Накопление · ${opName}`;
+                // Сумма на счёте уже крупно в карточке ниже, поэтому в шапке только сумма самой операции (не открытия)
+                if (isRootTx) {
+                    detailAmount.classList.add('hidden');
+                } else {
+                    const sign = st === '➖ Снятие' ? '−' : '+';
+                    detailAmount.textContent = `${sign}${this.formatNumber(transaction.amount || 0)}`;
+                }
+                detailAmount.dataset.kind = 'deposit';
 
                 depositMeta.classList.remove('hidden');
-                depositMeta.innerHTML = `
-          <div><strong>Накопление:</strong> ${escapeHtml(root.name || 'Без названия')}</div>
-          <div><strong>Ставка:</strong> ${meta.annualRate.toFixed(2)}% годовых</div>
-          <div><strong>Срок:</strong> ${meta.termMonths ? meta.termMonths + ' мес.' : 'Бессрочно'}</div>
-          <div><strong>Стартовая сумма:</strong> ${this.formatNumber(meta.initialAmount)}</div>
-          <div><strong>Начислено:</strong> ${this.formatNumber(meta.totalInterest)}</div>
-          <div><strong>Ожидаемый итог:</strong> ${this.formatNumber(meta.currentBalance)}</div>
-        `;
+                depositMeta.classList.add('dep-flat');
+                depositMeta.innerHTML = view.summaryHtml;
 
                 depositTable.classList.remove('hidden');
-                depositTable.innerHTML = rows.length
-                    ? `
-            <table class="deposit-schedule-table">
-              <thead>
-                <tr>
-                  <th>Месяц</th>
-                  <th>Старт</th>
-                  <th>➕</th>
-                  <th>➖</th>
-                  <th>% за мес.</th>
-                  <th>Итог</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map(r => `
-                  <tr>
-                    <td>${r.label}</td>
-                    <td>${this.formatNumber(r.startBalance)}</td>
-                    <td>${r.topups ? this.formatNumber(r.topups) : '—'}</td>
-                    <td>${r.withdrawals ? this.formatNumber(r.withdrawals) : '—'}</td>
-                    <td>${r.interest ? this.formatNumber(r.interest) : '—'}</td>
-                    <td>${this.formatNumber(r.endBalance)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `
-                    : '<div style="margin-top:6px;font-size:0.9rem;color:#777;">Нет данных по месяцам</div>';
+                depositTable.classList.add('dep-flat');
+                depositTable.innerHTML = view.listsHtml;
 
                 if (depositTopup && depositWithdraw) {
                     depositTopup.classList.remove('hidden');
@@ -1495,28 +1486,7 @@ export class UIManager {
             });
         }
 
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', e => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const installBtn = document.getElementById('install-btn');
-            if (installBtn) installBtn.style.display = 'block';
-            else console.warn('Кнопка установки (#install-btn) не найдена в DOM');
-        });
-
-        document.getElementById('install-btn')?.addEventListener('click', () => {
-            if (deferredPrompt) {
-                trackSafe?.('pwa-install-clicked');
-
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => {
-                    trackSafe?.('pwa-installed');
-
-                    deferredPrompt = null;
-                    document.getElementById('install-btn').style.display = 'none';
-                });
-            } else console.warn('deferredPrompt не инициализирован');
-        });
+        // Установка PWA: src/ui/PwaInstall.js
 
         document.getElementById('bottom-sheet-backdrop')?.addEventListener('click', e => {
             const backdrop = e.currentTarget;
@@ -1853,6 +1823,93 @@ export class UIManager {
                 if (da !== db) return da < db ? -1 : 1;
                 return a.id - b.id;
             });
+    }
+
+    // Данные и разметка карточки накопления: что на счёте сейчас, прогресс срока, история и график по месяцам
+    buildDepositView(root, group, rows, meta) {
+        const nf = n => this.formatNumber(Math.round(n || 0));
+        const now = new Date();
+        const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // Проценты капают в конце месяца: «сейчас» = старт текущего месяца + его пополнения/снятия
+        const curIdx = rows.findIndex(r => r.monthKey === nowKey);
+        let balanceNow;
+        if (curIdx >= 0) balanceNow = rows[curIdx].startBalance + rows[curIdx].topups - rows[curIdx].withdrawals;
+        else if (rows.length && nowKey > rows[rows.length - 1].monthKey) balanceNow = rows[rows.length - 1].endBalance;
+        else balanceNow = meta.initialAmount;
+        const accruedNow = rows.filter(r => r.monthKey < nowKey).reduce((sum, r) => sum + r.interest, 0);
+
+        const ops = group.filter(t => t !== root);
+        const topups = ops.filter(t => (t.status || '').trim() !== '➖ Снятие').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const withdrawn = ops.filter(t => (t.status || '').trim() === '➖ Снятие').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const contributed = meta.initialAmount + topups - withdrawn;
+
+        const term = meta.termMonths || 0;
+        let progressHtml = '';
+        if (term > 0) {
+            const sd = new Date(root.date);
+            const elapsed = Math.max(0, Math.min(term, (now.getFullYear() - sd.getFullYear()) * 12 + (now.getMonth() - sd.getMonth())));
+            const left = term - elapsed;
+            const end = new Date(sd.getFullYear(), sd.getMonth() + term, sd.getDate());
+            const pct = Math.round(elapsed / term * 100);
+            progressHtml = `
+              <div class="dep-progress">
+                <div class="dep-progress-top"><span>Срок: ${elapsed} из ${term} мес.</span><b>${left > 0 ? `ещё ${left} мес.` : 'срок прошёл'}</b></div>
+                <div class="dep-bar"><i style="width:${pct}%"></i></div>
+                <div class="dep-progress-dates"><span>${escapeHtml(String(this.formatDate(root.date)))}</span><span>${escapeHtml(String(this.formatDate(end)))}</span></div>
+              </div>`;
+        } else {
+            progressHtml = '<div class="dep-progress"><div class="dep-progress-top"><span>Срок</span><b>Бессрочно</b></div></div>';
+        }
+
+        const stat = (label, value, cls = '') => `<div class="dep-stat ${cls}"><small>${label}</small><b>${value}</b></div>`;
+        const summaryHtml = `
+          <div class="dep-card">
+            <div class="dep-hero">
+              <small>На счёте сейчас</small>
+              <b>${nf(balanceNow)}</b>
+              ${accruedNow > 0 ? `<span class="dep-hero-gain">+${nf(accruedNow)} процентов уже начислено</span>` : '<span class="dep-hero-gain dep-muted">проценты начнут капать в конце месяца</span>'}
+            </div>
+            <div class="dep-stats">
+              ${stat('Ставка', `${meta.annualRate.toFixed(2).replace(/\.00$/, '')}% годовых`)}
+              ${stat('Открыто', nf(meta.initialAmount))}
+              ${stat('Внесено всего', nf(contributed))}
+              ${stat('Ожидаемый итог', nf(meta.currentBalance), 'dep-stat-accent')}
+            </div>
+            ${progressHtml}
+            <div class="di-row"><span>Бюджет</span><b>${escapeHtml(this.budgetManager.getCurrentBudget()?.name || '')}</b></div>
+          </div>`;
+
+        const opsSorted = [root, ...ops].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        const opRow = t => {
+            const st = (t.status || '').trim();
+            const isRoot = t === root;
+            const kind = isRoot ? 'open' : st === '➖ Снятие' ? 'out' : 'in';
+            const label = isRoot ? 'Открытие' : kind === 'out' ? 'Снятие' : 'Пополнение';
+            const sign = kind === 'out' ? '−' : '+';
+            return `<div class="dep-op dep-op-${kind}"><span class="dep-op-ico">${kind === 'out' ? '➖' : kind === 'in' ? '➕' : '💎'}</span>
+                <span class="dep-op-main"><b>${label}</b><small>${escapeHtml(String(this.formatDate(t.date)))}</small></span>
+                <span class="dep-op-sum">${sign}${nf(t.amount)}</span></div>`;
+        };
+        const monthCard = r => {
+            const bits = [`старт ${nf(r.startBalance)}`];
+            if (r.topups) bits.push(`+${nf(r.topups)}`);
+            if (r.withdrawals) bits.push(`−${nf(r.withdrawals)}`);
+            if (r.interest) bits.push(`% ${nf(r.interest)}`);
+            const cur = r.monthKey === nowKey;
+            return `<div class="dep-month${cur ? ' is-current' : ''}${r.monthKey < nowKey ? ' is-past' : ''}">
+                <div class="dep-month-top"><span>${escapeHtml(r.label)}${cur ? ' · сейчас' : ''}</span><b>${nf(r.endBalance)}</b></div>
+                <small>${bits.join(' · ')}</small></div>`;
+        };
+        const listsHtml = `
+          <div class="dep-section-title">История операций · ${opsSorted.length}</div>
+          <div class="dep-ops">${opsSorted.map(opRow).join('')}</div>
+          ${rows.length ? `<details class="dep-sched"${rows.length <= 4 ? ' open' : ''}>
+              <summary>График по месяцам · ${rows.length}</summary>
+              <div class="dep-months">${rows.map(monthCard).join('')}</div>
+            </details>` : ''}`;
+
+        return { summaryHtml, listsHtml };
     }
 
     buildDepositSchedule(tx) {

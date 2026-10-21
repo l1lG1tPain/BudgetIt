@@ -1244,3 +1244,29 @@
 /* выбор категории в предпросмотре */
 .ei-op-main{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ei-op-pick{align-self:flex-start;margin:2px 0 0;padding:2px 9px;border:0;border-radius:999px;background:var(--chip, rgba(255,255,255,.1));color:var(--accent, #3dffa0);font-size:11px;font-weight:700;cursor:pointer;min-height:0;width:auto}
+
+
+/* ─── «Залётом»: компактный шаг загрузки (главная кнопка видна сразу) ─── */
+.ei-up { gap: 12px; }
+.ei-up-head { display: flex; align-items: center; gap: 12px; }
+.ei-up-shark { width: 56px; height: 56px; object-fit: contain; flex: none; }
+.ei-up-head b { display: block; font-size: 17px; font-weight: 800; color: var(--text, #e2e8f0); }
+.ei-up-head small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.35; color: var(--muted, #94a3b8); }
+.ei-up .ei-up-drop {
+    padding: 22px 16px; gap: 4px; border-radius: 20px;
+    border: 1.5px dashed color-mix(in srgb, var(--accent, #3dffa0) 55%, transparent);
+    background: color-mix(in srgb, var(--accent, #3dffa0) 9%, transparent);
+}
+.ei-up .ei-up-drop .ei-drop-icon { font-size: 30px; }
+.ei-up .ei-up-drop .ei-drop-title { font-size: 16px; font-weight: 800; color: var(--accent, #3dffa0); }
+.ei-up-help { border-radius: 16px; background: var(--faint, rgba(255,255,255,.06)); padding: 0 14px; }
+.ei-up-help summary { list-style: none; cursor: pointer; padding: 12px 0; font-size: 13.5px; font-weight: 700; color: var(--text, #e2e8f0); display: flex; justify-content: space-between; align-items: center; }
+.ei-up-help summary::-webkit-details-marker { display: none; }
+.ei-up-help summary::after { content: '›'; font-size: 20px; line-height: 1; color: var(--muted, #94a3b8); transition: transform .2s; }
+.ei-up-help[open] summary::after { transform: rotate(90deg); }
+.ei-up-help ul { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ei-up-help li b { display: block; font-size: 13px; color: var(--text, #e2e8f0); }
+.ei-up-help li span { display: block; font-size: 12px; color: var(--muted, #94a3b8); line-height: 1.35; }
+.ei-up-help .ei-banks { margin: 0 0 12px; }
+.ei-banks { display: flex; flex-wrap: wrap; gap: 6px; }
+.ei-banks span { padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: var(--faint, rgba(255,255,255,.08)); color: var(--muted, #94a3b8); }

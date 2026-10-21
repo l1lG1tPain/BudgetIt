@@ -2,6 +2,8 @@
 // Подключается к transaction-sheet, добавляет таб «⚡ Залётом»
 // Зависимости: SheetJS (xlsx), budgetManager, uiManager
 
+import { applyStaticSharkImages } from './shark/SharkUI.js';
+
 export class ExcelImportManager {
     constructor(budgetManager, uiManager) {
         this.budgetManager = budgetManager;
@@ -61,6 +63,7 @@ export class ExcelImportManager {
         sheet.appendChild(form);
 
         this._bindFormEvents(form);
+        try { applyStaticSharkImages(); } catch (e) { /* ignore */ }
     }
 
     /* ────────────────────────────────────────────────
@@ -71,70 +74,35 @@ export class ExcelImportManager {
       <div class="excel-import-wrap">
 
         <!-- Шаг 1: загрузка файла -->
-        <div id="ei-step-upload" class="ei-step">
+        <div id="ei-step-upload" class="ei-step ei-up">
 
-          <div class="ei-feature-banner">
-            <div class="ei-feature-bg-glow"></div>
-
-            <div class="ei-shark-frame">
-              <img src="assets/akulka-transaction-hero.png" alt="Акулка" class="ei-shark-img">
-            </div>
-
-            <div class="ei-feature-text">
-              <div class="ei-feature-title">⚡ Залётом</div>
-              <div class="ei-feature-desc">
-                Закинь выписку — Акулка распарсит платежи, определит поступления/траты и подготовит транзакции.
-              </div>
-
-              <div class="ei-feature-tags">
-                <span>Excel</span>
-                <span>CSV</span>
-                <span>PDF</span>
-              </div>
+          <div class="ei-up-head">
+            <img src="assets/akulka-transaction-hero.png" alt="" class="ei-up-shark" data-shark-emotion="think">
+            <div>
+              <b>Загрузи выписку</b>
+              <small>Акулка сама найдёт даты, суммы и категории. Ты проверишь список перед добавлением.</small>
             </div>
           </div>
 
-          <div class="ei-banks" aria-label="Поддерживаемые банки">
-            ${['Payme', 'Click', 'Uzum Bank', 'Humo', 'Uzcard', 'TBC', 'Kapitalbank', 'Сбер', 'Т-Банк'].map(b => `<span>${b}</span>`).join('')}
-          </div>
-
-          <div class="ei-instructions">
-            <div class="ei-inst-title">📋 Как загрузить выписку?</div>
-            <div class="ei-inst-body">
-              <div class="ei-inst-sources">
-                <div class="ei-inst-source">
-                  <span class="ei-inst-icon">🏦</span>
-                  <div>
-                    <b>Click.uz / Payme / Uzcard</b>
-                    <span>Личный кабинет → История → Экспорт в Excel/CSV</span>
-                  </div>
-                </div>
-                <div class="ei-inst-source">
-                  <span class="ei-inst-icon">💳</span>
-                  <div>
-                    <b>Сбер / Т-Банк / другие RU банки</b>
-                    <span>Онлайн-банк → Выписка по счёту → Скачать PDF</span>
-                  </div>
-                </div>
-                <div class="ei-inst-source">
-                  <span class="ei-inst-icon">📊</span>
-                  <div>
-                    <b>PDF и Excel</b>
-                    <span>Акулка сама определит формат — Сбер, Т-Банк, Click, Payme и другие. Просто закинь файл!</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <label class="ei-dropzone" for="ei-file-input">
+          <label class="ei-dropzone ei-up-drop" for="ei-file-input">
             <span class="ei-drop-icon">📂</span>
-            <span class="ei-drop-title">Выбери или перетащи файл</span>
-            <span class="ei-drop-sub">.xlsx, .xls, .csv, .pdf</span>
+            <span class="ei-drop-title">Выбрать файл выписки</span>
+            <span class="ei-drop-sub">Excel · CSV · PDF, или перетащи сюда</span>
             <input type="file" id="ei-file-input" accept=".xlsx,.xls,.csv,.pdf" style="display:none">
           </label>
           <div id="ei-file-name" class="ei-file-name hidden"></div>
           <div id="ei-upload-error" class="ei-error hidden"></div>
+
+          <details class="ei-up-help">
+            <summary>Где взять выписку?</summary>
+            <ul>
+              <li><b>Click / Payme / Uzcard</b><span>Кабинет → История → Экспорт в Excel или CSV</span></li>
+              <li><b>Сбер / Т-Банк и другие</b><span>Онлайн-банк → Выписка по счёту → Скачать PDF</span></li>
+            </ul>
+            <div class="ei-banks" aria-label="Поддерживаемые банки">
+              ${['Payme', 'Click', 'Uzum Bank', 'Humo', 'Uzcard', 'TBC', 'Kapitalbank', 'Сбер', 'Т-Банк'].map(b => `<span>${b}</span>`).join('')}
+            </div>
+          </details>
 
           <button type="button" id="ei-btn-cancel-upload" class="close-form">Закрыть</button>
         </div>

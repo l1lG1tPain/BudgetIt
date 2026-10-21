@@ -1,0 +1,8 @@
+config/
+_backups/
+_to_delete/
+tests/
+node_modules/
+*.md
+pwastat.txt
+.claude/

@@ -1,3 +1,5 @@
+import { sharkImage } from '../shark/SharkMood.js';
+const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 import { formatNumber } from '../utils/utils.js';
 
 export class PlannerPage {
@@ -189,7 +191,7 @@ export class PlannerPage {
                         class="planner-dropdown-item ${item.id === this.activePlannerId ? 'active' : ''}"
                         data-planner-id="${item.id}"
                     >
-                        <span class="planner-dropdown-item-title">${item.name} · ${item.periodDays} дн.</span>
+                        <span class="planner-dropdown-item-title">${escHtml(item.name)} · ${item.periodDays} дн.</span>
                         <span class="planner-dropdown-item-meta">${item.startDate} → ${item.endDate}</span>
                     </button>
                 `).join('')}
@@ -315,8 +317,9 @@ export class PlannerPage {
                 </div>`;
         }
 
-        const rows = (projection.rows || []).filter(r => !r.isStartDay);
-        const sumPlanned = key => rows.reduce((a, r) => a + (Number(r.planned?.[key]) || 0), 0);
+        const allRows = projection.rows || [];
+        const rows = allRows.filter(r => !r.isStartDay);
+        const sumPlanned = key => allRows.reduce((a, r) => a + (Number(r.planned?.[key]) || 0), 0);
         const mandatory = sumPlanned('main') + sumPlanned('regular');
         const limit = Math.floor(s.dailyLimit || 0);
 
@@ -328,6 +331,9 @@ export class PlannerPage {
             return `<i class="planner-strip-day ${cls}" title="${this.fmtDate(r.date)}"></i>`;
         }).join('');
 
+        const incomeNote = s.incomeReceived > 0
+            ? (s.incomeExpected > 0 ? `Получено ${formatNumber(Math.floor(s.incomeReceived))}, ждём ещё ${formatNumber(Math.floor(s.incomeExpected))}` : 'Получено, по факту')
+            : s.incomeByFact ? 'Ждём поступление' : 'Ожидается по плану';
         const remDays = s.remainingDays || 0;
         const left = Math.floor(s.remainingBudget || 0);
         const tip = remDays > 0
@@ -345,8 +351,8 @@ export class PlannerPage {
             <div class="planner-summary-grid planner-summary-grid-main">
                 <div class="planner-stat-card planner-stat-card-budget">
                     <div class="planner-stat-label">Поступление</div>
-                    <div class="planner-stat-value">${formatNumber(Math.floor(s.incomeAmount || 0))}</div>
-                    <div class="planner-stat-note">Основное поступление периода</div>
+                    <div class="planner-stat-value">${formatNumber(Math.floor((s.incomeReceived || 0) + (s.incomeExpected || 0)))}</div>
+                    <div class="planner-stat-note">${incomeNote}</div>
                 </div>
 
                 <div class="planner-stat-card planner-stat-card-start">
@@ -384,7 +390,7 @@ export class PlannerPage {
                     <div class="planner-mini-value">${formatNumber(Math.floor(s.openingBalance || 0))}</div>
                 </div>
             </div>
-            ${tip ? `<div class="planner-shark-tip"><img src="assets/shark.png" alt=""><span>${tip}</span></div>` : ''}
+            ${tip ? `<div class="planner-shark-tip"><img src="${sharkImage('idea')}" alt=""><span>${tip}</span></div>` : ''}
         `;
     }
 
@@ -409,7 +415,7 @@ export class PlannerPage {
             ${renderList('Основные траты', '🏠', planner.mainExpenses || [], item => `
                 <div class="planner-list-row">
                     <div class="planner-list-main">
-                        <div class="planner-list-name">${item.category}</div>
+                        <div class="planner-list-name">${escHtml(item.category)}</div>
                         <div class="planner-list-sub">${item.date}</div>
                     </div>
                     <div class="planner-list-amount">${formatNumber(item.amount)}</div>
@@ -419,7 +425,7 @@ export class PlannerPage {
             ${renderList('Ежедневные траты', '📆', planner.dailyExpenses || [], item => `
                 <div class="planner-list-row">
                     <div class="planner-list-main">
-                        <div class="planner-list-name">${item.category}</div>
+                        <div class="planner-list-name">${escHtml(item.category)}</div>
                         <div class="planner-list-sub">со 2 дня · ежедневно</div>
                     </div>
                     <div class="planner-list-amount">${formatNumber(item.amountPerDay)}<small>/день</small></div>
@@ -435,7 +441,7 @@ export class PlannerPage {
             return `
                     <div class="planner-list-row">
                         <div class="planner-list-main">
-                            <div class="planner-list-name">${item.category}</div>
+                            <div class="planner-list-name">${escHtml(item.category)}</div>
                             <div class="planner-list-sub">каждые ${item.everyNDays} дн. · с ${item.startOffsetDay + 1}-го дня · ${count} раз</div>
                         </div>
                         <div class="planner-list-amount">${formatNumber(item.amount)}</div>
@@ -446,7 +452,7 @@ export class PlannerPage {
             ${renderList('Вклады', '🏦', planner.plannedDeposits || [], item => `
                 <div class="planner-list-row">
                     <div class="planner-list-main">
-                        <div class="planner-list-name">${item.title}</div>
+                        <div class="planner-list-name">${escHtml(item.title)}</div>
                         <div class="planner-list-sub">${item.termDays > 0 ? `до ${item.endDate}` : 'без срока'} · ${item.annualRate || 0}%</div>
                     </div>
                     <div class="planner-list-amount">${formatNumber(item.amount)}</div>
@@ -566,7 +572,8 @@ export class PlannerPage {
         const parts = [
             b.income   > 0 ? `<span>💸 ${formatNumber(Math.floor(b.income))}</span>`    : '',
             b.main     > 0 ? `<span>🏠 -${formatNumber(Math.floor(b.main))}</span>`     : '',
-            b.deposits > 0 ? `<span>🏦 -${formatNumber(Math.floor(b.deposits))}</span>` : ''
+            b.deposits > 0 ? `<span>🏦 -${formatNumber(Math.floor(b.deposits))}</span>` : '',
+            b.extra    > 0 ? `<span>🧾 -${formatNumber(Math.floor(b.extra))}</span>`    : ''
         ].filter(Boolean).join('');
 
         return `
@@ -579,7 +586,7 @@ export class PlannerPage {
                         </div>
                         <div class="planner-day-date">${row.date} · день периода ${row.dayIndex}</div>
                         <div class="planner-day-start-note">
-                            Стартовый день формирует доступный остаток. Факт транзакций считается со 2 дня.
+                            Стартовый остаток = поступление минус траты этого дня (по факту). Ежедневные и регулярные траты начинаются со 2 дня.
                         </div>
                     </div>
                     <div>

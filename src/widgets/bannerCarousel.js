@@ -52,7 +52,8 @@ export function initBannerCarousel(containerSelector = ".banner-carousel .slides
 
     // ---- auto‑scroll ----
     const intervalId = window.setInterval(() => {
-        if (!isDragging) {
+        // в фоновой вкладке не крутим: экономим батарею
+        if (!isDragging && !document.hidden) {
             current = (current + 1) % slides.length;
             setPosition(current);
         }
@@ -63,7 +64,7 @@ export function initBannerCarousel(containerSelector = ".banner-carousel .slides
         const url = slide.dataset.link;
         if (url) {
             slide.style.cursor = "pointer";
-            slide.addEventListener("click", () => window.open(url, "_blank"));
+            slide.addEventListener("click", () => window.open(url, "_blank", "noopener,noreferrer"));
         }
     });
 

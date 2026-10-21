@@ -13,8 +13,9 @@ import {
 
 import {
     CHALLENGES, getChallenge, evaluateChallenge, countDaysInLimit, rankInfo, RANKS, topCategories, weekCompare, forecastDay,
-    debtSummary, oldestDebt, savingsMonth, incomeToday, detectSpike, weekRecapData, holidayKey
+    debtSummary, oldestDebt, savingsMonth, incomeToday, detectSpike, weekRecapData, weekReport, holidayKey
 } from './SharkPlus.js';
+import { WEEK_VERDICT, WEEK_TREND } from './texts/week.js';
 import { goalCalc, parseGoalDate, formatGoalDate, wasteCategory, monthSummary, ruleCheck, BADGES } from './SharkExtra.js';
 import { HELP_TOPICS, TIPS_TOPICS, HELP_INTRO, TIPS_INTRO, HELP_OUTRO, TIPS_OUTRO, MENU_EXPLAIN } from './texts/help.js';
 
@@ -75,6 +76,17 @@ export function flavorLine(ctx = {}) {
 }
 export const rareLine = (character = 'normal', seed = String(Math.random())) => pickBy(FLAVOR.rare[charOf(character)], seed);
 export const tailLine = (character = 'normal', seed = String(Math.random())) => pickBy(FLAVOR.tail[charOf(character)], seed);
+// Кнопки для пустых случаев: записать самому или загрузить выписку
+const ADD_ACTS = [{ id: 'add', label: '✍️ Записать трату' }, { id: 'import', label: '⚡ Загрузить выпиской' }];
+const INCOME_ACTS = [{ id: 'income', label: '✍️ Записать доход' }, { id: 'import', label: '⚡ Загрузить выпиской' }];
+// Фраза без «в неделю», если до цели меньше недели (иначе выходит сумма за 7 дней, которой не будет)
+function sayNoWeek(key, character, seed, vars) {
+    for (let i = 0; i < 12; i++) {
+        const t = pickFill(ANSWERS_C[key][charOf(character)], `${seed}:${key}:${i}`, vars);
+        if (!/неделю|недел[яи]|в неделю/i.test(t)) return t;
+    }
+    return `Цель принята: ${vars.sum} к ${vars.date}. Осталось ${vars.daysLeft} дн., откладывай около ${vars.perDay} в день.`;
+}
 const sayC = (key, character, seed, vars = {}) => pickFill(ANSWERS_C[key][charOf(character)], `${seed}:${key}`, vars);
 export const badgeText = (character, title, seed = String(Math.random())) => sayC('badgeNew', character, seed, { title });
 
@@ -108,7 +120,7 @@ export function buildExtra(ctx = {}) {
     const hour = now.getHours();
     const hasData = tx.length > 0;
     const hasToday = tx.some(t => t.date === today);
-    const seed = `${today}:${Math.floor(hour / 4)}:${character}`;
+    const seed = `${today}:${Math.floor(hour / (ctx.talk === 'chatty' ? 2 : 4))}:${character}`;
     const say = (key, vars = {}) => pickFill(PROACTIVE[key][character], `${key}:${seed}`, vars);
     const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
 
@@ -205,20 +217,49 @@ export function buildExtra(ctx = {}) {
 }
 
 // ───────── как считается лимит ─────────
-export function describeLimit({ info, planner = null, character = 'normal' } = {}) {
+const ddmm = iso => (iso ? iso.slice(8, 10) + '.' + iso.slice(5, 7) : '');
+
+// Подсказка, когда лимит «по плану» посчитать не из чего.
+// status — результат planStatus(): active | upcoming | ended | none.
+export function planHint({ source = 'noplan', status = null, character = 'normal', waiting = false } = {}) {
+    const name = status?.planner?.name ? `«${status.planner.name}»` : '';
+    let t;
+    if (source === 'plan-empty' && waiting) {
+        t = `В плане ${name} поступление учитывается по факту, и денег по нему ещё нет. Как только запишешь доход выбранной категории, я посчитаю лимит на день.`;
+    } else if (source === 'plan-empty') {
+        t = `По плану ${name} на оставшиеся дни ничего не остаётся, поэтому лимит равен нулю. Проверь доходы и траты в плане: когда появится запас, я начну считать по нему.`;
+    } else if (status?.state === 'upcoming') {
+        t = `План ${name} начнётся ${ddmm(status.planner.startDate)}. Пока он не начался, по нему не считаю. Добавь действующий план, чтобы считать по нему.`;
+    } else if (status?.state === 'ended') {
+        t = `План ${name} закончился ${ddmm(status.planner.endDate || status.planner.startDate)}. Завершённые планы не учитываю: добавь новый план, чтобы считать по нему.`;
+    } else {
+        t = 'Действующего плана нет. Добавь план месяца, чтобы считать лимит по нему.';
+    }
+    if (character === 'kind') t += ' 💙';
+    return t;
+}
+
+export function describeLimit({ info, planner = null, character = 'normal', status = null } = {}) {
     const [warnAt, angryAt] = getThresholds(character);
     const lines = [];
     const src = info?.source || 'none';
+    const autoWord = a => (a?.source === 'plan' ? 'по плану' : 'по твоим тратам');
     if (src === 'custom') {
         lines.push(`Лимит задан тобой: ${fmt(info.limit)} в день.`);
-        if (info.auto?.limit) lines.push(`Сама Акулка насчитала бы ${fmt(info.auto.limit)} (${info.auto.source === 'plan' ? 'по плану' : 'по твоим тратам'}).`);
+        if (info.auto?.limit) lines.push(`Сама Акулка насчитала бы ${fmt(info.auto.limit)} (${autoWord(info.auto)}).`);
     } else if (src === 'plan') {
-        lines.push(`Лимит из плана${planner?.name ? ` «${planner.name}»` : ''}: сумма «Ежедневных трат» за один день — ${fmt(info.limit)}.`);
+        lines.push(`Лимит из действующего плана${planner?.name ? ` «${planner.name}»` : ''}: средний лимит в день, который считает сам план (остаток бюджета плана на оставшиеся дни) — ${fmt(info.limit)}.`);
+        lines.push('Завершённые и ещё не начавшиеся планы не учитываются.');
+        if (info.median?.limit) lines.push(`Для сравнения, медиана твоих трат за 30 дней — ${fmt(info.median.limit)}.`);
     } else if (src === 'median') {
-        lines.push(`Лимит — твой типичный день: медиана дневных трат за последние 30 дней — ${fmt(info.limit)}.`);
+        lines.push(`Лимит — твой типичный день: медиана дневных трат за последние 30 дней — ${fmt(info.limit)}${info.days ? ` (по ${info.days} дн. с тратами)` : ''}.`);
         lines.push('Дни без трат и разовые крупные покупки (в 3 раза больше обычного) не учитываются.');
+        if (info.plan?.limit) lines.push(`Для сравнения, по действующему плану выходит ${fmt(info.plan.limit)}.`);
+    } else if (src === 'noplan' || src === 'plan-empty') {
+        lines.push(planHint({ source: src, status, character, waiting: info?.waiting }));
+        if (info.median?.limit) lines.push(`Пока можно переключиться на медиану: ${fmt(info.median.limit)} в день.`);
     } else {
-        lines.push('Лимита пока нет: нужен план месяца, хотя бы 3 дня с тратами за последние 30 дней или твоя собственная сумма.');
+        lines.push('Лимита пока нет: нужно хотя бы 3 дня с тратами за последние 30 дней, действующий план месяца или твоя собственная сумма.');
     }
     if (planner && src !== 'custom') lines.push('«Основные» и «Регулярные» платежи плана (аренда, связь) в дневные траты не входят.');
     else if (planner) lines.push('«Основные» и «Регулярные» платежи плана в дневные траты не входят.');
@@ -237,6 +278,78 @@ export const QUESTIONS = [
     { id: 'limit', label: 'Как считается лимит?' },
     { id: 'cheer', label: 'Подбодри меня' }
 ];
+
+// ───────── «А вчера? А на прошлой неделе?» ─────────
+const DAY_CHOICES = {
+    today:  [{ id: 'day:-1', label: 'А вчера?' }, { id: 'day:-2', label: 'А позавчера?' }, { id: 'lastweek', label: 'А на прошлой неделе?' }],
+    'day:-1': [{ id: 'day:-2', label: 'А позавчера?' }, { id: 'lastweek', label: 'А на прошлой неделе?' }],
+    'day:-2': [{ id: 'lastweek', label: 'А на прошлой неделе?' }]
+};
+const DAY_NAMES = { '-1': 'Вчера', '-2': 'Позавчера' };
+const DAY_NONE = {
+    kind: ['записей нет 🌊 Если что-то было, добавь, а я пересчитаю 💙', 'тишина, ни одной записи 🐚 Или просто забылось записать?'],
+    normal: ['записей нет. Если траты были, их можно добавить задним числом.', 'пусто. Либо тратить было нечего, либо не записано.'],
+    strict: ['записей нет. Если траты были, внеси их, иначе статистика врёт.', 'пусто. Подозрительно, проверь, всё ли записано.']
+};
+const DAY_TAIL = {
+    kind: { ok: ['Молодец, в лимите 💙', 'Всё в порядке, так держать 🌟'], over: ['Бывает, это всего один день 🫂', 'Ничего страшного, завтра поправим 🌱'], none: [''] },
+    normal: { ok: ['В лимите.', 'Нормальный день.'], over: ['Выше лимита.', 'Перебор.'], none: [''] },
+    strict: { ok: ['В лимите, и правильно.', 'Допустимо.'], over: ['Лимит нарушен.', 'Это надо исправлять.'], none: [''] }
+};
+const ruDate = day => new Date(day + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+const ruWd = day => new Date(day + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'short' });
+
+function expensesByCat(tx, days) {
+    const set = new Set(days);
+    const byCat = new Map();
+    let total = 0;
+    for (const t of tx) {
+        if (t.type !== 'expense' || !set.has(t.date)) continue;
+        const a = Number(t.amount) || 0;
+        total += a;
+        const c = t.category || 'Без категории';
+        byCat.set(c, (byCat.get(c) || 0) + a);
+    }
+    return { total, cats: [...byCat.entries()].sort((a, b) => b[1] - a[1]) };
+}
+
+export function dayAnswer({ offset, tx = [], today, limit = 0, character = 'normal' }) {
+    const ch = charOf(character);
+    const day = shiftDay(today, offset);
+    const name = DAY_NAMES[String(offset)] || ruDate(day);
+    const { total, cats } = expensesByCat(tx, [day]);
+    const choices = DAY_CHOICES[`day:${offset}`];
+    if (!total) return { text: `${name} (${ruDate(day)}): ${pickBy(DAY_NONE[ch], `${day}:none`)}`, choices };
+    const top = cats.slice(0, 3).map(([c, v]) => `${c} — ${fmt(v)}`).join('; ');
+    const ok = !limit || total <= limit;
+    const tail = limit ? ' ' + pickBy(DAY_TAIL[ch][ok ? 'ok' : 'over'], `${day}:${total}`) : '';
+    const cmp = limit ? ` Лимит: ${fmt(limit)}${ok ? '' : `, перерасход ${fmt(total - limit)}`}.` : '';
+    return { text: `${name} (${ruDate(day)}) ушло ${fmt(total)}. Больше всего: ${top}.${cmp}${tail}`, choices };
+}
+
+export function lastWeekAnswer({ tx = [], today, limit = 0, character = 'normal' }) {
+    const ch = charOf(character);
+    const dow = (new Date(today + 'T00:00:00').getDay() + 6) % 7;      // 0 = понедельник
+    const mon = shiftDay(today, -dow - 7);
+    const days = Array.from({ length: 7 }, (_, i) => shiftDay(mon, i));
+    const { total, cats } = expensesByCat(tx, days);
+    const head = `Прошлая неделя (${ruDate(days[0])} — ${ruDate(days[6])})`;
+    if (!total) return { text: `${head}: ${pickBy(DAY_NONE[ch], `${mon}:none`)}` };
+    const per = days.map(d => ({ d, v: expensesByCat(tx, [d]).total }));
+    const withRec = per.filter(x => x.v > 0);
+    const worst = withRec.reduce((a, b) => (b.v > a.v ? b : a));
+    const best = withRec.reduce((a, b) => (b.v < a.v ? b : a));
+    const lines = [`${head}: потрачено ${fmt(total)}, в среднем ${fmt(total / withRec.length)} в день с записями.`, ''];
+    per.forEach(x => lines.push(`• ${ruWd(x.d)} ${ruDate(x.d)} — ${x.v ? fmt(x.v) : '—'}${limit && x.v > limit ? ' ⚠️' : ''}`));
+    lines.push('');
+    lines.push(`• 🔝 Дороже всего: ${ruWd(worst.d)} — ${fmt(worst.v)}${withRec.length > 1 ? `; спокойнее всего: ${ruWd(best.d)} — ${fmt(best.v)}` : ''}`);
+    if (limit) {
+        const over = withRec.filter(x => x.v > limit).length;
+        lines.push(`• 🎯 В лимите ${withRec.length - over} из ${withRec.length} дн. (лимит сейчас ${fmt(limit)})`);
+    }
+    lines.push(`• 🧺 Больше всего: ${cats.slice(0, 3).map(([c, v]) => `${c} ${Math.round(v / total * 100)}%`).join(' · ')}`);
+    return { text: lines.join('\n') };
+}
 
 export function answerQuestion(id, ctx = {}) {
     const now = ctx.now || new Date();
@@ -263,26 +376,46 @@ export function answerQuestion(id, ctx = {}) {
             total += a;
             byCat.set(t.category || 'Без категории', (byCat.get(t.category || 'Без категории') || 0) + a);
         }
-        if (!total) return { text: say('todayNone') };
+        if (!total) return { text: say('todayNone'), choices: DAY_CHOICES.today, acts: ADD_ACTS };
         const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
             .map(([c, v]) => `${c} — ${fmt(v)}`).join('; ');
         return { text: say('todaySome', { total: fmt(total), top }) };
     }
+    if (id === 'day:-1' || id === 'day:-2') return dayAnswer({ offset: id === 'day:-1' ? -1 : -2, tx, today, limit, character });
+    if (id === 'lastweek') return lastWeekAnswer({ tx, today, limit, character });
     if (id === 'week') {
-        let total = 0, daysWith = 0, inLimit = 0;
-        for (let i = 0; i < 7; i++) {
-            const day = shiftDay(today, -i);
-            if (!tx.some(t => t.date === day)) continue;
-            const s = getSpentOnDay({ transactions: tx, planner: ctx.planner, day, normalize: ctx.normalize });
-            total += s; daysWith++;
-            if (limit && s <= limit) inLimit++;
+        const w = weekReport({ transactions: tx, planner: ctx.planner, today, limit, normalize: ctx.normalize });
+        if (!w.daysWith) return { text: say('weekNone'), acts: ADD_ACTS };
+        const lim = limit ? `В лимите ${w.inLimit} из ${w.daysWith} дн.` : '';
+        const head = say('weekSome', { total: fmt(w.total), avg: fmt(w.avg), lim: '' }).trim();
+        const lines = [head, ''];
+        lines.push(`• 📊 По дням: ${w.spark}  (справа сегодня, · — без записей)`);
+        lines.push(`• 📈 Тренд: ${WEEK_TREND[w.trend]}`);
+        if (w.deltaPct !== null) {
+            const m = Math.abs(w.deltaPct);
+            lines.push(m < 5
+                ? '• ↔️ Почти как неделей раньше'
+                : `• ${w.deltaPct > 0 ? '⬆️' : '⬇️'} ${m}% ${w.deltaPct > 0 ? 'больше' : 'меньше'}, чем неделей раньше (${w.diff > 0 ? '+' : '−'}${fmt(w.diff)})`);
         }
-        if (!daysWith) return { text: say('weekNone') };
-        const lim = limit ? `В лимите ${inLimit} из ${daysWith} дн.` : '';
-        return { text: say('weekSome', { total: fmt(total), avg: fmt(Math.round(total / daysWith)), lim }).trim() };
+        if (lim) lines.push(`• 🎯 ${lim}${w.overDays ? ` Выше лимита: ${w.overDays} дн.` : ''}`);
+        if (w.worst) lines.push(`• 🔝 Дороже всего: ${w.worst.wd} — ${fmt(w.worst.spent)}${w.best ? `; спокойнее всего: ${w.best.wd} — ${fmt(w.best.spent)}` : ''}`);
+        if (w.topCats.length) lines.push(`• 🧺 Больше всего: ${w.topCats.map(c => `${c.name} ${c.pct}%`).join(' · ')}`);
+        // вердикт: что важнее всего для этой недели
+        let vk = 'calm';
+        if (limit && w.overDays >= 3) vk = 'overs';
+        else if (limit && w.daysWith >= 4 && w.inLimit === w.daysWith) vk = 'clean';
+        else if (w.deltaPct !== null && w.deltaPct >= 15) vk = 'more';
+        else if (w.deltaPct !== null && w.deltaPct <= -15) vk = 'less';
+        else if (w.trend === 'up') vk = 'rising';
+        else if (w.trend === 'down') vk = 'falling';
+        const pool = (WEEK_VERDICT[charOf(character)] || WEEK_VERDICT.normal)[vk];
+        const verdict = pool[seeded(`wk:${today}:${w.total}`, pool.length)]
+            .replace('{pct}', String(Math.abs(w.deltaPct ?? 0))).replace('{n}', String(w.overDays));
+        lines.push('', verdict);
+        return { text: lines.join('\n') };
     }
     if (id === 'limit') {
-        return { text: describeLimit({ info: ctx.info, planner: ctx.planner, character }).join('\n'), action: 'limit' };
+        return { text: describeLimit({ info: ctx.info, planner: ctx.planner, character, status: ctx.planStatus }).join('\n'), action: 'limit' };
     }
     if (id === 'whatif') {
         const a = Math.round(Number(ctx.amount));
@@ -297,13 +430,13 @@ export function answerQuestion(id, ctx = {}) {
     }
     if (id === 'topcat') {
         const t = topCategories(tx, today, 30);
-        if (!t.total) return { text: say('topcatNone') };
+        if (!t.total) return { text: say('topcatNone'), acts: ADD_ACTS };
         const top = t.list.slice(0, 3).map(([c, v]) => `${c} — ${fmt(v)}`).join('; ');
         return { text: say('topcatSome', { top, total: fmt(t.total) }) };
     }
     if (id === 'vsweek') {
         const w = weekCompare({ transactions: tx, planner: ctx.planner, today, normalize: ctx.normalize });
-        if (!w.prevHas || (!w.cur && !w.prev)) return { text: say('vsweekNone') };
+        if (!w.prevHas || (!w.cur && !w.prev)) return { text: say('vsweekNone'), acts: ADD_ACTS };
         const diff = Math.abs(w.cur - w.prev);
         const vars = { cur: fmt(w.cur), prev: fmt(w.prev), diff: fmt(diff) };
         if (w.prev > 0 && diff / w.prev < 0.05) return { text: say('vsweekSame', vars) };
@@ -313,20 +446,25 @@ export function answerQuestion(id, ctx = {}) {
         const f = forecastDay({ spent, limit, now });
         if (f.state === 'none') return { text: say('runoutNone'), action: 'limit' };
         if (f.state === 'over') return { text: say('runoutOver', { limit: fmt(limit), spent: fmt(spent) }) };
-        if (f.state === 'early') return { text: say('runoutEarly') };
+        if (f.state === 'early') return { text: say('runoutEarly'), acts: [ADD_ACTS[0]] };
         return { text: say(f.state === 'safe' ? 'runoutSafe' : 'runoutRisk', { proj: fmt(f.proj), limit: fmt(limit), spent: fmt(spent) }) };
     }
     if (id === 'debts') {
         const d = debtSummary(tx);
-        if (!d.oweCount && !d.owedCount) return { text: say('debtsNone') };
-        if (d.oweCount && d.owedCount) return { text: say('debtsBoth', { oweSum: fmt(d.oweSum), owedSum: fmt(d.owedSum) }) };
+        if (!d.oweCount && !d.owedCount) return { text: say('debtsNone'), acts: [{ id: 'debt', label: '➕ Записать долг' }] };
+        if (d.oweCount && d.owedCount) return { text: say('debtsBoth', { oweSum: fmt(d.oweSum), owedSum: fmt(d.owedSum) }), acts: [{ id: 'accounts', label: 'Открыть долги ›' }] };
         return d.oweCount
-            ? { text: say('debtsOwe', { sum: fmt(d.oweSum), count: String(d.oweCount) }) }
-            : { text: say('debtsOwed', { sum: fmt(d.owedSum), count: String(d.owedCount) }) };
+            ? { text: say('debtsOwe', { sum: fmt(d.oweSum), count: String(d.oweCount) }), acts: [{ id: 'accounts', label: 'Открыть долги ›' }] }
+            : { text: say('debtsOwed', { sum: fmt(d.owedSum), count: String(d.owedCount) }), acts: [{ id: 'accounts', label: 'Открыть долги ›' }] };
     }
     if (id === 'savings') {
         const m = savingsMonth(tx, today);
-        return m.count ? { text: say('savingsSome', { sum: fmt(m.sum), count: String(m.count) }) } : { text: say('savingsNone') };
+        const goal = ctx.goalState ? goalCalc(ctx.goalState, tx, today) : null;
+        const goalLine = goal && goal.status !== 'done' ? `\n\n🎯 Цель ${fmt(goal.sum)} к ${formatGoalDate(goal.date)}: накоплено ${fmt(goal.saved)} (${goal.pct}%), осталось ${fmt(goal.left)}.` : '';
+        const acts = [{ id: 'deposit', label: '➕ Записать накопление' }];
+        return m.count
+            ? { text: say('savingsSome', { sum: fmt(m.sum), count: String(m.count) }) + goalLine, acts }
+            : { text: say('savingsNone') + goalLine, acts };
     }
     if (id === 'level') {
         const info = rankInfo(countDaysInLimit({ transactions: tx, planner: ctx.planner, limit, today, normalize: ctx.normalize }));
@@ -352,18 +490,18 @@ export function answerQuestion(id, ctx = {}) {
         const w = wasteCategory(tx, today);
         if (w.state === 'up') return { text: sayC('wasteUp', ch, seed, { cat: w.cat, pct: String(w.pct), cur: fmt(w.cur), prev: fmt(w.prev), diff: fmt(w.diff) }) };
         if (w.state === 'down') return { text: sayC('wasteDown', ch, seed, { cat: w.cat, pct: String(w.pct) }) };
-        return { text: sayC('wasteNone', ch, seed) };
+        return { text: sayC('wasteNone', ch, seed), acts: ADD_ACTS };
     }
     if (id === 'month') {
         const m = monthSummary(tx, today);
-        if (!m) return { text: sayC('monthNone', ch, seed) };
+        if (!m) return { text: sayC('monthNone', ch, seed), acts: ADD_ACTS };
         const d = m.inc - m.exp;
         const bal = d > 0 ? `плюс ${fmt(d)}` : d < 0 ? `минус ${fmt(-d)}` : 'ноль';
         return { text: sayC('monthSome', ch, seed, { exp: fmt(m.exp), inc: fmt(m.inc), sav: fmt(m.sav), top: m.top, days: String(m.days), bal }) };
     }
     if (id === 'rule') {
         const r = ruleCheck(tx, today);
-        if (r.state === 'none') return { text: sayC('ruleNone', ch, seed) };
+        if (r.state === 'none') return { text: sayC('ruleNone', ch, seed), acts: INCOME_ACTS };
         return { text: sayC(r.state === 'good' ? 'ruleGood' : r.state === 'mid' ? 'ruleMid' : 'ruleLow', ch, seed, { spentPct: String(r.spentPct), savePct: String(r.savePct) }) };
     }
     if (id === 'goal' || id === 'goalnew') {
@@ -372,16 +510,24 @@ export function answerQuestion(id, ctx = {}) {
             const date = parseGoalDate(ctx.goalInput.date, today);
             if (!(sum > 0) || !date) return { text: sayC('goalBad', ch, seed), input: 'goal' };
             const calc = goalCalc({ sum, date, start: today }, tx, today);
+            const gv = { sum: fmt(sum), date: formatGoalDate(date), daysLeft: String(calc.daysLeft), perDay: fmt(calc.perDay), perWeek: fmt(calc.perWeek) };
+            const how = '\n\nКак это работает: я считаю всё, что ты запишешь в «Накопления» с сегодняшнего дня.';
             return {
-                text: sayC('goalSet', ch, seed, { sum: fmt(sum), date: formatGoalDate(date), daysLeft: String(calc.daysLeft), perDay: fmt(calc.perDay), perWeek: fmt(calc.perWeek) }),
-                effect: { setGoal: { sum, date, start: today } }
+                text: (calc.daysLeft < 7 ? sayNoWeek('goalSet', ch, seed, gv) : sayC('goalSet', ch, seed, gv)) + how,
+                effect: { setGoal: { sum, date, start: today } },
+                acts: [{ id: 'deposit', label: `➕ Отложить ${fmt(calc.perDay)}`, amt: calc.perDay }]
             };
         }
         const calc = id === 'goal' ? goalCalc(ctx.goalState, tx, today) : null;
         if (!calc) return { text: sayC(id === 'goal' ? 'goalNone' : 'goalAsk', ch, seed), input: 'goal' };
         if (calc.status === 'done') return { text: sayC('goalDone', ch, seed, { sum: fmt(calc.sum) }), goalButtons: true };
         const vars = { sum: fmt(calc.sum), saved: fmt(calc.saved), left: fmt(calc.left), pct: String(calc.pct), daysLeft: String(calc.daysLeft), perDay: fmt(calc.perDay) };
-        return { text: sayC(calc.status === 'behind' ? 'goalBehind' : 'goalProgress', ch, seed, vars), goalButtons: true };
+        const plan = `\n\nДо ${formatGoalDate(calc.date)} осталось ${calc.daysLeft} дн. Чтобы успеть, нужно откладывать около ${fmt(calc.perDay)} в день.`;
+        return {
+            text: sayC(calc.status === 'behind' ? 'goalBehind' : 'goalProgress', ch, seed, vars) + plan,
+            goalButtons: true,
+            acts: [{ id: 'deposit', label: `➕ Отложить ${fmt(calc.perDay)}`, amt: calc.perDay }]
+        };
     }
     if (id === 'goalstop') return { text: 'Хорошо, цель убрана. Когда захочется новую, начнём заново.', effect: { clearGoal: true } };
     if (id === 'badges') {

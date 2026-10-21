@@ -26,7 +26,7 @@
 
     --spacing-xs: 4px;
     --spacing-sm: 8px;
-    --spacing-md: 12px;
+    --spacing-md: 8px;
     --spacing-lg: 20px;
     --spacing-xl: 32px;
 
@@ -84,7 +84,7 @@
 
     --spacing-xs: 4px;
     --spacing-sm: 8px;
-    --spacing-md: 12px;
+    --spacing-md: 8px;
     --spacing-lg: 20px;
     --spacing-xl: 32px;
 
@@ -171,8 +171,7 @@
         color: #ffffff;
     }
 
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
         color: var(--secondary-color);
     }
 
@@ -235,8 +234,7 @@
         color: #ffffff;
     }
 
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
         color: var(--secondary-color);
     }
 
@@ -314,9 +312,7 @@
 
     input,
     select,
-    textarea,
-    .custom-select-button,
-    .custom-select {
+    textarea {
         color: var(--secondary-color);
         background-color: #050509;
     }
@@ -391,9 +387,6 @@
     }
 
     /* Месяцы */
-    #month-filter-container {
-        color: var(--primary-color);
-    }
 
     /* FAQ */
     .faq-item summary {
@@ -530,9 +523,7 @@
     }
 
     /* Инпуты */
-    input, select, textarea,
-    .custom-select-button, .custom-select,
-    .close-category-sheet, .close-settings-btn {
+    input, select, textarea, .close-category-sheet, .close-settings-btn {
         color: var(--secondary-color);
         background-color: var(--tertiary-color);
     }
@@ -640,10 +631,6 @@
         color: var(--secondary-color);
     }
 
-    #month-filter-container {
-        color: var(--accent-color);
-    }
-
     /* 🐬 Паттерн фона */
     main {
         background-image:
@@ -707,10 +694,6 @@
 
     .analytics-slide h4 {
         color: var(--secondary-color);
-    }
-
-    #month-filter-container {
-        color: var(--primary-color);
     }
 
     .faq-item summary {
@@ -777,7 +760,7 @@
         box-shadow: 0 0 16px rgba(255, 155, 184, 0.55);
     }
 
-    .chip-info, .tx-date, .chip-value{
+    .tx-date{
         color: var(--secondary-color);
     }
 
@@ -889,8 +872,7 @@
     }
 
     /* Поля ввода */
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
         color: var(--secondary-color);
         background-color: var(--tertiary-color);
     }
@@ -963,8 +945,7 @@
         color: var(--secondary-color);
     }
   
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
       color: var(--secondary-color);
       background-color: var(--tertiary-color);
     }
@@ -972,7 +953,7 @@
     main {
         background-image: 
         linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
-        url('assets/blackbberry-pattern.png');
+        url('/assets/blackbberry-pattern.png');
         background-size: 300px;
         background-repeat: repeat;
         background-color: var(--main-ground);
@@ -1036,15 +1017,14 @@
           box-shadow: 0 4px 16px rgba(0,0,0,0.5);
       }
 
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
       color: var(--secondary-color);
       background-color: var(--tertiary-color);
     }
 
     main {
       background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.5)),
-      url('assets/hookah-pattern.png');
+      url('/assets/hookah-pattern.png');
       background-size: 420px;
       background-repeat: repeat;
       background-color: var(--main-ground);
@@ -1118,8 +1098,7 @@
       color: var(--text-color); /* Белый при наведении */
     }
 
-    input, select, textarea,
-    .custom-select-button, .custom-select {
+    input, select, textarea {
       color: var(--text-color); /* Белый для текста ввода */
     }
   }
@@ -1255,9 +1234,7 @@
     /* 🧾 INPUT */
     input,
     select,
-    textarea,
-    .custom-select-button,
-    .custom-select {
+    textarea {
         color: var(--secondary-color);
         background-color: var(--tertiary-color);
     }
@@ -1277,32 +1254,27 @@
 }
 
 /* 6. Planner: только светлые темы, убираем слишком тёмные карточки */
-:root:not([data-theme]) .planner-empty-card,
 :root:not([data-theme]) .planner-quick-create-btn,
 :root:not([data-theme]) .planner-stat-card,
 :root:not([data-theme]) .planner-mini-card,
 :root:not([data-theme]) .planner-section-card,
 :root:not([data-theme]) .planner-insight-card,
 :root:not([data-theme]) .planner-day-card,
-:root[data-theme="light"] .planner-empty-card,
 :root[data-theme="light"] .planner-stat-card,
 :root[data-theme="light"] .planner-mini-card,
 :root[data-theme="light"] .planner-section-card,
 :root[data-theme="light"] .planner-insight-card,
 :root[data-theme="light"] .planner-day-card,
-:root[data-theme="dolphin"] .planner-empty-card,
 :root[data-theme="dolphin"] .planner-stat-card,
 :root[data-theme="dolphin"] .planner-mini-card,
 :root[data-theme="dolphin"] .planner-section-card,
 :root[data-theme="dolphin"] .planner-insight-card,
 :root[data-theme="dolphin"] .planner-day-card,
-:root[data-theme="sage"] .planner-empty-card,
 :root[data-theme="sage"] .planner-stat-card,
 :root[data-theme="sage"] .planner-mini-card,
 :root[data-theme="sage"] .planner-section-card,
 :root[data-theme="sage"] .planner-insight-card,
 :root[data-theme="sage"] .planner-day-card,
-:root[data-theme="yogurt"] .planner-empty-card,
 :root[data-theme="yogurt"] .planner-stat-card,
 :root[data-theme="yogurt"] .planner-mini-card,
 :root[data-theme="yogurt"] .planner-section-card,
@@ -1346,4 +1318,38 @@
 :root[data-theme="yogurt"] .add-btn,
 :root[data-theme="yogurt"] #add-btn {
     color: var(--tertiary-color);
+}
+
+/* 💎 Тиффани — глубокое бирюзовое стекло (старые переменные для компонентов без токенов) */
+:root[data-theme="tiffany"] {
+    --main-ground:        #031416;
+    --sidebar-bg:         #031416;
+    --bg-secondary-color: #082123;
+    --tertiary-color:     #0d2e30;
+    --secondary-color:    #effffd;
+    --text-muted:         #86b5b1;
+    --border-color:       rgba(170, 255, 246, 0.15);
+
+    --primary-color:      #81d8d0;
+    --income-color:       #7be8a8;
+    --expense-color:      #ff7b8c;
+    --deposit-color:      #efdcae;
+    --debt-color:         #ffb27d;
+
+    --accent-color:       #0a2a2c;
+    --dark-color:         #000000;
+
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(129, 216, 208, 0.18);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.75), 0 0 24px rgba(129, 216, 208, 0.24);
+
+    --an-primary-color:    #81d8d0;
+    --an-income-color:     #7be8a8;
+    --an-expense-color:    #ff7b8c;
+    --an-debt-color:       #ffb27d;
+    --an-secondary-color:  #effffd;
+    --an-tertiary-color:   #031416;
+    --an-accent-color:     #0a2a2c;
+    --an-shadow-md:        0 4px 16px rgba(129, 216, 208, 0.28);
+    --an-border-radius-md: var(--border-radius-md);
 }

@@ -193,42 +193,6 @@ export class PlannerManager {
         return this.aggregateByCategory(triggered, 'amount');
     }
 
-    getStartDayOpeningBalance(planner) {
-        const startDate = planner.startDate;
-
-        const incomeAtStart =
-            planner.incomePlan?.incomeDate === startDate
-                ? (Number(planner.incomePlan.amount) || 0)
-                : 0;
-
-        // Только главные расходы, явно назначенные на стартовую дату, и депозиты
-        // стартового дня вычитаются из начального остатка.
-        // Ежедневные (daily) и регулярные (regular) расходы начинаются со 2-го дня —
-        // именно так работает buildDayFacts при isStartDay=true, поэтому здесь их
-        // вычитать не нужно (это и было причиной ухода баланса в минус).
-        const startMainEntries = this.getPlannedMainForDate(planner, startDate);
-
-        const startDeposits = (planner.plannedDeposits || [])
-            .filter(item => item.startDate === startDate)
-            .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-
-        const startMain = this.sumAmounts(startMainEntries.map(item => item.amount));
-
-        const openingBalance =
-            incomeAtStart -
-            startMain -
-            startDeposits;
-
-        return {
-            incomeAtStart,
-            startMain,
-            startDaily: 0,   // daily не применяются на стартовый день
-            startRegular: 0, // regular не применяются на стартовый день
-            startDeposits,
-            openingBalance
-        };
-    }
-
     classifyTransaction(tx) {
         const amount = Number(tx?.amount) || 0;
         if (amount <= 0) return null;
@@ -367,51 +331,74 @@ export class PlannerManager {
         };
     }
 
+    // Дата, в которую «ожидается» плановое поступление: до начала периода — стартовый день,
+    // после конца периода поступление в расчёт не входит (возвращается '').
+    getPlanIncomeDate(planner) {
+        const d = planner.incomePlan?.incomeDate || planner.startDate;
+        if (d < planner.startDate) return planner.startDate;
+        if (d > planner.endDate) return '';
+        return d;
+    }
+
+    // Состояние планового поступления.
+    // Реальные поступления плановой категории в любой день периода засчитываются в свой день и «закрывают» план:
+    //   • дата плана уже наступила — если факт есть, план не считаем; если фактов нет, считаем, что деньги придут по плану;
+    //   • дата плана ещё впереди — ожидаем только недостающую часть (план минус уже полученное).
+    // Пустая сумма плана = «считать по факту»: учитываются только реальные поступления категории.
+    getPlanIncomeState(planner, realByDate, todayIso) {
+        const category = this.normalizeCategory(planner.incomePlan?.category);
+        let received = 0;
+        for (const list of realByDate.values()) {
+            for (const entry of list) {
+                if (entry.kind === 'income' && this.normalizeCategory(entry.category) === category) {
+                    received += Number(entry.amount) || 0;
+                }
+            }
+        }
+        const planned = Number(planner.incomePlan?.amount) || 0;
+        const planDate = this.getPlanIncomeDate(planner);
+        const expected = !planDate ? 0
+            : planDate > todayIso ? Math.max(0, planned - received)
+            : (received > 0 ? 0 : planned);
+        return { category, received, planned, planDate, expected };
+    }
+
     buildDayFacts({
                       planner,
                       currentDate,
                       day,
                       isStartDay,
-                      realByDate
+                      realByDate,
+                      incomeState
                   }) {
-        const plannedIncome = isStartDay
-            ? 0
-            : (
-                currentDate === planner.incomePlan.incomeDate
-                    ? (Number(planner.incomePlan.amount) || 0)
-                    : 0
-            );
+        const isPlanIncomeDay = !!incomeState && incomeState.planDate === currentDate;
+        const plannedIncome = isPlanIncomeDay ? incomeState.planned : 0;
+        const expectedIncome = isPlanIncomeDay ? incomeState.expected : 0;
 
-        const plannedMainEntries = isStartDay ? [] : this.getPlannedMainForDate(planner, currentDate);
+        const plannedMainEntries = this.getPlannedMainForDate(planner, currentDate);
         const plannedDailyEntries = this.getPlannedDailyForDay(planner, isStartDay);
         const plannedRegularEntries = this.getPlannedRegularForDay(planner, day.offsetDay, isStartDay);
 
-        const plannedDepositOut = isStartDay
-            ? 0
-            : (planner.plannedDeposits || [])
-                .filter(dep => dep.startDate === currentDate)
-                .reduce((sum, dep) => sum + (Number(dep.amount) || 0), 0);
+        const plannedDepositOut = (planner.plannedDeposits || [])
+            .filter(dep => dep.startDate === currentDate)
+            .reduce((sum, dep) => sum + (Number(dep.amount) || 0), 0);
 
-        const allRealDay = isStartDay ? [] : [...(realByDate.get(currentDate) || [])];
+        // Стартовый день: реальные расходы считаются, как в любой другой день.
+        // Реальные поступления — только плановой категории (остальные деньги этого дня в расчёт не входят).
+        const allRealDay = [...(realByDate.get(currentDate) || [])];
+        const planCategory = this.normalizeCategory(planner.incomePlan?.category);
         const realIncomeEntries = allRealDay.filter(item => item.kind === 'income');
         let realExpenseEntries = allRealDay.filter(item => item.kind === 'expense');
 
-        const plannedIncomeFact = isStartDay
-            ? 0
-            : realIncomeEntries
-                .filter(entry => this.normalizeCategory(entry.category) === this.normalizeCategory(planner.incomePlan.category))
-                .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
-
-        const usedIncomeIds = new Set(
-            realIncomeEntries
-                .filter(entry => this.normalizeCategory(entry.category) === this.normalizeCategory(planner.incomePlan.category))
-                .map(entry => entry.id)
-        );
+        const planIncomeEntries = realIncomeEntries
+            .filter(entry => this.normalizeCategory(entry.category) === planCategory);
+        const plannedIncomeFact = planIncomeEntries
+            .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
         const extraIncome = isStartDay
             ? 0
             : realIncomeEntries
-                .filter(entry => !usedIncomeIds.has(entry.id))
+                .filter(entry => this.normalizeCategory(entry.category) !== planCategory)
                 .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
         const mainMatch = this.matchPlanEntries(plannedMainEntries, realExpenseEntries);
@@ -445,7 +432,7 @@ export class PlannerManager {
         const factRegular = regularMatch.matchedTotal;
         const factDeposits = realDepositFact;
 
-        const effectiveIncome = plannedIncomeFact > 0 ? plannedIncomeFact : plannedIncome;
+        const effectiveIncome = plannedIncomeFact + expectedIncome;
         const effectiveMain = factMain > 0 ? factMain : plannedMain;
         const effectiveDaily = factDaily > 0 ? factDaily : plannedDaily;
         const effectiveRegular = factRegular > 0 ? factRegular : plannedRegular;
@@ -604,11 +591,34 @@ export class PlannerManager {
         const todayIso = this.getTodayIso(today);
         const realByDate = this.buildRealTransactionsByDate(plannerId);
 
-        const startBase = this.getStartDayOpeningBalance(planner);
-        let runningBalance = startBase.openingBalance;
+        const incomeState = this.getPlanIncomeState(planner, realByDate, todayIso);
+
+        // Стартовый день: плановое поступление (или полученное) минус траты этого дня по факту (или по плану).
+        // Ежедневные и регулярные траты начинаются со 2-го дня.
+        let startBase = { openingBalance: 0, incomeAtStart: 0, startMain: 0, startDaily: 0, startRegular: 0, startDeposits: 0, startExtra: 0 };
+        let runningBalance = 0;
         const rows = [];
 
         if (periodDays.length > 0) {
+            const startCalc = this.buildDayFacts({
+                planner,
+                currentDate: planner.startDate,
+                day: periodDays[0],
+                isStartDay: true,
+                realByDate,
+                incomeState
+            });
+            startBase = {
+                openingBalance: startCalc.netDay,
+                incomeAtStart: startCalc.totalIncomeDay,
+                startMain: startCalc.effective.main,
+                startDaily: 0,
+                startRegular: 0,
+                startDeposits: startCalc.effective.deposits,
+                startExtra: startCalc.fact.extraExpenses
+            };
+            runningBalance = startCalc.netDay;
+
             rows.push({
                 dayIndex: 1,
                 date: planner.startDate,
@@ -618,41 +628,18 @@ export class PlannerManager {
                 startBreakdown: {
                     income: startBase.incomeAtStart,
                     main: startBase.startMain,
-                    daily: startBase.startDaily,
-                    regular: startBase.startRegular,
-                    deposits: startBase.startDeposits
-                },
-                planned: {
-                    income: 0,
-                    main: 0,
                     daily: 0,
                     regular: 0,
-                    deposits: 0
+                    deposits: startBase.startDeposits,
+                    extra: startBase.startExtra
                 },
-                fact: {
-                    income: 0,
-                    main: 0,
-                    daily: 0,
-                    regular: 0,
-                    deposits: 0,
-                    extraIncome: 0,
-                    extraExpenses: 0
-                },
-                effective: {
-                    income: 0,
-                    main: 0,
-                    daily: 0,
-                    regular: 0,
-                    deposits: 0
-                },
-                breakdown: {
-                    main: [],
-                    daily: [],
-                    regular: []
-                },
-                totalIncomeDay: 0,
-                totalExpenseDay: 0,
-                netDay: 0,
+                planned: startCalc.planned,
+                fact: startCalc.fact,
+                effective: startCalc.effective,
+                breakdown: startCalc.breakdown,
+                totalIncomeDay: startCalc.totalIncomeDay,
+                totalExpenseDay: startCalc.totalExpenseDay,
+                netDay: startCalc.netDay,
                 balanceEndOfDay: runningBalance
             });
         }
@@ -668,7 +655,8 @@ export class PlannerManager {
                 currentDate,
                 day,
                 isStartDay,
-                realByDate
+                realByDate,
+                incomeState
             });
 
             runningBalance += dayCalc.netDay;
@@ -735,14 +723,14 @@ export class PlannerManager {
             riskMeta: this.buildDayRiskMeta(row, dailyLimit)
         }));
 
-        const totalPlannedExpense = this.sumAmounts(actionableRows.map(row => (
+        const totalPlannedExpense = this.sumAmounts(rows.map(row => (
             (Number(row.planned.main) || 0) +
             (Number(row.planned.daily) || 0) +
             (Number(row.planned.regular) || 0) +
             (Number(row.planned.deposits) || 0)
         )));
 
-        const totalFactExpense = this.sumAmounts(actionableRows.map(row => (
+        const totalFactExpense = this.sumAmounts(rows.map(row => (
             (Number(row.fact.main) || 0) +
             (Number(row.fact.daily) || 0) +
             (Number(row.fact.regular) || 0) +
@@ -750,8 +738,8 @@ export class PlannerManager {
             (Number(row.fact.extraExpenses) || 0)
         )));
 
-        const totalPlannedIncome = this.sumAmounts(actionableRows.map(row => Number(row.planned.income) || 0));
-        const totalFactIncome = this.sumAmounts(actionableRows.map(row => (
+        const totalPlannedIncome = this.sumAmounts(rows.map(row => Number(row.planned.income) || 0));
+        const totalFactIncome = this.sumAmounts(rows.map(row => (
             (Number(row.fact.income) || 0) +
             (Number(row.fact.extraIncome) || 0)
         )));
@@ -762,6 +750,9 @@ export class PlannerManager {
             summary: {
                 budgetName: planner.name,
                 incomeAmount: Number(planner.incomePlan.amount) || 0,
+                incomeReceived: incomeState.received,
+                incomeExpected: incomeState.expected,
+                incomeByFact: !(Number(planner.incomePlan.amount) > 0),
                 periodDays: planner.periodDays,
                 startDate: planner.startDate,
                 endDate: planner.endDate,

@@ -5,6 +5,8 @@ const THEME_KEY = 'appTheme';
 
 let _switchTimer = null;
 let _pendingTheme = null;
+let _vtActive = false;   // идёт View Transition
+let _queuedTheme = null; // тема, выбранная во время перехода
 
 export function setTheme(theme) {
     _pendingTheme = theme;
@@ -12,58 +14,49 @@ export function setTheme(theme) {
     _switchTimer = setTimeout(() => _applyTheme(_pendingTheme), 80);
 }
 
+// Одно применение темы: атрибут, токены, сохранение, оповещение — всё в одном кадре
+function _commit(theme) {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    applyThemeTokens(theme, root);
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* ignore */ }
+    _announceThemeChange(theme);
+}
+
 function _applyTheme(theme) {
     const root = document.documentElement;
     _highlightActiveCard(theme);
+    if (root.getAttribute('data-theme') === theme) return;
 
-    if (document.startViewTransition) {
-        root.style.setProperty('--theme-transition-duration', '0.22s');
-        const transition = document.startViewTransition(() => {
-            root.setAttribute('data-theme', theme);
-            applyThemeTokens(theme, root);
-            localStorage.setItem(THEME_KEY, theme);
-        });
-        transition.finished.then(() => {
-            root.style.removeProperty('--theme-transition-duration');
-            _announceThemeChange(theme);
-        });
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (document.startViewTransition && !calm) {
+        // Старый кадр остаётся на месте, новый плавно проявляется поверх (см. ::view-transition в style.css):
+        // без провала яркости и без перестройки страницы на глазах
+        // Переход уже идёт: запоминаем последнюю тему и применим её следующим плавным переходом.
+        // Новый startViewTransition поверх текущего отменил бы его, и страница мигнула бы жёстким переключением.
+        if (_vtActive) { _queuedTheme = theme; return; }
+        _vtActive = true;
+        root.classList.add('theme-transitioning');
+        const vt = document.startViewTransition(() => _commit(theme));
+        const done = () => {
+            _vtActive = false;
+            root.classList.remove('theme-transitioning');
+            const next = _queuedTheme; _queuedTheme = null;
+            if (next && next !== root.getAttribute('data-theme')) _applyTheme(next);
+        };
+        vt.finished.then(done, done);
         return;
     }
 
-    root.style.transition = 'opacity 0.12s ease';
-    root.style.opacity = '0';
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            root.setAttribute('data-theme', theme);
-            applyThemeTokens(theme, root);
-            localStorage.setItem(THEME_KEY, theme);
-            root.style.opacity = '1';
-
-            root.addEventListener('transitionend', function cleanup(e) {
-                if (e.propertyName !== 'opacity') return;
-                root.style.transition = '';
-                root.removeEventListener('transitionend', cleanup);
-                _announceThemeChange(theme);
-            });
-        });
-    });
+    // Без View Transitions: мгновенная смена в одном кадре, без анимаций отдельных элементов
+    root.classList.add('theme-transitioning');
+    _commit(theme);
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-transitioning')));
 }
 
 // charts.js и Analyticsinsights.js слушают 'themechange' (раньше его никто не диспатчил)
 function _announceThemeChange(theme) {
     window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
-}
-
-// Мёртвый код (глобалов destroyAllCharts/renderCharts нет) — оставлен для совместимости
-function _rechartIfNeeded() {
-    if (typeof destroyAllCharts === 'function' && typeof renderCharts === 'function') {
-        const analyticsPage = document.getElementById('analytics-page');
-        if (analyticsPage && !analyticsPage.classList.contains('hidden')) {
-            destroyAllCharts();
-            renderCharts();
-        }
-    }
 }
 
 function _highlightActiveCard(theme) {
@@ -89,16 +82,16 @@ export const THEMES = [
         value: 'light',
         emoji: '💡',
         name: 'Светлая',
-        desc: 'Чистый классический интерфейс',
+        desc: 'Светлая версия Тёмной: стекло и синий акцент',
         badge: null,
         preview: {
-            bg:     '#F5F7F9',
+            bg:     '#eaf1fb',
             card:   '#FFFFFF',
-            accent: '#3B82F6',
-            text:   '#1A1A1A',
-            bar:    '#3B82F6',
-            income: '#27AE60',
-            expense:'#ff4b5c',
+            accent: '#2a6df0',
+            text:   '#0b1730',
+            bar:    '#2a6df0',
+            income: '#0a9a62',
+            expense:'#e0384f',
         }
     },
     {
@@ -154,7 +147,7 @@ export const THEMES = [
         emoji: '🔵',
         name: 'Onyx',
         desc: 'Дискордовый вайб',
-        badge: null,
+        badge: 'ULTIMA',
         preview: {
             bg:     '#050509',
             card:   '#181824',
@@ -170,7 +163,7 @@ export const THEMES = [
         emoji: '🍷',
         name: 'Burgundy',
         desc: 'Винный бордо с вишнёвым акцентом',
-        badge: null,
+        badge: 'PRO',
         preview: {
             bg:     '#12070a',
             card:   '#2a0f18',
@@ -323,6 +316,22 @@ export const THEMES = [
             bar:    '#e94560',
             income: '#a0ff00',
             expense:'#ff00ff',
+        }
+    },
+    {
+        value: 'tiffany',
+        emoji: '💎',
+        name: 'Тиффани',
+        desc: 'Бирюзовое глубокое стекло и жемчужные блики',
+        badge: 'ULTIMA',
+        preview: {
+            bg:     '#031416',
+            card:   '#0a2a2c',
+            accent: '#81d8d0',
+            text:   '#effffd',
+            bar:    '#81d8d0',
+            income: '#7be8a8',
+            expense:'#ff7b8c',
         }
     },
     {
@@ -545,6 +554,14 @@ export function initThemeSelector() {
                 border: 1px solid rgba(46,204,113,.3);
             }
 
+            .tc-badge--ultima {
+                /* Боттега-зелёный: плотная заливка, чтобы читалось и на светлых, и на тёмных темах */
+                background: linear-gradient(135deg, #0b5d3b, #127a4d);
+                color: #f3f1e3;
+                border: 1px solid rgba(243,241,227,.38);
+                box-shadow: 0 1px 4px rgba(6,60,38,.35);
+            }
+
             /* Галочка активной темы */
             .tc-check {
                 width: 20px;
@@ -573,8 +590,8 @@ export function initThemeSelector() {
 
     const fragment = document.createDocumentFragment();
 
-    // порядок как в макете: Акулка, Onyx, Бордо, Мята, Светлая, Дельфин, затем остальные
-    const ORDER = ['shark', 'onyx', 'burgundy', 'mint', 'light', 'dolphin'];
+    // порядок: Onyx и Тиффани (ULTIMA), Акулка и Бордо (PRO), затем Мята, Светлая, Дельфин и остальные
+    const ORDER = ['onyx', 'tiffany', 'shark', 'burgundy', 'mint', 'light', 'dolphin'];
     const rank = v => { const i = ORDER.indexOf(v); return i === -1 ? ORDER.length : i; };
     [...THEMES].sort((a, b) => rank(a.value) - rank(b.value)).forEach(theme => {
         const card = document.createElement('button');
@@ -588,6 +605,8 @@ export function initThemeSelector() {
             badgeHtml = `<span class="tc-badge tc-badge--old">OLD</span>`;
         } else if (theme.badge === 'PRO') {
             badgeHtml = `<span class="tc-badge tc-badge--pro">✦ PRO</span>`;
+        } else if (theme.badge === 'ULTIMA') {
+            badgeHtml = `<span class="tc-badge tc-badge--ultima">✦ ULTIMA</span>`;
         }
 
         card.innerHTML = `

@@ -11,3 +11,8 @@ CLAUDE.md
 .claudeignore
 .claude/
 design_handoff_budgetit_redesign/
+
+# Не для публикации
+_backups/
+_to_delete/
+config/*.pem

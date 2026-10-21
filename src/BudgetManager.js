@@ -1,4 +1,5 @@
 // BudgetManager.js — финальная версия с planner support
+import { cleanText, cleanTransaction } from './utils/sanitize.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
 
 export class BudgetManager {
@@ -104,7 +105,20 @@ export class BudgetManager {
     }
 
     /* ───────────── 2. Сохранение ───────────── */
+    // Сохранения за один «тик» объединяются в одно: массовый импорт не пишет всё состояние на каждую строку
     saveToStorage() {
+        if (this._saveScheduled) return;
+        this._saveScheduled = true;
+        const run = () => { this._saveScheduled = false; this.flushSave(); };
+        if (typeof queueMicrotask === 'function') queueMicrotask(run); else Promise.resolve().then(run);
+        if (!this._saveHooked && typeof window !== 'undefined') {
+            this._saveHooked = true;
+            // страница уходит в фон или закрывается: дописываем всё, что ещё не сохранено
+            window.addEventListener('pagehide', () => { if (this._saveScheduled) { this._saveScheduled = false; this.flushSave(); } });
+        }
+    }
+
+    flushSave() {
         const snapshot = {
             budgets: this.budgets,
             currentBudgetIndex: this.currentBudgetIndex,
@@ -140,7 +154,7 @@ export class BudgetManager {
 
         this.budgets.push({
             id: `budget_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            name,
+            name: cleanText(name, 60),
             transactions: []
         });
 
@@ -173,6 +187,7 @@ export class BudgetManager {
     addTransaction(tx) {
         const budget = this.getCurrentBudget();
         if (!budget) return;
+        cleanTransaction(tx);
 
         if (tx.date) {
             const d = new Date(tx.date);
@@ -229,11 +244,12 @@ export class BudgetManager {
         }
 
         tx.date = updatedData.date ?? tx.date;
-        tx.category = updatedData.category ?? tx.category;
+        tx.category = updatedData.category !== undefined ? cleanText(updatedData.category) : tx.category;
         tx.amount = updatedData.amount ?? tx.amount;
 
         if (tx.type === 'expense' && updatedData.products) {
             tx.products = updatedData.products;
+            cleanTransaction(tx);
             tx.amount = updatedData.products.reduce(
                 (s, p) => s + (Number(p.quantity) || 0) * (Number(p.price) || 0),
                 0

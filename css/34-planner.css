@@ -146,7 +146,6 @@
 
 /* ---------- Shared planner cards ---------- */
 
-.planner-empty-card,
 .planner-stat-card,
 .planner-mini-card,
 .planner-section-card,
@@ -162,79 +161,6 @@
 }
 
 /* ---------- Empty state ---------- */
-
-.planner-empty-card {
-    padding: 20px 18px 18px;
-    text-align: center;
-}
-
-.planner-empty-title {
-    font-size: 1.05rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-    padding-bottom: 0;
-}
-
-.planner-empty-text {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    line-height: 1.45;
-    margin-bottom: 14px;
-}
-
-.planner-empty-features {
-    display: grid;
-    gap: 7px;
-    margin-bottom: 16px;
-    text-align: left;
-}
-
-.planner-empty-feature {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.planner-empty-feature-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-    line-height: 1.2;
-}
-
-.planner-empty-feature-body {
-    min-width: 0;
-}
-
-.planner-empty-feature-title {
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--text-color);
-    line-height: 1.2;
-}
-
-.planner-empty-feature-sub {
-    margin-top: 2px;
-    font-size: 0.73rem;
-    color: var(--text-muted);
-    line-height: 1.3;
-}
-
-.planner-empty-create-btn {
-    width: 100%;
-    margin-top: 0;
-    padding: 13px;
-    border-radius: var(--border-radius-lg);
-    border: none;
-    background: var(--primary-color);
-    color: var(--secondary-color);
-    font-family: "Montserrat", sans-serif;
-    font-size: 0.92rem;
-    font-weight: 800;
-    cursor: pointer;
-}
 
 /* ---------- Summary ---------- */
 
@@ -521,12 +447,6 @@
 .planner-days-subtitle {
     font-size: 11px;
     color: var(--secondary-color, #9aa4b2);
-}
-
-.planner-days-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
 }
 
 .planner-day-card {
@@ -887,15 +807,6 @@
 }
 
 /* ---------- Empty state shark image ---------- */
-
-.planner-empty-shark {
-    width: 220px;
-    height: auto;
-    margin: -4px auto 14px;
-    display: block;
-    object-fit: contain;
-    border-radius: var(--border-radius-lg);
-}
 
 /* ---------- Delete confirm modal ---------- */
 
