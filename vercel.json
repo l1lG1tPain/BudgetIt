@@ -45,5 +45,6 @@
       ]
     }
   ],
-  "buildCommand": "node scripts/build-css.mjs"
+  "buildCommand": "node scripts/build-css.mjs",
+  "outputDirectory": "."
 }
