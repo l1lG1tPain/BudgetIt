@@ -9,6 +9,7 @@ import {
 import { buildExtra, describeLimit, planHint, answerQuestion, greeting, QUESTIONS, MENUS, menuIntro, topicAnswer, richHtml, evaluateChallenge, hintText, challengeText, badgeText, flavorLine, tailLine, goalDoneText, countDaysInLimit, rankInfo } from './SharkTalk.js';
 import { goalCalc, earnedBadges, BADGES, getFlags, markFlag } from './SharkExtra.js';
 import { showTweak } from '../utils/tweakSystem.js';
+import { EMOTION_INFO } from './texts/emotionInfo.js';
 
 const MOOD_TO_ATTR = { new: 'new', ok: 'ok', tense: 'warn', angry: 'bad', proud: 'proud' };
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -26,7 +27,7 @@ function setSharkImg(img, key) {
 // Эмоция Акулки в ответах чата (остальные — по текущему настроению карточки)
 const CHAT_EMOTION = {
     today: 'think', whatif: 'think', week: 'count-cold', topcat: 'count-cold', limit: 'idea', fact: 'smart',
-    cheer: 'laugh', joke: 'laugh', left: 'count-happy', goalnew: 'idea', goaldone: 'celebrate'
+    cheer: 'laugh', joke: 'cheeky', left: 'count-happy', goalnew: 'idea', goaldone: 'celebrate'
 };
 
 // Картинки-заглушки в разметке: <img data-shark-emotion="welcome"> получает файл выбранной Акулки
@@ -174,6 +175,13 @@ export class SharkUI {
             applyStaticSharkImages();
             applySharkTheme();
             this.forceRefresh();
+        });
+        // Галерея эмоций: рисуем один раз при первом раскрытии
+        document.getElementById('shark-gallery')?.addEventListener('toggle', e => {
+            const box = document.getElementById('shark-emotions');
+            if (!e.target.open || !box || box.childElementCount) return;
+            box.innerHTML = EMOTION_INFO.map(([id, name, when]) =>
+                `<div class="sk-gal-item"><img src="assets/hoodie/hoodie-${id}.webp" alt="" loading="lazy" decoding="async"><b>${name}</b><small>${when}</small></div>`).join('');
         });
         document.getElementById('shark-talk-seg')?.addEventListener('click', e => {
             const b = e.target.closest('button[data-talk]');
@@ -416,7 +424,8 @@ export class SharkUI {
                 ? new Date(tx.date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : null;
             r = reactToSave({
                 type: tx.type, amount: Number(tx.amount) || 0, before, after, limit: c.limit,
-                character: c.settings.character, backdate, first: c.transactions.length === 1, talk: c.settings.talk
+                character: c.settings.character, backdate, first: c.transactions.length === 1, talk: c.settings.talk,
+                rude: !!c.settings.rude && c.settings.shark === 'hoodie'
             });
         }
         this.showToast(r, c.settings);

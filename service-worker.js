@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.3-r3';
+const CACHE_VERSION = 'v5.0.3-r6';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -61,6 +61,9 @@ const STATIC_ASSETS = [
     '/src/shark/texts/emotion.js',
     '/src/shark/texts/live.js',
     '/src/shark/texts/live2.js',
+    '/src/shark/texts/emotionInfo.js',
+    '/src/shark/texts/rude.js',
+    '/src/shark/texts/rude-more.js',
     '/src/shark/texts/stats-more.js',
     '/src/ui/PwaInstall.js',
     '/assets/onb-scene-cut.webp',

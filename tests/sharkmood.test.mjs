@@ -101,6 +101,8 @@ test('все варианты ≤ 90 символов при больших су
     const bad = /\b(вышла|сделала|потратила|молодец\b.*\bсам)/i;
     for (const [state, entry] of Object.entries(TEXT_VARIANTS)) {
         const lists = Array.isArray(entry) ? [entry] : Object.values(entry);
+        // «Дерзкая» (18+) пишет длиннее и обращается к полу через «(а)»: для неё отдельная проверка ниже
+        if (state.startsWith('rude:')) { for (const list of lists) for (const fn of list) assert.ok(fn({ ...vars, spent: 1234567, limit: 1234567 }).length <= 170, fn(vars)); continue; }
         for (const list of lists) for (const fn of list) {
             const t = fn(vars);
             assert.ok(t.length <= 90, `${t.length}: ${t}`);
@@ -265,13 +267,15 @@ test('заголовки карточки зависят от характера
 });
 
 test('тосты: первая трата, 50% и 90% лимита', () => {
+    const rnd = Math.random; Math.random = () => 0.99;   // без редкой шуточной реплики
+    try {
     const base = { type: 'expense', limit: 1000, character: 'normal' };
     assert.match(reactToSave({ ...base, amount: 10, before: 0, after: 10, first: true }).text, /перв|старт|начал|№1|Есть|Начн/i);
     assert.match(reactToSave({ ...base, amount: 300, before: 300, after: 600 }).text, / 400|400\b/);
     assert.match(reactToSave({ ...base, amount: 100, before: 800, after: 920 }).text, /\b80\b/);
     assert.equal(reactToSave({ ...base, amount: 100, before: 800, after: 920 }).mood, 'tense');
     // уже были выше 50% — обычный тост
-    assert.doesNotMatch(reactToSave({ ...base, amount: 50, before: 600, after: 650 }).text, /50%|Половин|Середин|Рубеж/);
+    assert.doesNotMatch(reactToSave({ ...base, amount: 50, before: 600, after: 650 }).text, /50%|Половин|Середин|Рубеж/);    } finally { Math.random = rnd; }
 });
 
 test('текст «лимит сохранён» по характеру', () => {

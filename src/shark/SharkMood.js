@@ -6,6 +6,7 @@
 
 import { MOOD_TEXTS, TOAST_TEXTS, FLAVOR } from './texts/index.js';
 import { EMOTION_TEXTS, EMOTION_TITLES } from './texts/emotion.js';
+import { RUDE_TEXTS, RUDE_TITLES } from './texts/rude.js';
 import { LIVE_TEXTS, EMOTION_MORE } from './texts/live.js';
 import { LIVE_MORE } from './texts/live2.js';
 
@@ -70,7 +71,7 @@ export const HOODIE_EMOTIONS = [
     'shock', 'angry', 'fist', 'grim-fist', 'cheeky', 'gopnik', 'rage-squat', 'rage-flip-serious', 'rage-flip-stand',
     'smart', 'idea', 'broke', 'sympathy', 'celebrate', 'sleep', 'tired'
 ];
-export const RUDE_EMOTIONS = ['rage-squat', 'rage-flip-serious', 'rage-flip-stand'];
+export const RUDE_EMOTIONS = ['rage-flip-serious', 'rage-flip-stand'];   // «очень сильно злится» (rage-squat — ещё выше)
 const HOODIE_DIR = 'assets/hoodie/hoodie-';
 
 // Настроение → эмоция hoodie по умолчанию
@@ -342,6 +343,9 @@ for (const key of Object.keys(LIVE_TEXTS)) {
     }
 }
 
+// «Дерзкая» (18+): отдельные наборы под каждую эмоцию, плоские списки без деления по характеру
+for (const key of Object.keys(RUDE_TEXTS)) TEXTS[`rude:${key}`] = RUDE_TEXTS[key].map(fillMood);
+
 export const TEXT_VARIANTS = TEXTS; // для тестов
 
 function textList(state, character) {
@@ -434,15 +438,19 @@ const daySeed = (today, n) => {
 export function emotionFor({ mood = 'ok', ratio = 0, character = 'normal', streak = 0, hasData = true, hasToday = false,
     spent = 0, hour = 12, quietHours = true, rude = false, source = null, today = '' } = {}) {
     if (!hasData || mood === 'new') return { emotion: source === 'noplan' || source === 'plan-empty' ? 'think' : 'welcome', textKey: null };
+    if (source === 'plan-empty') return { emotion: 'broke', textKey: null };   // по плану ничего не остаётся
     if (mood === 'angry') {
-        if (ratio >= 1.6) {
-            if (rude && ratio >= 2) return { emotion: RUDE_EMOTIONS[daySeed(today, RUDE_EMOTIONS.length)], textKey: 'shock' };
-            return { emotion: 'shock', textKey: 'shock' };
-        }
-        return { emotion: character === 'strict' ? 'fist' : 'angry', textKey: null };
+        // «Дерзкая»: чем сильнее перерасход, тем грубее жест (гопник → стойка/«серьёзно» → присед)
+        if (rude && ratio >= 3) return { emotion: 'rage-squat', textKey: 'shock' };
+        if (rude && ratio >= 2) return { emotion: RUDE_EMOTIONS[daySeed(today, RUDE_EMOTIONS.length)], textKey: 'shock' };
+        if (rude && ratio >= 1.3) return { emotion: 'gopnik', textKey: ratio >= 1.6 ? 'shock' : null };
+        if (ratio >= 1.6) return { emotion: 'shock', textKey: 'shock' };
+        // злится: кулак при заметном перерасходе (у строгой — сразу), совсем слегка — обычная злая
+        return { emotion: character === 'strict' || ratio > 1.2 ? 'fist' : 'angry', textKey: null };
     }
     if (mood === 'tense') {
         if (ratio >= 1.6) return { emotion: 'shock', textKey: 'shock' };   // «добрая» не злится, но в шоке от большого перерасхода
+        if (character === 'strict' && ratio > 1) return { emotion: 'fist', textKey: null };   // строгая сжимает кулак уже на первом перерасходе
         return { emotion: character === 'kind' && ratio > 1 ? 'sympathy' : 'stern-smile', textKey: null };
     }
     if (mood === 'proud') return streak >= 30 ? { emotion: 'celebrate', textKey: 'celebrate' } : { emotion: 'proud', textKey: null };
@@ -486,6 +494,14 @@ export function computeCard(args, opts = {}) {
             const over = Math.max(0, (args.spent || 0) - (args.limit || 0));
             text = pickText(liveKey, { left, over, days: args.streak || 0, spent: args.spent || 0, limit: args.limit || 0 }, opts.storage, opts.today, character);
         }
+    }
+    // «Дерзкая»: только у Акулки в худи и только если пользователь включил режим сам
+    if (args.rude && sharkId === 'hoodie' && m.key !== 'new' && TEXTS[`rude:${e.emotion}`] && (opts.random || Math.random)() < 0.85) {
+        const left = Math.max(0, (args.limit || 0) - (args.spent || 0));
+        const over = Math.max(0, (args.spent || 0) - (args.limit || 0));
+        text = pickText(`rude:${e.emotion}`, { left, over, days: args.streak || 0, spent: args.spent || 0, limit: args.limit || 0 }, opts.storage, opts.today, character);
+        const ts = RUDE_TITLES[e.emotion];
+        if (ts) title = ts[daySeed(opts.today || isoDay(now), ts.length)];
     }
     return { ...m, emotion: e.emotion, title, text };
 }
@@ -555,13 +571,26 @@ export function limitSetText(character, mode, limit) {
 
 // Обёртка: в режимах «Обычная» и «Болтушка» иногда вместо спокойной реакции выпадает редкая реплика,
 // а у «Болтушки» к реакции добавляется короткий хвостик. talk по умолчанию 'quiet' — без добавок.
+// «Дерзкая»: тост после операции говорит грубее (только по желанию и если Акулка не «тихая»)
+function rudeToast(r, args) {
+    const key = r && r.emotion && `rude:${r.emotion}`;
+    if (!args.rude || !key || !TEXTS[key] || args.talk === 'quiet' || args.first || args.backdate || Math.random() >= 0.85) return r;
+    const over = Math.max(0, (args.after || 0) - (args.limit || 0));
+    const left = Math.max(0, (args.limit || 0) - (args.after || 0));
+    return { ...r, text: pickText(key, { left, over, spent: args.after || 0, limit: args.limit || 0, days: 0 }, args.storage, args.today) };
+}
+
 export function reactToSave(args) {
+    return rudeToast(reactToSaveBase(args), args);
+}
+
+function reactToSaveBase(args) {
     const r = reactBase(args);
     const talk = args.talk || 'quiet';
     if (talk === 'quiet' || !r || args.first || args.backdate) return r;
     const ch = FLAVOR.rare[args.character] ? args.character : 'normal';
     const calm = r.mood === 'ok' || r.mood === 'proud';
-    if (calm && Math.random() < (talk === 'chatty' ? 1 / 12 : 1 / 30)) return { ...r, text: pick(FLAVOR.rare[ch]), emotion: 'laugh' };
+    if (calm && Math.random() < (talk === 'chatty' ? 1 / 12 : 1 / 30)) return { ...r, text: pick(FLAVOR.rare[ch]), emotion: Math.random() < 0.5 ? 'laugh' : 'cheeky' };
     if (talk === 'chatty' && calm && Math.random() < 0.5) return { ...r, text: `${r.text} ${pick(FLAVOR.tail[ch])}` };
     return r;
 }
