@@ -3,6 +3,8 @@
 // Зависимости: SheetJS (xlsx), budgetManager, uiManager
 
 import { applyStaticSharkImages } from './shark/SharkUI.js';
+import { parseRussianPdf } from './import/pdfBanks.js';
+import { mapRuExpense, mapRuIncome, mapUzExtraExpense } from './import/merchants/index.js';
 
 export class ExcelImportManager {
     constructor(budgetManager, uiManager) {
@@ -249,7 +251,7 @@ export class ExcelImportManager {
                         return;
                     }
 
-                    this._importParsedRows(parsed);
+                    this._startPdfPreview(parsed, file);
                 } catch (err) {
                     this._showError('upload', 'Ошибка чтения PDF: ' + err.message);
                 }
@@ -261,6 +263,39 @@ export class ExcelImportManager {
 
             reader.readAsArrayBuffer(file);
         });
+    }
+
+    /** PDF → тот же предпросмотр, что и у Excel: можно снять галочки и выбрать категорию (правило запоминается) */
+    _startPdfPreview(parsed, file) {
+        this._pdfMode = true;
+        this._pdfRows = parsed.map(r => ({ ...r }));
+        this._rows = this._pdfRows;           // привязка выбора/исключений к текущему файлу
+        this._headers = [];
+        this._detectedSource = { name: 'PDF', icon: '📄' };
+        this._currentImportSource = 'PDF';
+        document.querySelector('#ei-step-map .ei-cols')?.classList.add('hidden');
+        const srcEl = document.getElementById('ei-detected-source');
+        if (srcEl) {
+            srcEl.textContent = `📄 Формат: PDF-выписка${parsed.bank ? ' · ' + parsed.bank : ''}`;
+            srcEl.style.display = '';
+        }
+        this._showError('upload', '');
+        this._renderPreview();
+        this._showStep('map');
+    }
+
+    _parsePdfRowsForPreview() {
+        const out = [];
+        for (const r of this._pdfRows || []) {
+            if (!r.date || !r.amount) continue;
+            const idx = out.length;
+            let category = r.category;
+            const ruled = this._getCatRule(r.description, r.type);
+            if (ruled) category = ruled;
+            if (this._catOverride?.has(idx)) category = this._catOverride.get(idx);
+            out.push({ date: r.date, type: r.type, category, amount: r.amount, description: r.description || '', idx });
+        }
+        return out;
     }
 
     _loadPdfJs(cb) {
@@ -306,6 +341,17 @@ export class ExcelImportManager {
        7. Парсинг PDF
     ──────────────────────────────────────────────── */
     _parsePDFText(text, tokens) {
+        // Российские банки (Т-Банк, Газпромбанк, Ozon Банк): RU-словарь первым, затем общий маппер
+        try {
+            const ruRows = parseRussianPdf(text, {
+                mapExpense: d => mapRuExpense(d) || this._mapExpenseCategory(d),
+                mapIncome:  d => mapRuIncome(d)  || this._mapIncomeCategory(d),
+            });
+            if (ruRows && ruRows.length > 0) return ruRows;
+        } catch (e) {
+            console.warn('RU PDF parser failed, fallback to legacy', e);
+        }
+
         const formatters = [
             () => this._parseOzonBankPDF(text),
             () => this._parseSberPDF(text),
@@ -925,6 +971,9 @@ export class ExcelImportManager {
             return;
         }
 
+        this._pdfMode = false;
+        document.querySelector('#ei-step-map .ei-cols')?.classList.remove('hidden');
+
         const nameEl = document.getElementById('ei-file-name');
         if (nameEl) {
             nameEl.textContent = `📄 ${file.name}`;
@@ -1185,6 +1234,7 @@ export class ExcelImportManager {
        17. Парсинг строк по текущим настройкам маппинга
     ──────────────────────────────────────────────── */
     _parseRows() {
+        if (this._pdfMode) return this._parsePdfRowsForPreview();
         if (!this._rows?.length) return [];
 
         const colDate = parseInt(document.getElementById('ei-col-date')?.value ?? 0);
@@ -1597,6 +1647,7 @@ export class ExcelImportManager {
 
         // ── Точные названия мест (раньше общих правил) ──
         if (/\bK\d{3}\b/.test(t))                                         return '🛒 Korzinka';          // K057, K112 … — номера магазинов Korzinka
+        if (/^\s*B\d{2,3}\s*$/.test(t))                                 return '🍞 Булочная';          // B106 … — номера точек «Булочная Ф. Вольчека»
         if (/МК ДУЭСТИ|MK DUESTI|DUESTI|ДУЭСТИ/.test(t))                   return '💄 M Cosmetics';
         if (/\bATTO\b|\bATTO[ .\-_]/.test(t))                              return '💳 Atto';              // карта метро
         if (/HOOKAH/.test(t))                                              return '💨 Кальян';
@@ -1685,7 +1736,7 @@ export class ExcelImportManager {
         if (/FOODEXPRESS/i.test(t)) return '🍟 FoodExpress';
 
 // ── Такси / транспорт ──
-        if (/YANDEXGO|YANDEX.*GO|YANDEX.*TAXI/i.test(t)) return '🚖 YandexGO Taxi';
+        if (/YANDEXGO|YANDEX.*GO|YANDEX.*TAXI|YGO UB|RIDETECH INTERNATIONAL|МКАО ЯНДЕКС.ТАКСИ/i.test(t)) return '🚖 YandexGO Taxi';
         if (/MYTAXI|MY.TAXI/i.test(t)) return '🚗 MyTaxi';
         if (/TAXI|ТАКСИ|TRANSPORT|ТРАНСПОРТ/i.test(t)) return '🚖 Транспорт, такси и доставка';
         if (/LUKOIL|UZNEFTEPRODUKT|UZNEFTEGAS/i.test(t)) return '⛽ Бензин и заправка';
@@ -1944,11 +1995,13 @@ export class ExcelImportManager {
         if (/U TYOTUSHKI/i.test(t)) return '🧕 У Тётушки';
         if (/\bBON\b/i.test(t)) return '🥞 BON';
 
+// ── Дополнительные словари (узбекские дополнения, затем российские) — только если выше ничего не найдено ──
+        const extra = mapUzExtraExpense(t) || mapRuExpense(t);
+        if (extra) return extra;
+
 // ── Прочие (fallback) ──
         return '🗿 Прочее';
     }
-
-    /** Маппинг текста на категорию дохода */
 
     /** Маппинг текста на категорию дохода */
     _mapIncomeCategory(text) {

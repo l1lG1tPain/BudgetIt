@@ -16,7 +16,9 @@ export const ORDER = [
     '32-search.css',
     '33-data-tools.css',        // экспорт, импорт, бэкапы
     '34-planner.css',
-    '35-achievements.css'
+    '35-achievements.css',
+    '36-month-recap.css',     // «Каким был твой прошлый месяц»: сторис и карточка-вход
+    '37-sw-update.css'        // карточка «Доступна новая версия»
 ];
 
 // Убираем комментарии и пустые строки; строки и url(...) не трогаем

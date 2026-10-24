@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.3b';
+const CACHE_VERSION = 'v5.0.4';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -88,6 +88,20 @@ const STATIC_ASSETS = [
     '/src/Searchmanager.js',
     '/src/Analyticsinsights.js',
     '/src/Excelimportmanager.js',
+    '/src/recap/recapStats.js',
+    '/src/recap/recapPeriods.js',
+    '/src/recap/recapRecords.js',
+    '/src/recap/recapUI.js',
+    '/src/recap/recapEntry.js',
+    '/src/utils/swUpdate.js',
+    '/src/import/pdfBanks.js',
+    '/src/import/merchants/engine.js',
+    '/src/import/merchants/index.js',
+    '/src/import/merchants/ru.js',
+    '/src/import/merchants/ru-2.js',
+    '/src/import/merchants/ru-3.js',
+    '/src/import/merchants/uz.js',
+    '/src/import/merchants/uz-2.js',
 
     // planner
     '/src/planner/PlannerManager.js',
@@ -278,7 +292,7 @@ self.addEventListener('activate', event => {
             .then(() =>
                 self.clients.matchAll({ type: 'window' })
                     .then(clients =>
-                        clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }))
+                        clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION }))
                     )
             )
     );

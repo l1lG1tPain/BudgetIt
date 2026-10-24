@@ -37,7 +37,7 @@
 
 
 
-  <link rel="manifest" href="manifest.json?v=5.0.3">
+  <link rel="manifest" href="manifest.json?v=5.0.4">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -88,7 +88,7 @@
   <meta name="twitter:image:alt"   content="Акулка в бордовом худи — талисман BudgetIt">
 
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.3","image":"https://budgetit.app/assets/og-cover.png"}
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.4","image":"https://budgetit.app/assets/og-cover.png"}
   </script>
 
   <style>
@@ -735,7 +735,7 @@
                   <img src="assets/icons/budgetit-icon.png" class="product-icon">
                   <h3>BudgetIt</h3>
                   <p>Учёт финансов с аналитикой</p>
-                  <span class="product-version">v5.0.3</span>
+                  <span class="product-version">v5.0.4</span>
               </div>
 
               <a href="https://migry-bice.vercel.app/" target="_blank" rel="noopener noreferrer" class="product-card link">
@@ -1111,7 +1111,7 @@
               <div class="about-hero">
                   <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
                   <div class="about-title">BudgetIt</div>
-                  <div class="about-version">Версия 5.0.3</div>
+                  <div class="about-version">Версия 5.0.4</div>
                   <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
               </div>
 
@@ -1191,11 +1191,20 @@
                   </div>
                   <div class="about-changelog">
                       <div class="about-changelog-row">
+                          <div class="about-changelog-ver">5.0.4</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Итоги в сторис
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Новый вид трендов — сторисы (итоги месяца, недели и года); импорт выписок российских банков (Т-Банк, Ozon Банк, Газпромбанк)</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
                           <div class="about-changelog-ver">5.0.3</div>
                           <div class="about-changelog-info">
                               <div class="about-changelog-name">
                                   Акулка в худи
-                                  <span class="about-badge-now">Сейчас</span>
                               </div>
                               <div class="about-changelog-desc">Новая Акулка в худи с 27 эмоциями и сотнями живых фраз, обновлённая страница «Акулка», лимит, цель и значки отдельно для каждого бюджета; пересчитанный «План месяца» (стартовый день и поступления); умная установка приложения (PWA); новые карточки «Накопления» и «Залётом»; кнопки «записать вручную / выпиской» в «Моих цифрах»; тема «Тиффани», «Светлая» в синем акценте, плашки ULTIMA и PRO</div>
                           </div>
@@ -1860,10 +1869,6 @@
     <p id="loading-text">Загрузка BudgetIt...</p>
   </div>
 
-  <div id="sw-update-banner" class="hidden">
-    🚀 Новая версия будет загружена через 5 сек...
-  </div>
-
   <!-- Подключаем внешний JavaScript -->
   <script type="module" src="./app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -1891,7 +1896,7 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
+      navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
         .then(reg => console.log('[SW] Registered', reg))
         .catch(err => console.warn('[SW] Failed', err));
     }

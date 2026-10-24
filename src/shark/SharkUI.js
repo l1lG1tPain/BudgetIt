@@ -6,6 +6,9 @@ import {
     getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, computeMood,
     countStreakInLimit, countOverStreak, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
 } from './SharkMood.js';
+import { recapAvailability, recapChatVisible } from '../recap/recapStats.js';
+import { showRecap } from '../recap/recapUI.js';
+import { buildAnyRecap } from '../recap/recapPeriods.js';
 import { buildExtra, describeLimit, planHint, answerQuestion, greeting, QUESTIONS, MENUS, menuIntro, topicAnswer, richHtml, evaluateChallenge, hintText, challengeText, badgeText, flavorLine, tailLine, goalDoneText, countDaysInLimit, rankInfo } from './SharkTalk.js';
 import { goalCalc, earnedBadges, BADGES, getFlags, markFlag } from './SharkExtra.js';
 import { showTweak } from '../utils/tweakSystem.js';
@@ -711,7 +714,36 @@ export class SharkUI {
         this.ui.openModal('shark-chat-sheet');
     }
 
+    // «Каким был мой {месяц}?» / неделя / год: сторис с итогами или объяснение, чего не хватает
+    askRecap(label, kind = 'month') {
+        this.bubble('user', esc(label));
+        const c = this.context();
+        const r = buildAnyRecap(kind, c.transactions, c.today, true);
+        if (r.ok) {
+            this.reply('Собрала итоги. Листай, это быстро 🦈', 300);
+            setTimeout(() => showRecap(kind, c.transactions, c.today, { force: true }), 700);
+            return;
+        }
+        const need = kind === 'week' ? 'для итогов недели нужны записи минимум за 4 дня' : kind === 'year' ? 'для итогов года нужны записи минимум за 60 дней в 3 разных месяцах' : 'для итогов месяца нужны записи минимум за 15 дней';
+        const have = r.activeDays || 0;
+        this.reply(`Пока мало данных: записей на ${have} ${have === 1 ? 'день' : 'дн.'}, ${need}. Загрузи выписку через «Залётом», и я всё соберу.` +
+            '<button type="button" class="sc-act" data-act="import">⚡ Загрузить выпиской</button>', 380);
+    }
+
+    recapItems() {
+        const c = this.context();
+        const av = recapAvailability(c.transactions, c.today);
+        const y = Number(c.today.slice(0, 4)) - (c.today.slice(5, 7) === '01' ? 1 : 0);
+        return [
+            { id: 'recap:month', label: `🎞️ Каким был мой ${av.name}` },
+            { id: 'recap:week', label: '📅 Какой была моя неделя' },
+            { id: 'recap:year', label: `🏆 Мой ${y} год` }
+        ];
+    }
+
     ask(id, label, extra = {}) {
+        if (id === 'recap') { this.askRecap(label, 'month'); return; }
+        if (id.startsWith('recap:')) { this.askRecap(label, id.slice(6)); return; }
         this.bubble('user', esc(label));
         const ctx = { ...this.talkContext(), ...extra };
         const ans = answerQuestion(id, ctx);
@@ -754,7 +786,10 @@ export class SharkUI {
         const gf = document.getElementById('sc-goal');
         if (gf && !menu) gf.hidden = true;
         if (!menu) {
-            box.innerHTML = QUESTIONS.map(q => `<button type="button" data-q="${q.id}">${esc(q.label)}</button>`).join('') +
+            const rc = this.context();
+            const rav = recapAvailability(rc.transactions, rc.today);
+            const recapChip = !recapChatVisible(rc.today) ? '' : `<button type="button" class="sc-recap" data-q="recap">🎞️ Каким был мой ${esc(rav.name)}?</button>`;
+            box.innerHTML = recapChip + QUESTIONS.map(q => `<button type="button" data-q="${q.id}">${esc(q.label)}</button>`).join('') +
                 Object.entries(MENUS).map(([k, m]) => `<button type="button" class="sc-menu" data-menu="${k}">${esc(m.label)}</button>`).join('');
             return;
         }
@@ -763,7 +798,8 @@ export class SharkUI {
         if (m.topics) inner += m.topics.map(t => `<button type="button" data-topic="${t.id}">${t.icon} ${esc(t.title)}</button>`).join('');
         else {
             const active = this.loadChallenge()?.status === 'active';
-            inner += m.items.filter(i => i.id !== 'chstop').map(i => `<button type="button" data-q="${i.id}"${i.group ? ' class="sc-start"' : ''}>${esc(i.label)}</button>`).join('');
+            const items = (menu === 'stats' ? [...this.recapItems(), ...m.items] : m.items);
+            inner += items.filter(i => i.id !== 'chstop').map(i => `<button type="button" data-q="${i.id}"${i.group ? ' class="sc-start"' : ''}>${esc(i.label)}</button>`).join('');
             if (active && menu === 'fun') inner += '<button type="button" data-q="chstop">✖ Отказаться от челленджа</button>';
         }
         box.innerHTML = inner;

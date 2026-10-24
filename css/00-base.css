@@ -2804,35 +2804,6 @@ main::-webkit-scrollbar-thumb {
 }
 
 
-#sw-update-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(12px);
-    color: #fff;
-    text-align: center;
-    padding: 12px;
-    font-size: 16px;
-    z-index: 1000;
-    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
-    transform: translateY(100%);
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-
-#sw-update-banner.show {
-    transform: translateY(0%);
-    opacity: 1;
-}
-
-
-#sw-update-banner.hidden {
-    opacity: 0;
-}
-
-
 /* ───────── Вклады: инфо-блок + табличка + чипсы срока ───────── */
 
 .deposit-meta-block {

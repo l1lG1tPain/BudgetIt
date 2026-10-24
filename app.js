@@ -5,6 +5,8 @@ import { UIManager } from './src/UIManager.js';
 import { StorageManager } from './src/StorageManager.js';
 import { initThemeSelector } from './src/ThemeManager.js';
 import { initSettings } from './src/settings.js';
+import { initRecapEntry } from './src/recap/recapEntry.js';
+import { initSwUpdate } from './src/utils/swUpdate.js';
 import { showLoader } from './src/utils/loader.js';
 import { SearchManager } from './src/Searchmanager.js';
 import { normalizeCustomCategories } from './src/utils/customCategories.js';
@@ -125,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     uiManager.desktopWidgets = desktopWidgets;
 
     initSettings(budgetManager, uiManager);
+    initRecapEntry(() => budgetManager.getCurrentBudget()?.transactions || []);
     initPwaInstall();
     // Картинки нельзя сохранить: блокируем меню по долгому нажатию и перетаскивание
     const isImg = e => e.target instanceof Element && e.target.closest('img, picture, canvas');
@@ -138,24 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ===============================================================
 // 4. Service Worker
 // ===============================================================
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', event => {
-        const { type } = event.data || {};
-        if (type === 'SW_UPDATED') {
-            const banner = document.getElementById('sw-update-banner');
-            if (!banner) return;
-
-            banner.classList.remove('hidden');
-            banner.classList.add('show');
-
-            setTimeout(() => {
-                banner.classList.remove('show');
-                banner.classList.add('hidden');
-                window.location.reload();
-            }, 5005);
-        }
-    });
-}
+initSwUpdate();
 
 function isNewYearPeriod() {
     const now = new Date();
