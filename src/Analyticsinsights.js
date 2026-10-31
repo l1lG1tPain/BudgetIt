@@ -135,6 +135,8 @@ function _hideOnboarding() {
 // ──────────────────────────────────────────────────────────────
 // Работа с пользовательскими исключениями
 // ──────────────────────────────────────────────────────────────
+const _escA = x => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
 function _getUserExcludedCats() {
     try {
         return JSON.parse(localStorage.getItem(USER_EXCLUDED_CATS_KEY) || '[]');
@@ -460,12 +462,13 @@ function _render() {
         cards.push({
             e: '🔎',
             t: 'Нетипичная трата',
-            b: `<b>${anomaly.category}</b> — ${_f(anomaly.amount)}<br>
+            b: `<b>${_escA(anomaly.category)}</b> — ${_f(anomaly.amount)}<br>
 <span style="opacity:.72;font-size:11px">${_fd(anomaly.date)} · выше среднего в ${anomaly.timesAvg}x и выше медианы в ${anomaly.timesMedian}x</span><br>
-<div class="bi-anomaly-actions" data-id="${anomaly.id}" data-cat="${anomaly.category}" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-  <button class="bi-action-btn bi-action-ok" data-action="ok" data-id="${anomaly.id}">✓ Норм, это разовая</button>
-  <button class="bi-action-btn bi-action-fin" data-action="exclude" data-id="${anomaly.id}" data-cat="${anomaly.category}">💸 Исключить из анализа</button>
-</div>`,
+<div class="bi-anomaly-actions" data-id="${_escA(anomaly.id)}" data-cat="${_escA(anomaly.category)}" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+  <button class="bi-action-btn bi-action-ok" data-action="ok" data-id="${_escA(anomaly.id)}">✓ Разовая, не показывать</button>
+  <button class="bi-action-btn bi-action-fin" data-action="exclude" data-id="${_escA(anomaly.id)}" data-cat="${_escA(anomaly.category)}">🚫 Не считать категорию</button>
+</div>
+<div style="opacity:.62;font-size:11px;line-height:1.35;margin-top:8px"><b>Разовая</b> — эта карточка про операцию пропадёт, цифры не изменятся.<br><b>Не считать</b> — все операции «${_escA(anomaly.category)}» уйдут из трендов (траты, здоровье, прогноз). Графики и главная не меняются. Вернуть можно в подсказке ниже.</div>`,
             badge: 'аномалия',
             col: '#f59e0b',
             interactive: true,
@@ -483,7 +486,7 @@ function _render() {
             t: `Итог ${_mn(months.at(-1))}`,
             b: plus
                 ? `Доходов было больше, чем расходов. Осталось <b>${_f(mb)}</b>`
-                : `Бытовые расходы превысили доходы на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`,
+                : `Траты превысили доходы на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`,
             badge: `${plus ? '+' : ''}${_f(mb)}`,
             col: plus ? '#10b981' : '#f43f5e',
             priority: 95
@@ -505,7 +508,7 @@ function _render() {
         cards.push({
             e: up ? '📈' : '📉',
             t: 'Тренд расходов',
-            b: `Бытовые расходы ${up
+            b: `Траты ${up
                 ? '<b style="color:#f43f5e">выросли</b>'
                 : '<b style="color:#22d3ee">снизились</b>'} на ${Math.abs(trend).toFixed(1)}% vs ${_mn(M.prevKey)}${partialMonth ? ' (на то же число)' : ''}`,
             badge: `${up ? '+' : ''}${trend.toFixed(1)}%`,
@@ -776,7 +779,7 @@ function _render() {
     if (totI > 0 && totE > totI * 1.05) {
         al.push({
             ico: '🚨',
-            txt: `Бытовые расходы превышают доходы на <b>${_f(totE - totI)}</b>`,
+            txt: `Траты превышают доходы на <b>${_f(totE - totI)}</b>`,
             t: 'danger'
         });
     }
@@ -808,7 +811,12 @@ function _render() {
     if (totExcluded > 0) {
         al.push({
             ico: '🚫',
-            txt: `Исключено из аналитики: <b>${_f(totExcluded)}</b>`,
+            txt: (() => {
+                const cats = _getUserExcludedCats();
+                return cats.length
+                    ? `Не считается в трендах: ${cats.map(c => `«${_escA(c)}»`).join(', ')} и траты «без учёта» — <b>${_f(totExcluded)}</b> <button type="button" class="bi-al-restore" data-restore-excluded style="margin-left:6px;padding:3px 10px;border-radius:999px;border:0;background:var(--chip);color:var(--text);font:inherit;font-size:12px;font-weight:700;cursor:pointer">Вернуть категории</button>`
+                    : `Траты «без учёта» в тренды не входят: <b>${_f(totExcluded)}</b>`;
+            })(),
             t: 'info'
         });
     }
@@ -816,7 +824,7 @@ function _render() {
     if (depositTx.length > 0 || debtTx.length > 0) {
         al.push({
             ico: '🧩',
-            txt: 'Вклады, переводы и долги считаются, как на главной. Вклад или перевод себе можно убрать кнопкой «Исключить» на карточке нетипичной траты',
+            txt: 'Вклады, переводы и долги считаются, как на главной. Вклад или перевод себе можно убрать кнопкой «Не считать категорию» на карточке нетипичной траты',
             t: 'info'
         });
     }
@@ -881,14 +889,14 @@ function _cards(list) {
                 _confirmAnomaly(txId);
                 _showActionFeedback(
                     btn.closest('.bi-card'),
-                    '✓ Понял, это разовая трата. Больше не будем её поднимать',
+                    '✓ Понял: разовая. Эту операцию больше не покажу, цифры не меняются',
                     '#10b981'
                 );
             } else if (action === 'exclude') {
                 _addUserExcludedCat(cat);
                 _showActionFeedback(
                     btn.closest('.bi-card'),
-                    `✓ Категория «${cat}» исключена из анализа`,
+                    `✓ «${cat}» больше не считается в трендах. Вернуть — в подсказке ниже`,
                     '#06b6d4'
                 );
             }
@@ -961,6 +969,12 @@ function _alerts(list) {
         ${a.t === 'info' ? `<button class="bi-al-dismiss" aria-label="Закрыть">✕</button>` : ''}
       </div>
     `).join('');
+
+    r.querySelector('[data-restore-excluded]')?.addEventListener('click', e => {
+        e.stopPropagation();
+        try { localStorage.removeItem(USER_EXCLUDED_CATS_KEY); } catch { /* ignore */ }
+        _render();
+    });
 
     r.querySelectorAll('.bi-al-dismiss').forEach(btn => {
         btn.addEventListener('click', e => {
