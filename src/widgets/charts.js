@@ -266,7 +266,7 @@ function getRichTooltipLines(tx, categoryLabel, totalAmt) {
  */
 function buildTooltipDefaults() {
     const isLight = document.documentElement.dataset.theme &&
-        ['light','yogurt','dolphin','mint','sage'].includes(
+        ['light','light-classic','yogurt','dolphin','sage','tiffany'].includes(
             document.documentElement.dataset.theme
         );
     return {

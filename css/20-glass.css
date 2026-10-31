@@ -1982,62 +1982,53 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
 .sc-form-goal input[type="date"] { flex: 1 1 140px; }
 
 
-/* ═══════════ Тема «Тиффани»: бирюзовое глубокое стекло, жемчужные блики, серебристая «лента» ═══════════
-   Без backdrop-blur на карточках и списках (см. правила производительности выше): всё делается градиентами и тенями. */
+/* ═══════════ Тема «Тиффани» (светлая): Tiffany Blue #81D8D0, белое стекло, чёрные акценты ═══════════
+   Без backdrop-blur на карточках и списках: всё градиентами и тенями. */
 :root[data-theme="tiffany"] {
-  /* Tiffany Blue #0ABAB5; блики #C3FFFF / #86FFFF, глубокий тон #078282 */
-  --tf-a: #0abab5; --tf-b: #078282; --tf-pearl: #c3ffff;
-  --tf-grad: linear-gradient(135deg, #c3ffff 0%, #86ffff 22%, #0abab5 60%, #078282 100%);
-  --tf-sheen: linear-gradient(145deg, rgba(195,255,255,.08) 0%, rgba(195,255,255,0) 34%, rgba(10,186,181,.07) 100%);
+  --tf-blue: #81d8d0; --tf-deep: #0abab5; --tf-ink: #0b1d1c;
+  --tf-sheen: linear-gradient(150deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 45%, rgba(255,255,255,.08) 100%);
 }
-/* фон: к трём бликам добавляется диагональный «атласный» отлив */
+/* фон: фирменная бирюза с мягкими белыми бликами */
 @media (max-width:1099px){
   :root[data-theme="tiffany"] main{
     background-image:
-      radial-gradient(circle 360px at -40px 40px, var(--orb1), transparent 72%),
-      radial-gradient(circle 320px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
-      radial-gradient(circle 280px at 60px calc(100% - 10px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(195,255,255,.03) 46%, transparent 54% 100%) !important}
+      radial-gradient(circle 380px at -40px 30px, var(--orb1), transparent 72%),
+      radial-gradient(circle 320px at calc(100% + 60px) 360px, var(--orb2), transparent 72%),
+      radial-gradient(circle 300px at 50px calc(100% - 10px), var(--orb3), transparent 72%) !important}
 }
 @media (min-width:1100px){
   :root[data-theme="tiffany"] body{
     background-image:
-      radial-gradient(circle 420px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
-      radial-gradient(circle 380px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
-      radial-gradient(circle 340px at 40% calc(100% + 40px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(195,255,255,.028) 46%, transparent 54% 100%) !important}
+      radial-gradient(circle 440px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
+      radial-gradient(circle 400px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
+      radial-gradient(circle 360px at 40% calc(100% + 40px), var(--orb3), transparent 72%) !important}
 }
-/* карточки: стеклянный отлив, холодная кромка и бирюзовое свечение снизу */
+/* карточки: белое матовое стекло с мягкой бирюзовой тенью */
 :root[data-theme="tiffany"] :is(.glass, .glass-2, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row,
   #settings-page .sp-hero-card, #settings-page .sp-nav-group, .faq-item, .set-card, .empty-card, .about-hero,
-  #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .bi-card,
+  #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .bi-card, #analytics-page .an-card,
   #planner-page .planner-hero, #planner-page .planner-stat-card, #planner-page .planner-section-card, #planner-page .planner-day-card) {
   background-image: var(--tf-sheen);
   border-color: var(--stroke);
-  box-shadow: inset 0 1px 0 rgba(195,255,255,.16), inset 0 -1px 0 rgba(10,186,181,.16), 0 14px 32px -18px rgba(10,186,181,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 12px 28px -16px rgba(7,90,88,.35);
 }
-/* строки операций: только отлив (сотни элементов, тени не добавляем) */
 :root[data-theme="tiffany"] #transaction-list li.tx-item{ background-image: var(--tf-sheen); border-color: var(--stroke); }
-/* шторки и шапка: тонкая светящаяся кромка */
 :root[data-theme="tiffany"] .bottom-sheet:not(.fullscreen-sheet), :root[data-theme="tiffany"] .sheet{
-  border-top-color: rgba(134,255,255,.26);
-  box-shadow: inset 0 1px 0 rgba(195,255,255,.22), 0 -22px 60px rgba(0,0,0,.45), 0 -2px 30px rgba(10,186,181,.16);
+  border-top-color: rgba(255,255,255,.95);
+  box-shadow: inset 0 1px 0 #fff, 0 -18px 50px rgba(7,70,68,.25);
 }
-/* главные кнопки: градиент «Тиффани» с мягким свечением */
+/* главные кнопки: чёрные с бирюзовой иконкой — как лента на коробке Tiffany */
 :root[data-theme="tiffany"] footer.liquid-footer #add-btn.fab-btn,
 :root[data-theme="tiffany"] .add-btn, :root[data-theme="tiffany"] .chip-btn.active,
 :root[data-theme="tiffany"] .sl-save, :root[data-theme="tiffany"] .sl-seg button.active{
-  background: var(--tf-grad) !important; color: var(--ink) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -6px rgba(10,186,181,.65);
+  background: var(--tf-ink) !important; color: var(--tf-blue) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 22px -8px rgba(11,29,28,.55);
 }
 :root[data-theme="tiffany"] footer.liquid-footer .lnav-item.active{
-  background: linear-gradient(180deg, rgba(10,186,181,.24), rgba(10,186,181,.08));
-  box-shadow: inset 0 1px 0 rgba(195,255,255,.22), 0 0 18px rgba(10,186,181,.22);
+  background: rgba(255,255,255,.55);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 16px -8px rgba(7,90,88,.35);
 }
-/* Акулка: индикатор с градиентом (общий блик карточки — в конце файла, для всех тем) */
-:root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 55%, #fff)); }
-/* заголовки сумм: лёгкое свечение, чтобы цифры «светились» изнутри */
-:root[data-theme="tiffany"] #summary-blocks .block-value{ text-shadow: 0 0 18px rgba(10,186,181,.3); }
+:root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 60%, #fff)); }
 
 
 /* Пауза анимации Акулки, когда карточки не видно (SharkUI.watchCardVisibility) */

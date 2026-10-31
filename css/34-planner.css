@@ -871,7 +871,7 @@
 :root[data-theme="light"] .planner-today-badge,
 :root[data-theme="dolphin"] .planner-today-badge,
 :root[data-theme="light-classic"] .planner-today-badge,
-:root[data-theme="yogurt"] .planner-today-badge {
+:root[data-theme="yogurt"] .planner-today-badge, :root[data-theme="tiffany"] .planner-today-badge {
     color: #0d6b3a;                          /* тёмный зелёный — читается на светлом */
     background: rgba(24, 201, 100, 0.12);
     border-color: rgba(24, 201, 100, 0.28);
@@ -883,7 +883,7 @@
 :root[data-theme="light"] .planner-day-extra span,
 :root[data-theme="dolphin"] .planner-day-extra span,
 :root[data-theme="light-classic"] .planner-day-extra span,
-:root[data-theme="yogurt"] .planner-day-extra span {
+:root[data-theme="yogurt"] .planner-day-extra span, :root[data-theme="tiffany"] .planner-day-extra span {
     background: rgba(0, 0, 0, 0.05);
     border-color: rgba(0, 0, 0, 0.08);
     color: var(--secondary-color);
@@ -893,7 +893,7 @@
 :root[data-theme="light"] .planner-day-extra-start span,
 :root[data-theme="dolphin"] .planner-day-extra-start span,
 :root[data-theme="light-classic"] .planner-day-extra-start span,
-:root[data-theme="yogurt"] .planner-day-extra-start span {
+:root[data-theme="yogurt"] .planner-day-extra-start span, :root[data-theme="tiffany"] .planner-day-extra-start span {
     background: rgba(0, 0, 0, 0.07);
     border-color: rgba(0, 0, 0, 0.1);
     color: var(--secondary-color);
@@ -905,7 +905,7 @@
 :root[data-theme="light"] .planner-day-hint,
 :root[data-theme="dolphin"] .planner-day-hint,
 :root[data-theme="light-classic"] .planner-day-hint,
-:root[data-theme="yogurt"] .planner-day-hint {
+:root[data-theme="yogurt"] .planner-day-hint, :root[data-theme="tiffany"] .planner-day-hint {
     background: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.07);
     color: var(--secondary-color);
@@ -985,14 +985,14 @@
 :root[data-theme="light"] .planner-ob-title,
 :root[data-theme="dolphin"] .planner-ob-title,
 :root[data-theme="light-classic"] .planner-ob-title,
-:root[data-theme="yogurt"] .planner-ob-title {
+:root[data-theme="yogurt"] .planner-ob-title, :root[data-theme="tiffany"] .planner-ob-title {
     color: #1e293b;
 }
 
 :root[data-theme="light"] .planner-ob-sub,
 :root[data-theme="dolphin"] .planner-ob-sub,
 :root[data-theme="light-classic"] .planner-ob-sub,
-:root[data-theme="yogurt"] .planner-ob-sub {
+:root[data-theme="yogurt"] .planner-ob-sub, :root[data-theme="tiffany"] .planner-ob-sub {
     color: #475569;
     opacity: 1;
 }
@@ -1120,7 +1120,7 @@
 :root[data-theme="light"] .planner-ob-step,
 :root[data-theme="dolphin"] .planner-ob-step,
 :root[data-theme="light-classic"] .planner-ob-step,
-:root[data-theme="yogurt"] .planner-ob-step {
+:root[data-theme="yogurt"] .planner-ob-step, :root[data-theme="tiffany"] .planner-ob-step {
     background: rgba(0,0,0,.03);
     border-color: rgba(0,0,0,.07);
     box-shadow: 0 2px 8px rgba(0,0,0,.06);
@@ -1129,7 +1129,7 @@
 :root[data-theme="light"] .planner-ob-feat,
 :root[data-theme="dolphin"] .planner-ob-feat,
 :root[data-theme="light-classic"] .planner-ob-feat,
-:root[data-theme="yogurt"] .planner-ob-feat {
+:root[data-theme="yogurt"] .planner-ob-feat, :root[data-theme="tiffany"] .planner-ob-feat {
     background: rgba(0,0,0,.03);
     border-color: rgba(0,0,0,.07);
 }

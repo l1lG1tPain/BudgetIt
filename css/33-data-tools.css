@@ -622,7 +622,7 @@
 :root[data-theme="light-classic"],
 :root[data-theme="dolphin"],
 :root[data-theme="sage"],
-:root[data-theme="yogurt"] {
+:root[data-theme="yogurt"], :root[data-theme="tiffany"] {
 
     /* ── Stat-карточки ── */
     .eip-stat-card {
