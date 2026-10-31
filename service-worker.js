@@ -116,6 +116,7 @@ const STATIC_ASSETS = [
     '/src/analytics/ui.js',
     '/src/utils/insightsMath.js',
     '/src/utils/savingsFlow.js',
+    '/src/utils/carryOver.js',
     '/src/utils/insightsExtra.js',
     '/src/utils/emojiMap.js',
     '/src/utils/loader.js',

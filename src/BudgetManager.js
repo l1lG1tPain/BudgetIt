@@ -1,6 +1,7 @@
 // BudgetManager.js — финальная версия с planner support
 import { cleanText, cleanTransaction } from './utils/sanitize.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
+import { carryNext } from './utils/carryOver.js';
 
 export class BudgetManager {
     constructor(storageManager = null) {
@@ -572,6 +573,7 @@ export class BudgetManager {
 
         // 3. Перенос остатка из месяца в месяц.
         // Если месяц закрылся в минус — следующий месяц начинается с 0.
+        const carryMode = 'reset'; // TODO 2.2: getCarryMode()
         let rollingBalance = 0;
         let openingBalance = 0;
         let selectedMonthNet = 0;
@@ -582,7 +584,7 @@ export class BudgetManager {
                 .filter(monthKey => isBeforeMonth(monthKey, target.monthKey))
                 .forEach(monthKey => {
                     const rawClosing = rollingBalance + getMonthNet(monthKey);
-                    rollingBalance = Math.max(0, rawClosing);
+                    rollingBalance = carryNext(rawClosing, carryMode);
                 });
 
             openingBalance = rollingBalance;
@@ -669,7 +671,7 @@ export class BudgetManager {
                 .filter(monthKey => !endMonthKey || compareMonthKey(monthKey, endMonthKey) <= 0)
                 .forEach(monthKey => {
                     const rawClosing = allRollingBalance + getMonthNet(monthKey);
-                    allRollingBalance = Math.max(0, rawClosing);
+                    allRollingBalance = carryNext(rawClosing, carryMode);
                 });
 
             overallBudget = allRollingBalance;
@@ -902,6 +904,7 @@ export class BudgetManager {
 
         // Накопительный баланс бюджета:
         // если месяц ушёл в минус, следующий месяц начинается с 0.
+        const carryMode = 'reset'; // TODO 2.2: getCarryMode()
         let rollingBudget = 0;
         allKnownMonths.forEach(monthKey => {
             const bucket = buckets.get(monthKey);
@@ -911,7 +914,7 @@ export class BudgetManager {
 
             const rawClosing = rollingBudget + bucket.budgetNet;
             bucket.budgetClosing = rawClosing;
-            rollingBudget = Math.max(0, rawClosing);
+            rollingBudget = carryNext(rawClosing, carryMode);
         });
 
         // Накопительный баланс вкладов.

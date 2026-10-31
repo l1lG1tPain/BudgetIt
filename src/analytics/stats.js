@@ -4,6 +4,7 @@
 //   Даты — строки 'YYYY-MM-DD' (никогда не парсим через new Date(str)).
 // ===============================
 import { num, median, isSystemExcludedCategory, isFinancialCategory } from '../utils/insightsMath.js';
+import { carryNext } from '../utils/carryOver.js';
 import { inPeriod, keyOf, monthRange, addMonths, previousPeriod, periodSpan, keyYear, keyMonth, ymKey, makePeriod } from './period.js';
 
 export const WEEKDAYS_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
@@ -212,16 +213,16 @@ export function cashEvents(raw) {
 }
 
 /** Остаток на начало месяца `key`: перенос из месяца в месяц, ушедший в минус месяц дальше начинается с 0 (как «Доступно»). */
-function openingFor(ev, key) {
+function openingFor(ev, key, mode = 'reset') {
     const net = new Map();
     for (const e of ev) { const k = keyOf(e.date); if (k < key) net.set(k, (net.get(k) || 0) + e.v); }
     let run = 0;
-    for (const k of [...net.keys()].sort()) run = Math.max(0, run + net.get(k));
+    for (const k of [...net.keys()].sort()) run = carryNext(run + net.get(k), mode);
     return run;
 }
 
 /** Остаток на конец каждого месяца окна. Стартует с переноса (как «Доступно» на главной), конец последнего месяца = «Доступно». */
-export function balanceSeries(raw, p) {
+export function balanceSeries(raw, p, mode = 'reset') {
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const { first, last } = dataRange(ev);
@@ -234,16 +235,16 @@ export function balanceSeries(raw, p) {
         net.set(k, (net.get(k) || 0) + e.v);
         if (e.v > 0) plus.set(k, (plus.get(k) || 0) + e.v); else minus.set(k, (minus.get(k) || 0) - e.v);
     }
-    const start = openingFor(ev, a);
+    const start = openingFor(ev, a, mode);
     let run = start;
-    const points = keys.map((k, i) => { if (i) run = Math.max(0, run); run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0, plus: plus.get(k) || 0, minus: minus.get(k) || 0 }; });
+    const points = keys.map((k, i) => { if (i) run = carryNext(run, mode); run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0, plus: plus.get(k) || 0, minus: minus.get(k) || 0 }; });
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
     return { points, start, end: run, change: run - start, min, max };
 }
 
 /** Дневной остаток для коротких периодов: от 1-го числа первого месяца (с переносом) до последнего дня периода. Последняя точка = «Доступно». */
-export function balanceDaily(raw, p, todayISO) {
+export function balanceDaily(raw, p, todayISO, mode = 'reset') {
     if (p.all || !p.keys.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
@@ -262,13 +263,13 @@ export function balanceDaily(raw, p, todayISO) {
             if (e.v > 0) plus.set(e.date, (plus.get(e.date) || 0) + e.v); else minus.set(e.date, (minus.get(e.date) || 0) - e.v);
         } else if (e.date <= monthEnd) { later += e.v; if (e.v > 0) laterPlus += e.v; else laterMinus -= e.v; }
     }
-    const start = openingFor(ev, a);
+    const start = openingFor(ev, a, mode);
     const points = [];
     let run = start;
     const end = Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)) - 1, Number(to.slice(8, 10)));
     for (let ms = Date.UTC(Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1, 1); ms <= end; ms += 86400000) {
         const d = new Date(ms).toISOString().slice(0, 10);
-        if (d.slice(8, 10) === '01' && d.slice(0, 7) !== a) run = Math.max(0, run);
+        if (d.slice(8, 10) === '01' && d.slice(0, 7) !== a) run = carryNext(run, mode);
         run += net.get(d) || 0;
         points.push({ date: d, balance: run, net: net.get(d) || 0, plus: plus.get(d) || 0, minus: minus.get(d) || 0 });
     }
