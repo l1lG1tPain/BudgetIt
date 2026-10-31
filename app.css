@@ -7106,6 +7106,19 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
 .ms-sub em{font-style:normal;font-size:10.5px;opacity:.7}
 .ms-show{display:block;width:100%;margin-top:16px}
 .an-ratio small { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.allcat-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.allcat-row{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:7px 2px;background:none;border:0;border-radius:12px;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.allcat-row:active{background:var(--chip)}
+.allcat-emoji{flex:0 0 32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--chip);font-size:17px}
+.allcat-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.allcat-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.allcat-h b{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.allcat-h em{font-style:normal;font-weight:800;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.allcat-sub{display:flex;align-items:center;gap:8px}
+.allcat-track{flex:1;height:5px;border-radius:3px;background:var(--faint);overflow:hidden}
+.allcat-track i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--out),color-mix(in srgb,var(--out) 45%,transparent))}
+.allcat-sub small{flex:0 0 auto;min-width:52px;text-align:right;color:var(--muted);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.allcat-more{margin-top:6px;padding:10px;border:0;border-radius:12px;background:var(--chip);color:var(--text);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
 /* ── 30-statement-import.css ── */
 .ei-detected-source {
     font-size: 12px;

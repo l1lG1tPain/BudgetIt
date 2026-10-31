@@ -307,7 +307,7 @@ export function openMonthSheet(d, { onShow } = {}) {
       <div class="cs-sec"><h5>Не вошло в этот итог</h5>
         <div class="ms-row"><span>Ушло: свои переводы, вклады, долги, «без учёта»</span><b>−${f(recon.out.fin + recon.out.excluded)}</b></div>
         ${list(recon.out)}
-        <div class="ms-row"><span>Пришло: свои переводы, со вкладов, проценты, долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
+        <div class="ms-row"><span>Пришло: свои переводы, тело вклада, кредиты и долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
         ${list(recon.in)}
         <div class="ms-row ms-res ${otherNet >= 0 ? 'pos' : 'neg'}"><span>Вместе</span><b>${sg(otherNet)} ${cur}</b></div>
       </div>

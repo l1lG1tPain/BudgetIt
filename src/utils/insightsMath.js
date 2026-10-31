@@ -23,7 +23,10 @@ export const FINANCIAL_RE = new RegExp(`${CORE_FIN}|${EXPENSE_FIN}`, 'i');
 export const FINANCIAL_INCOME_RE = new RegExp(CORE_FIN, 'i');
 
 export const isFinancialCategory = cat => !!cat && FINANCIAL_RE.test(String(cat));
-export const isFinancialIncomeCategory = cat => !!cat && FINANCIAL_INCOME_RE.test(String(cat));
+// Поступления: проценты по вкладу и возврат долга — настоящие деньги в кошелёк, это обычное поступление.
+// Финансовыми остаются тело вклада («Перевод с вклада», «Депозит»), взятые кредиты/займы и свои переводы.
+const INCOME_KEEP_RE = /процент|interest|percent|(?:вернул|возврат)\S*[^,]*долг|долг\S*\s+(?:вернул|возврат)/i;
+export const isFinancialIncomeCategory = cat => !!cat && !INCOME_KEEP_RE.test(String(cat)) && FINANCIAL_INCOME_RE.test(String(cat));
 export const isSystemExcludedCategory = cat => !!cat && SYSTEM_EXCLUDED_CATEGORIES.includes(String(cat).trim());
 
 // Единые предикаты «потребления»: обычные траты и обычные поступления без переводов, вкладов, долгов

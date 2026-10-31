@@ -503,7 +503,7 @@ function renderHeroRecon(hero) {
     const cur = getCurrencyLabel();
     const money = v => `${formatNumber(Math.round(v))} ${cur}`;
     const parts = [];
-    if (side.fin > 0) parts.push(`${isOut ? 'свои переводы, вклады, долги' : 'свои переводы, со вкладов, долги'} ${money(side.fin)}`);
+    if (side.fin > 0) parts.push(`${isOut ? 'свои переводы, вклады, долги' : 'свои переводы, тело вклада, кредиты и долги'} ${money(side.fin)}`);
     if (side.excluded > 0) parts.push(`без учёта ${money(side.excluded)}`);
     const rows = side.cats.map(c => `<li><span>${escHtml(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${escHtml(money(c.sum))}</b></li>`).join('');
     el.hidden = false;
@@ -1120,9 +1120,12 @@ function renderIncomeVsExpensesChart() {
     const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + amtOf(t), 0);
     const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + amtOf(t), 0);
 
-    // Доля трат от поступлений: бар = поступления, закрашенная часть = траты (не больше 100% шкалы)
-    const spentPart = income > 0 ? Math.min(expense, income) : 0;
-    const leftPart  = income > 0 ? income - spentPart : 0;
+    // Шкала = большее из двух. Красное — траты в пределах поступлений, зелёное — что осталось,
+    // тёмно-красное — траты сверх поступлений (перерасход). Черта отмечает 100% поступлений.
+    const spentPart = Math.min(expense, income);
+    const leftPart  = Math.max(0, income - expense);
+    const overPart  = Math.max(0, expense - income);
+    const scaleMax  = Math.max(income, expense, 1);
     const pct       = income > 0 ? Math.round(expense / income * 100) : null;
 
     // подпись «Траты от поступлений, N%» над баром
@@ -1157,6 +1160,13 @@ function renderIncomeVsExpensesChart() {
             ctx.textAlign = 'right';
             ctx.fillText(`Траты ${compactNumber(Math.round(expense))}`, right, bottom + 8);
 
+            // черта «100% поступлений», когда траты больше
+            if (overPart > 0 && income > 0) {
+                const x = chart.scales.x.getPixelForValue(income);
+                ctx.strokeStyle = getCssVar('--text', '#fff');
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x, chartArea.top - 4); ctx.lineTo(x, chartArea.bottom + 4); ctx.stroke();
+            }
             ctx.restore();
         }
     };
@@ -1175,8 +1185,15 @@ function renderIncomeVsExpensesChart() {
                 },
                 {
                     label: 'Осталось от поступлений',
-                    data : [income > 0 ? leftPart : 1],
-                    backgroundColor: getCssVar('--faint', 'rgba(128,128,128,.18)'),
+                    data : [leftPart],
+                    backgroundColor: PALETTE.income(),
+                    borderRadius   : 999,
+                    borderSkipped  : false
+                },
+                {
+                    label: 'Сверх поступлений',
+                    data : [overPart],
+                    backgroundColor: cssRgba(getCssVar('--out', '#ef4444'), 0.45),
                     borderRadius   : 999,
                     borderSkipped  : false
                 }
@@ -1186,7 +1203,7 @@ function renderIncomeVsExpensesChart() {
             indexAxis: 'y',
             layout   : { padding: { top: 10, left: 16, right: 16, bottom: 32 } },
             scales   : {
-                x: { stacked: true, display: false, min: 0, max: income > 0 ? income : 1 },
+                x: { stacked: true, display: false, min: 0, max: scaleMax },
                 y: { stacked: true, display: false }
             },
             plugins: {
@@ -1195,7 +1212,9 @@ function renderIncomeVsExpensesChart() {
                     callbacks: {
                         label: c => c.dataset.label === 'Траты'
                             ? `Траты: ${withCurrency(expense)}${pct != null ? ` (${pct}% от поступлений)` : ''}`
-                            : `Осталось от поступлений: ${withCurrency(Math.max(income - expense, 0))}`
+                            : c.dataset.label === 'Сверх поступлений'
+                                ? `Сверх поступлений: ${withCurrency(overPart)}`
+                                : `Осталось от поступлений: ${withCurrency(leftPart)}`
                     }
                 }
             }
@@ -1251,7 +1270,7 @@ function renderBalanceDynamicsChart() {
             `<span class="bal-chg ${res.change >= 0 ? 'good' : 'bad'}">${res.change >= 0 ? '▲ Выросло на' : '▼ Снизилось на'} ${formatNumber(Math.abs(Math.round(res.change)))}</span></div>` +
             `<div class="bal-mm"><span>Пик <b>${formatNumber(Math.round(res.max.balance))}</b><em>${lbl(res.max)}</em></span>` +
             `<span>Минимум <b>${formatNumber(Math.round(res.min.balance))}</b><em>${lbl(res.min)}</em></span></div>` +
-            (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ Остаток ушёл в минус (${lbl(res.min)}: −${formatNumber(Math.abs(Math.round(res.min.balance)))}). Возможно, не внесены все поступления или начальный остаток` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
+            (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ ${lbl(res.min)} по записям потрачено больше, чем было: −${formatNumber(Math.abs(Math.round(res.min.balance)))}. Значит, часть трат оплачена деньгами, которых нет в приложении (наличные, другая карта, кредитка), или поступление записано позже, чем пришло` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
             `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов${res.later ? `. Записи на будущие даты (${sgn(res.later)}${formatNumber(Math.abs(Math.round(res.later)))}) в итоге учтены, на линии — нет` : ''}</div>`;
     }
 
@@ -1447,126 +1466,55 @@ function wrapLabel(src, maxLen = 15) {
     }
     return lines;
 }
-// === 7. Категории по убыванию (фикс налезаний/wrap/клик) ===
+// === 7. Все категории трат — компактный список (вместо высокого бар-чарта с пустым местом) ===
+let allCatsExpanded = false;
 function renderCategoriesByDescendingChart() {
-    const canvas = document.getElementById('categoriesByDescendingChart');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const tx  = getCurrentBudgetTransactions();
-
-    const map = {};
-    tx.filter(t => t.type === 'expense').forEach(t => {
-        const cat = t.category || 'Без категории';
-        map[cat]  = (map[cat] || 0) + amtOf(t);
-    });
-
-    const sorted     = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 30);
-    if (emptyGuard(canvas, !sorted.length, 'За выбранный период трат нет', 'categoriesByDescending')) return;
-    const fullLabels = sorted.map(([c]) => c);
-    const data       = sorted.map(([, a]) => a);
-
-    // визуальные подписи: многострочные
-    const labels = fullLabels.map(l => wrapLabel(l, 28));
-    ensureNonEmptyData(labels, data);
-
-    // динамическая высота под количество строк
-    const rowH     = 30; // ~высота строки с межстрочным
-    const extra    = 70; // сверху/снизу + ось X
-    const desiredH = Math.max(260, labels.length * rowH + extra);
-    ensureWrap(canvas, desiredH);
-
-    // толщина баров из высоты
-    const barThickness = Math.max(
-        12,
-        Math.min(
-            28,
-            Math.floor((desiredH - extra) / Math.max(labels.length, 1)) - 6
-        )
-    );
-
-    const colors = labels.map((_, i) => PALETTE.catHue(i, labels.length));
-
-    // уничтожаем старый график при перерисовке
-    if (charts.categoriesByDescending) {
-        try { charts.categoriesByDescending.destroy(); } catch (e) {}
-        delete charts.categoriesByDescending;
+    let el = document.getElementById('anAllCats');
+    if (!el) {
+        const canvas = document.getElementById('categoriesByDescendingChart');
+        if (!canvas) return;
+        el = document.createElement('div');
+        el.id = 'anAllCats';
+        el.className = 'allcat-list';
+        canvas.replaceWith(el);
     }
-
-    charts.categoriesByDescending = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels, // массивы строк → многострочные подписи
-            datasets: [{
-                data,
-                backgroundColor: colors,
-                borderRadius: 8,
-                borderSkipped: false,
-                barThickness
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            layout   : { padding: { left: 16, right: 14, top: 8, bottom: 20 } },
-            scales   : {
-                y: {
-                    offset: true,
-                    grid  : { display: false },
-                    ticks : {
-                        autoSkip   : false,
-                        color      : getCssVar('--secondary-color', '#fff'),
-                        font       : { size: 11, lineHeight: 1.1 }
-                    }
-                },
-                x: {
-                    grid : {
-                        color: 'rgba(255,255,255,0.06)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: getCssVar('--text-muted', '#888'),
-                        callback: v => formatNumber(v)
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    ...buildTooltipDefaults(),
-                    callbacks: {
-                        title: c => Array.isArray(c[0]?.label) ? c[0].label.join(' ') : (c[0]?.label || ''),
-                        label: ctx => {
-                            const val = ctx.raw || 0;
-                            const totalAll = sorted.reduce((s, [,v]) => s + v, 0);
-                            const pct = totalAll > 0 ? (val / totalAll * 100).toFixed(1) : 0;
-                            return `${withCurrency(val)}  ·  ${pct}%`;
-                        },
-                        afterLabel: ctx => {
-                            const catName = fullLabels[ctx.dataIndex];
-                            if (!catName) return [];
-                            return getRichTooltipLines(getCurrentBudgetTransactions(), catName, ctx.raw);
-                        }
-                    }
-                }
-            },
-            animation: {
-                duration: 500,
-                easing  : 'easeOutCubic'
-            }
-        }
+    const map = new Map();
+    getCurrentBudgetTransactions().filter(t => t.type === 'expense').forEach(t => {
+        const cat = t.category || 'Без категории';
+        const r = map.get(cat) || { sum: 0, count: 0 };
+        r.sum += amtOf(t); r.count++; map.set(cat, r);
     });
-
-    // 💡 КЛИК ПО НАЗВАНИЮ/СТОЛБЦУ → ПОДСВЕТКА И СУММА
-    const chart  = charts.categoriesByDescending;
-    const yScale = chart.scales.y;
-
-    const clickHandler = evt => {
-        const { offsetY } = evt;
-        const idx = indexFromY(yScale, offsetY); // уже есть утилита ниже в файле
-        activateBar(chart, idx);                // выставляет active + tooltip
+    const rows = [...map.entries()].map(([name, r]) => ({ name, ...r })).filter(r => r.sum > 0).sort((a, b) => b.sum - a.sum);
+    if (!rows.length) { el.innerHTML = '<p class="an-empty">За выбранный период трат нет</p>'; return; }
+    const total = rows.reduce((s, r) => s + r.sum, 0);
+    const max = rows[0].sum || 1;
+    const LIMIT = 10;
+    const shown = allCatsExpanded ? rows : rows.slice(0, LIMIT);
+    const split = name => {
+        const m = String(name).match(/^\s*(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*(.*)$/u);
+        return m ? { emoji: m[1], text: m[2] || name } : { emoji: '', text: name };
     };
-
-    bindClickOnce(canvas, clickHandler);
+    el.innerHTML = shown.map((r, i) => {
+        const { emoji, text } = split(r.name);
+        const pct = total > 0 ? r.sum / total * 100 : 0;
+        return `<button type="button" class="allcat-row" data-i="${i}">
+            <span class="allcat-emoji">${escHtml(emoji || '💸')}</span>
+            <span class="allcat-main">
+              <span class="allcat-h"><b>${escHtml(text)}</b><em>${formatNumber(Math.round(r.sum))}</em></span>
+              <span class="allcat-sub"><span class="allcat-track"><i style="width:${Math.max(2, r.sum / max * 100).toFixed(1)}%"></i></span><small>${pct < 1 ? '<1' : Math.round(pct)}% · ${r.count}</small></span>
+            </span>
+        </button>`;
+    }).join('') + (rows.length > LIMIT
+        ? `<button type="button" class="allcat-more">${allCatsExpanded ? 'Свернуть' : `Показать все (${rows.length})`}</button>` : '');
+    el.querySelectorAll('.allcat-row').forEach(b => b.addEventListener('click', () => {
+        const r = shown[Number(b.dataset.i)];
+        if (!r) return;
+        const d = categoryDetail(allAnalyticsTx(), period, r.name, { type: 'expense', todayISO: todayISO(), allMonths: allMonthsCount() });
+        openCategorySheet(d, { type: 'expense', color: 'var(--out)', periodText: periodLabel(period), selected: period });
+        selectedAnalyticsCategory = r.name;
+        renderCategoryHistoryChart();
+    }));
+    el.querySelector('.allcat-more')?.addEventListener('click', () => { allCatsExpanded = !allCatsExpanded; renderCategoriesByDescendingChart(); });
 }
 
 
