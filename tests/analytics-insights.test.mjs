@@ -185,9 +185,25 @@ test('финансовое здоровье: 0..100, непрерывно по �
     }
 });
 
-test('подпись KPI честная: «Бытовые траты»; DOM-идентификаторы на месте', () => {
+test('тренды считают все деньги, как главная: KPI «Траты», computeMetrics с allMoney; DOM-идентификаторы на месте', () => {
     const src = readFileSync(new URL('../src/Analyticsinsights.js', import.meta.url), 'utf8');
-    assert.match(src, /lbl: 'Бытовые траты'/);
+    assert.match(src, /lbl: 'Траты'/);
+    assert.match(src, /computeMetrics\(moneyTx\(allTx\), \{\s*allMoney: true/);
     for (const id of ['bi-insights', 'bi-kpi-row', 'bi-health', 'bi-cards', 'bi-alerts'])
         assert.ok(src.includes(id), id);
+});
+
+test('allMoney: вклады и переводы входят в траты/поступления, «без учёта» и исключённые пользователем — нет', () => {
+    const tx = [
+        { type: 'income', date: '2026-10-05', category: '💼 Зарплата', amount: 100 },
+        { type: 'income', date: '2026-10-06', category: '🏦 Перевод с вклада', amount: 30 },
+        { type: 'expense', date: '2026-10-07', category: '🏦 Вклад', amount: 50 },
+        { type: 'expense', date: '2026-10-08', category: '🛒 Продукты', amount: 20 },
+        { type: 'expense', date: '2026-10-09', category: 'Не знаю на что потратил (без учёта)', amount: 7 },
+        { type: 'expense', date: '2026-10-10', category: '🎮 Игры', amount: 5 },
+    ];
+    const M = computeMetrics(tx, { today: '2026-10-31', allMoney: true, userExcluded: ['🎮 Игры'] });
+    assert.equal(M.totI, 130);
+    assert.equal(M.totE, 70);
+    assert.equal(M.totExcluded, 12);
 });

@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // Analyticsinsights.js — Живая аналитика BudgetIt v4
 // Инсайты рассчитаны на весь период бюджета
-// Вклады, долги, финансовые и служебные категории
-// НЕ смешиваются с бытовыми расходами
+// Считаем все деньги, как на главной (вклады, переводы, долги входят);
+// в стороне только «без учёта» и категории, исключённые пользователем
 // Показываем до 10 инсайтов
 // ═══════════════════════════════════════════════════════════════
 
@@ -10,7 +10,7 @@ let _bm = null;
 
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
-import { balanceDaily, cashEvents } from './analytics/stats.js';
+import { balanceDaily, cashEvents, moneyTx } from './analytics/stats.js';
 import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
@@ -316,7 +316,9 @@ function _render() {
     const depositTx = allTx.filter(t => t.type === 'deposit');
     const debtTx = allTx.filter(t => t.type === 'debt');
 
-    const M = computeMetrics(allTx, {
+    // тренды считают все деньги, как главная и графики: вклады, переводы, долги входят
+    const M = computeMetrics(moneyTx(allTx), {
+        allMoney: true,
         today: localToday(),
         userExcluded: _getUserExcludedCats(),
         confirmed: _getConfirmedAnomalies(),
@@ -334,22 +336,22 @@ function _render() {
     _kpi([
         {
             ico: '💸',
-            lbl: 'Бытовые траты',
+            lbl: 'Траты',
             val: _fk(totE),
-            sub: `${realExp.length} бытовых операций`
+            sub: `${realExp.length} операций`
         },
         {
             ico: '💚',
             lbl: 'Поступления',
             val: _fk(totI),
-            sub: `${incomeTx.length} поступлений без своих переводов`
+            sub: `${incomeTx.length} поступлений`
         },
         {
             ico: '🏦',
             lbl: 'Разница за всё время',
             val: _fk(bal),
             sub: bal >= 0 ? 'В плюсе, не «Доступно»' : 'В минусе, не «Доступно»',
-            hint: 'Поступления минус обычные траты, без своих переводов и вкладов. Это не «Доступно»',
+            hint: 'Поступления минус траты за всё время, как на главной, но без переноса остатка между месяцами и без трат «без учёта»',
             neg: bal < 0
         },
         {
@@ -393,7 +395,7 @@ function _render() {
         cards.push({
             e: '🔥',
             t: 'Главная статья расходов',
-            b: `<b>${c}</b> — ${p}% бытовых расходов (${_f(a)})${itemList ? '<br>' + itemList : ''}`,
+            b: `<b>${c}</b> — ${p}% расходов (${_f(a)})${itemList ? '<br>' + itemList : ''}`,
             badge: `${p}%`,
             col: '#f43f5e',
             priority: 100
@@ -480,7 +482,7 @@ function _render() {
             e: plus ? '✅' : '⚠️',
             t: `Итог ${_mn(months.at(-1))}`,
             b: plus
-                ? `Доходов было больше, чем бытовых расходов. Осталось <b>${_f(mb)}</b>`
+                ? `Доходов было больше, чем расходов. Осталось <b>${_f(mb)}</b>`
                 : `Бытовые расходы превысили доходы на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`,
             badge: `${plus ? '+' : ''}${_f(mb)}`,
             col: plus ? '#10b981' : '#f43f5e',
@@ -529,7 +531,7 @@ function _render() {
         cards.push({
             e: '🏠',
             t: 'Средняя стоимость жизни',
-            b: `В среднем тебе нужно <b>${_f(lifeCostAvg)}</b> в месяц на бытовые траты`,
+            b: `В среднем тебе нужно <b>${_f(lifeCostAvg)}</b> в месяц на траты`,
             badge: `~${_f(lifeCostAvg)}/мес`,
             col: '#10b981',
             priority: 91
@@ -644,7 +646,7 @@ function _render() {
         cards.push({
             e: '😬',
             t: 'Тяжелейший месяц',
-            b: `<b>${_mn(ym)}</b> — максимум бытовых расходов`,
+            b: `<b>${_mn(ym)}</b> — максимум расходов`,
             badge: _f(d.e),
             col: '#fb7185',
             priority: 56
@@ -656,7 +658,7 @@ function _render() {
         cards.push({
             e: '🌟',
             t: 'Лучший месяц',
-            b: `<b>${_mn(ym)}</b> — минимум бытовых расходов`,
+            b: `<b>${_mn(ym)}</b> — минимум расходов`,
             badge: _f(d.e),
             col: '#10b981',
             priority: 55
@@ -668,7 +670,7 @@ function _render() {
         cards.push({
             e: '🔮',
             t: 'Прогноз расходов',
-            b: `На следующий месяц ожидается ~<b>${_f(forecast.predicted)}</b> бытовых расходов (тренд ${sign}${forecast.delta.toFixed(0)}% к среднему)`,
+            b: `На следующий месяц ожидается ~<b>${_f(forecast.predicted)}</b> расходов (тренд ${sign}${forecast.delta.toFixed(0)}% к среднему)`,
             badge: `~${_f(forecast.predicted)}`,
             col: '#8b5cf6',
             priority: 54
@@ -782,7 +784,7 @@ function _render() {
     if (cats[0] && totE > 0 && cats[0][1] / totE > 0.5) {
         al.push({
             ico: '🎯',
-            txt: `«${cats[0][0]}» занимает больше 50% бытовых расходов`,
+            txt: `«${cats[0][0]}» занимает больше 50% расходов`,
             t: 'warn'
         });
     }
@@ -798,7 +800,7 @@ function _render() {
     if (realExp.length > 0 && realExp.length < 5) {
         al.push({
             ico: '💬',
-            txt: 'Пока мало бытовых расходов для уверенной аналитики',
+            txt: 'Пока мало расходов для уверенной аналитики',
             t: 'info'
         });
     }
@@ -814,7 +816,7 @@ function _render() {
     if (depositTx.length > 0 || debtTx.length > 0) {
         al.push({
             ico: '🧩',
-            txt: 'Вклады и долги показываются отдельно и не увеличивают бытовые расходы',
+            txt: 'Вклады, переводы и долги считаются, как на главной. Вклад или перевод себе можно убрать кнопкой «Исключить» на карточке нетипичной траты',
             t: 'info'
         });
     }

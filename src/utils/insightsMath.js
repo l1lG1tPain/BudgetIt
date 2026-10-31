@@ -208,11 +208,14 @@ export function computeMetrics(allTx, opts = {}) {
     const today = opts.today || localToday();
     const userExcluded = opts.userExcluded || [];
     const confirmed = opts.confirmed || [];
-    const isExcludedExp = c => isFinancialCategory(c) || isSystemExcludedCategory(c) || userExcluded.includes(c);
+    // allMoney: все деньги, как на главной (вклады, переводы, долги входят) — исключаются только «без учёта»
+    // и категории, убранные пользователем; иначе — прежние «бытовые» правила (без финансовых категорий)
+    const allMoney = !!opts.allMoney;
+    const isExcludedExp = c => (!allMoney && isFinancialCategory(c)) || isSystemExcludedCategory(c) || userExcluded.includes(c);
 
     const expenseTx = allTx.filter(t => t.type === 'expense');
     const incomeTx = allTx.filter(t => t.type === 'income'
-        && !isFinancialIncomeCategory(t.category) && !isSystemExcludedCategory(t.category));
+        && (allMoney || !isFinancialIncomeCategory(t.category)) && !isSystemExcludedCategory(t.category));
     const realExp = expenseTx.filter(t => !isExcludedExp(t.category));
     const excludedExp = expenseTx.filter(t => isExcludedExp(t.category));
 
