@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.budgetit.twa",
+      "sha256_cert_fingerprints": [
+        "A8:F7:EB:3F:A0:9E:2C:83:A3:72:33:30:C1:7E:DE:AA:53:D2:C2:0F:9D:EA:ED:EA:85:4F:D8:D5:B4:9B:51:38"
+      ]
+    }
+  }
+]
