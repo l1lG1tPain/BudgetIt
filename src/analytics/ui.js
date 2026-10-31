@@ -265,7 +265,7 @@ export function renderSummary(el, data, { period, title = '', onPick, activeKeys
       }).join('')}
       <div class="sm-row sm-total"><span class="sm-m">${esc(title || 'Итого')}</span><span class="sm-in">${D.compact(totals.income)}</span><span class="sm-out">${D.compact(totals.expense)}</span>
         <span class="sm-net ${totals.net >= 0 ? 'pos' : 'neg'}">${sign(totals.net)}</span></div>
-      <div class="sm-foot">Итог — без переводов между своими счетами, вкладов, долгов и трат «без учёта». Нажми на месяц — увидишь, чем он отличается от «Доступно».</div>
+      <div class="sm-foot">Все деньги, как на главной, кроме трат «без учёта». Нажми на месяц — подробности.</div>
       ${totals.rate != null ? `<div class="sm-foot">${totals.rate >= 0 ? `После обычных трат остаётся ${Math.round(totals.rate * 100)}% поступлений` : `Обычные траты выше поступлений на ${Math.round(-totals.rate * 100)}%`}</div>` : ''}
       ${saved > 0 ? `<div class="sm-foot">Отложено во вклады: ${esc(D.fmt(Math.round(saved)))} ${esc(D.cur())}${totals.income > 0 ? ` (${Math.round(saved / totals.income * 100)}% поступлений)` : ''}</div>`
         : saved < 0 ? `<div class="sm-foot">Со вкладов снято больше, чем внесено: ${esc(D.fmt(Math.round(-saved)))} ${esc(D.cur())}</div>` : ''}`;
@@ -290,6 +290,7 @@ export function openMonthSheet(d, { onShow } = {}) {
     const otherNet = (recon.in.fin + recon.in.excluded) - (recon.out.fin + recon.out.excluded); // переводы, вклады, долги, «без учёта»
     const list = side => side.cats.slice(0, 5).map(c =>
         `<div class="ms-sub"><span>${esc(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${f(c.sum)}</b></div>`).join('');
+    const topList = (h, rows) => rows && rows.length ? `<div class="cs-sec"><h5>${esc(h)}</h5>${rows.map(r => `<div class="ms-sub"><span>${esc(r.name)}</span><b>${f(r.sum)}</b></div>`).join('')}</div>` : '';
     const title = `${MONTHS_FULL[keyMonth(d.key) - 1]} ${keyYear(d.key)}`;
     el.innerHTML = `
       <div class="cs-head">
@@ -298,27 +299,18 @@ export function openMonthSheet(d, { onShow } = {}) {
         <button type="button" class="sheet-x" data-act="close" aria-label="Закрыть">✕</button>
       </div>
 
-      <div class="cs-sec"><h5>Обычные поступления и траты</h5>
+      <div class="cs-sec"><h5>Поступления и траты</h5>
         <div class="ms-row"><span>Поступления</span><b>${f(row.income)} ${cur}</b></div>
         <div class="ms-row"><span>Траты</span><b>${f(row.expense)} ${cur}</b></div>
-        <div class="ms-row ms-res ${row.net >= 0 ? 'pos' : 'neg'}"><span>Итог в таблице</span><b>${sg(row.net)} ${cur}</b></div>
-      </div>
-
-      <div class="cs-sec"><h5>Не вошло в этот итог</h5>
-        <div class="ms-row"><span>Ушло: свои переводы, вклады, долги, «без учёта»</span><b>−${f(recon.out.fin + recon.out.excluded)}</b></div>
-        ${list(recon.out)}
-        <div class="ms-row"><span>Пришло: свои переводы, тело вклада, кредиты и долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
-        ${list(recon.in)}
-        <div class="ms-row ms-res ${otherNet >= 0 ? 'pos' : 'neg'}"><span>Вместе</span><b>${sg(otherNet)} ${cur}</b></div>
-      </div>
-
-      <div class="cs-sec"><h5>Все деньги — как на главной</h5>
-        <div class="ms-row"><span>Пришло</span><b>${f(cashIn)} ${cur}</b></div>
-        <div class="ms-row"><span>Ушло</span><b>${f(cashOut)} ${cur}</b></div>
-        <div class="ms-row ms-res ${cashNet >= 0 ? 'pos' : 'neg'}"><span>Разница за месяц</span><b>${sg(cashNet)} ${cur}</b></div>
+        <div class="ms-row ms-res ${row.net >= 0 ? 'pos' : 'neg'}"><span>Итог месяца</span><b>${sg(row.net)} ${cur}</b></div>
         ${d.balanceEnd != null ? `<div class="ms-row"><span>«Доступно» на конец месяца</span><b>${f(d.balanceEnd)} ${cur}</b></div>` : ''}
       </div>
-      <div class="cs-note">${sg(row.net)} (итог в таблице) ${otherNet < 0 ? '−' : '+'} ${f(Math.abs(otherNet))} (свои переводы, вклады и прочее) = ${sg(cashNet)} (разница по деньгам). Поэтому плюс в таблице может быть, а на «Доступно» его нет: деньги ушли во вклады, долги или на свои счета.</div>
+      ${topList('Куда ушло больше всего', d.topOut)}
+      ${topList('Откуда пришло', d.topIn)}
+      ${otherNet !== 0 ? `<div class="cs-sec"><h5>«Без учёта» — на главной входит, здесь нет</h5>
+        ${list(recon.out)}${list(recon.in)}
+        <div class="ms-row ms-res ${cashNet >= 0 ? 'pos' : 'neg'}"><span>С ними, как на главной</span><b>${sg(cashNet)} ${cur}</b></div>
+      </div>` : ''}
       <button type="button" class="ps-apply ms-show" data-act="show">Показать только этот месяц</button>`;
     el.onclick = e => {
         if (e.target.closest('[data-act="close"]')) closeSheet(el);

@@ -229,6 +229,43 @@ export function cashEvents(raw) {
  * consumed + fin + excluded = total — это ровно monthlyExpense/monthlyIncome из calculateTotals за те же месяцы.
  *  fin — переводы, вклады, долги и прочие «финансовые» категории; excluded — «без учёта».
  */
+/**
+ * Все деньги бюджета в виде операций income/expense — ровно как «Ушло»/«Пришло» на главной:
+ * обычные траты и поступления (кроме «без учёта»), пополнение вклада = трата, снятие = поступление
+ * («Уже лежало» кошелёк не трогает), долги — по направлению, платежи по датам платежей (не больше суммы долга).
+ * Категории по смыслу ничего не угадываются: что ушло из кошелька — трата, что пришло — поступление.
+ */
+export function moneyTx(raw) {
+    const out = [];
+    for (const t of raw || []) {
+        if (!t || !t.date) continue;
+        if (t.type === 'income' || t.type === 'expense') {
+            if (!isSystemExcludedCategory(t.category)) out.push(t);
+            continue;
+        }
+        const a = num(t.amount);
+        if (t.type === 'deposit') {
+            const st = String(t.status || '');
+            if (st.includes('Уже лежало') || !a) continue;
+            const wd = st.trim() === '➖ Снятие';
+            out.push({ id: `dep:${t.id}`, type: wd ? 'income' : 'expense', date: String(t.date).slice(0, 10), amount: a,
+                category: wd ? '🏦 Со вклада' : '🏦 Вклад', name: t.name || '', synthetic: true });
+        } else if (t.type === 'debt') {
+            const init = num(t.initialAmount ?? t.amount);
+            const owe = t.direction === 'owe';
+            if (init > 0) out.push({ id: `debt:${t.id}`, type: owe ? 'income' : 'expense', date: String(t.date).slice(0, 10), amount: init,
+                category: owe ? '🤝 Взял в долг' : '🤝 Дал в долг', name: t.name || '', synthetic: true });
+            let paid = 0;
+            (Array.isArray(t.payments) ? t.payments : []).forEach((pm, i) => {
+                const pa = Math.min(num(pm.amount), Math.max(0, init - paid)); paid += pa;
+                if (pa > 0) out.push({ id: `debt:${t.id}:${i}`, type: owe ? 'expense' : 'income', date: localYmd(pm.date), amount: pa,
+                    category: owe ? '🤝 Отдал долг' : '🤝 Вернули долг', name: t.name || '', synthetic: true });
+            });
+        }
+    }
+    return out;
+}
+
 export function reconcile(raw, p) {
     const mk = () => ({ total: 0, consumed: 0, fin: 0, excluded: 0, cats: new Map() });
     const out = mk(), inn = mk();
@@ -242,11 +279,9 @@ export function reconcile(raw, p) {
     for (const e of cashEvents(raw)) {
         if (!inPeriod(p, e.date)) continue;
         const side = e.v < 0 ? out : inn, a = Math.abs(e.v);
-        if (e.kind === 'deposit') bump(side, 'fin', 'Накопления', a);
-        else if (e.kind === 'debt') bump(side, 'fin', 'Долги', a);
-        else if (isSystemExcludedCategory(e.cat)) bump(side, 'excluded', e.cat, a);
-        else if (e.v < 0 ? isFinancialCategory(e.cat) : isFinancialIncomeCategory(e.cat)) bump(side, 'fin', e.cat, a);
-        else bump(side, 'consumed', e.cat, a);
+        // графики считают все деньги (moneyTx); в стороне остаются только операции «без учёта»
+        if (e.kind !== 'deposit' && e.kind !== 'debt' && isSystemExcludedCategory(e.cat)) bump(side, 'excluded', e.cat, a);
+        else bump(side, 'consumed', e.cat || '', a);
     }
     const fin = side => { const rows = [...side.cats.values()].sort((x, y) => y.sum - x.sum); return { ...side, cats: rows }; };
     return { out: fin(out), in: fin(inn) };

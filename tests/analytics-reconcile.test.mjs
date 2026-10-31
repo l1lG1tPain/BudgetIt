@@ -43,17 +43,29 @@ const mk = () => {
     return bm;
 };
 
-test('сверка: потребление + переводы/вклады/долги + «без учёта» = «Ушло» и «Пришло» главной (месяц)', () => {
+test('сверка: графики (все деньги) + «без учёта» = «Ушло» и «Пришло» главной (месяц)', () => {
     const t = mk().calculateTotals('10', 2026);
     const r = S.reconcile(DATA, P.monthPeriod('2026-10'));
     assert.equal(r.out.total, t.monthlyExpense);
     assert.equal(r.in.total, t.monthlyIncome);
-    assert.equal(r.out.consumed, 120);
     assert.equal(r.out.excluded, 40);
-    assert.equal(r.out.fin, 80 + 200 + 100 + 300);       // перевод, пополнение вклада, платёж по долгу, «мне должны»
-    assert.equal(r.in.consumed, 1000);
-    assert.equal(r.in.fin, 300 + 50 + 500);              // со вклада, снятие, «я должен»
-    assert.equal(r.out.consumed + r.out.fin + r.out.excluded, r.out.total);
+    assert.equal(r.out.consumed, 120 + 80 + 200 + 100 + 300); // траты, свой перевод, пополнение вклада, платёж по долгу, «мне должны»
+    assert.equal(r.in.consumed, 1000 + 300 + 50 + 500);      // зарплата, с вклада, снятие, «я должен»
+    assert.equal(r.out.fin, 0);
+    assert.equal(r.out.consumed + r.out.excluded, r.out.total);
+});
+
+test('moneyTx: суммы за месяц равны главной без «без учёта»; вклады и долги — по правилам «Доступно»', () => {
+    const t = mk().calculateTotals('10', 2026);
+    const m = S.moneyTx(DATA);
+    const p = P.monthPeriod('2026-10');
+    assert.equal(S.sumTx(m, p, 'expense'), t.monthlyExpense - 40);
+    assert.equal(S.sumTx(m, p, 'income'), t.monthlyIncome);
+    assert.ok(m.some(x => x.category === '🏦 Вклад' && x.amount === 200 && x.type === 'expense'));
+    assert.ok(m.some(x => x.category === '🏦 Со вклада' && x.amount === 50 && x.type === 'income'));
+    assert.ok(m.some(x => x.category === '🤝 Взял в долг' && x.amount === 500));
+    assert.ok(m.some(x => x.category === '🤝 Отдал долг' && x.amount === 100 && x.date === '2026-10-15'));
+    assert.ok(!m.some(x => String(x.category).includes('без учёта')));
 });
 
 test('сверка: всё время', () => {
@@ -74,7 +86,6 @@ test('сверка: список категорий для раскрытия о
     const r = S.reconcile(DATA, P.monthPeriod('2026-10'));
     const sums = r.out.cats.map(x => x.sum);
     assert.deepEqual(sums, [...sums].sort((a, b) => b - a));
-    assert.ok(r.out.cats.some(x => x.name === 'Накопления' && x.sum === 200));
     assert.ok(r.out.cats.some(x => x.group === 'excluded' && x.sum === 40));
 });
 

@@ -8,7 +8,7 @@ import {
     toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth
 } from '../analytics/period.js';
 import {
-    baseTx, consumptionTx, reconcile, activeMonths, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
+    baseTx, moneyTx, reconcile, activeMonths, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
     categoryDetail, balanceSeries, balanceDaily, summaryKeys, summaryRows, heroSeries, weekdayMon
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
@@ -476,7 +476,7 @@ function ensureHero() {
         '<div class="an-metrics" role="group">' +
             Object.entries(METRICS).map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join('') +
         '</div>' +
-        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Переводы между своими счетами, вклады, долги и траты «без учёта» не входят — они в строке под суммой. P2P и переводы людям входят.</div>';
+        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Считаются все деньги, как на главной: вклады, переводы и долги входят. Не входят только траты «без учёта».</div>';
     const seg = document.getElementById('analytics-period-seg');
     if (seg) seg.insertAdjacentElement('afterend', hero); else scroll.insertAdjacentElement('afterbegin', hero);
     hero.querySelector('.an-metrics').addEventListener('click', e => {
@@ -725,11 +725,11 @@ function destroyAllCharts(keep = []) {
 // ------------------------------------------------------------------
 const todayISO = () => isoOf(new Date());
 const todayKeyNow = () => todayISO().slice(0, 7);
-// «Траты» и «Поступления» в аналитике — потребление (без переводов, вкладов, долгов и «без учёта»);
-// разницу с главным экраном показывает строка сверки под hero.
-function allAnalyticsTx() { return consumptionTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+// «Траты» и «Поступления» в аналитике — все деньги, как на главной (вклады, переводы, долги входят);
+// в стороне только «без учёта» — их показывает строка сверки под hero.
+function allAnalyticsTx() { return moneyTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
 // Для навигации по периодам нужны все месяцы с движением денег, а не только с обычными тратами.
-function rangeTx() { return baseTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+function rangeTx() { return moneyTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
 const allMonthsCount = () => activeMonths(rangeTx());
 
 function defaultPeriod() {
@@ -1139,7 +1139,7 @@ function renderIncomeVsExpensesChart() {
     ratioEl.innerHTML = (pct == null
         ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
         : `Траты от поступлений, ${pct}%`) +
-        '<small>Обычные траты к обычным поступлениям — без переводов между своими счетами, вкладов и долгов</small>';
+        '<small>Все траты ко всем поступлениям, как на главной (без трат «без учёта»)</small>';
 
     const labels = ['']; // один ряд, как прогресс-бар
 
@@ -1603,7 +1603,12 @@ function openMonthDetails(key) {
     const row = summaryRows(allAnalyticsTx(), [key]).rows[0];
     const recon = reconcile(raw, mp);
     const bal = balanceSeries(raw, mp);
-    openMonthSheet({ key, row, recon, balanceEnd: bal.points.length ? bal.end : null }, {
+    const top = type => {
+        const m = new Map();
+        allAnalyticsTx().filter(t => t.type === type && inPeriod(mp, t.date)).forEach(t => { const c = t.category || 'Без категории'; m.set(c, (m.get(c) || 0) + amtOf(t)); });
+        return [...m.entries()].map(([name, sum]) => ({ name, sum })).sort((a, b) => b.sum - a.sum).slice(0, type === 'expense' ? 5 : 3);
+    };
+    openMonthSheet({ key, row, recon, balanceEnd: bal.points.length ? bal.end : null, topOut: top('expense'), topIn: top('income') }, {
         onShow: k => setPeriod(monthPeriod(k), { keepHero: true })
     });
 }
