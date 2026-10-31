@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // Analyticsinsights.js — Живая аналитика BudgetIt v4
 // Инсайты рассчитаны на весь период бюджета
-// Вклады, долги, финансовые и служебные категории
-// НЕ смешиваются с бытовыми расходами
+// Считаем все деньги, как на главной (вклады, переводы, долги входят);
+// в стороне только «без учёта» и категории, исключённые пользователем
 // Показываем до 10 инсайтов
 // ═══════════════════════════════════════════════════════════════
 
@@ -10,7 +10,8 @@ let _bm = null;
 
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
-import { balanceDaily } from './analytics/stats.js';
+import { balanceDaily, cashEvents, moneyTx } from './analytics/stats.js';
+import { calcBigPurchases, calcYearOverYear, calcSavingsPace, calcNoSpendDays, calcTypicalDay, calcAfterPayday } from './utils/insightsNew.js';
 import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
@@ -135,6 +136,9 @@ function _hideOnboarding() {
 // ──────────────────────────────────────────────────────────────
 // Работа с пользовательскими исключениями
 // ──────────────────────────────────────────────────────────────
+const prevMonthKeyLocal = ym => { const [y, m] = ym.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
+const _escA = x => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
 function _getUserExcludedCats() {
     try {
         return JSON.parse(localStorage.getItem(USER_EXCLUDED_CATS_KEY) || '[]');
@@ -222,6 +226,7 @@ function _injectHTML() {
     const block = document.createElement('div');
     block.id = 'bi-insights';
     block.innerHTML = `
+      <p class="bi-scope-note">Тренды · за всё время</p>
       <div class="bi-kpi-row" id="bi-kpi-row"></div>
 
       <div class="bi-health" id="bi-health" style="display:none">
@@ -264,6 +269,7 @@ function _addSubtitles() {
         spendingByWeekdayChart    : 'В какой день недели тратишь больше',
         incomeBySourceChart       : 'Доходы по источникам',
         annualSummaryChart        : 'Полная картина: доходы, расходы, баланс',
+        categoriesByMonthChart    : 'Какая статья растёт: топ-5 категорий за 12 месяцев',
     };
 
     document.querySelectorAll('#analytics-page .analytics-scroll section').forEach(sec => {
@@ -315,7 +321,9 @@ function _render() {
     const depositTx = allTx.filter(t => t.type === 'deposit');
     const debtTx = allTx.filter(t => t.type === 'debt');
 
-    const M = computeMetrics(allTx, {
+    // тренды считают все деньги, как главная и графики: вклады, переводы, долги входят
+    const M = computeMetrics(moneyTx(allTx), {
+        allMoney: true,
         today: localToday(),
         userExcluded: _getUserExcludedCats(),
         confirmed: _getConfirmedAnomalies(),
@@ -333,26 +341,27 @@ function _render() {
     _kpi([
         {
             ico: '💸',
-            lbl: 'Бытовые траты',
+            lbl: 'Траты',
             val: _fk(totE),
-            sub: `${realExp.length} бытовых операций`
+            sub: `${realExp.length} операций`
         },
         {
             ico: '💚',
             lbl: 'Поступления',
             val: _fk(totI),
-            sub: `${incomeTx.length} поступлений без переводов`
+            sub: `${incomeTx.length} поступлений`
         },
         {
             ico: '🏦',
-            lbl: 'Остаток',
+            lbl: 'Разница за всё время',
             val: _fk(bal),
-            sub: bal >= 0 ? 'В плюсе' : 'Дефицит',
+            sub: bal >= 0 ? 'В плюсе, не «Доступно»' : 'В минусе, не «Доступно»',
+            hint: 'Поступления минус траты за всё время, как на главной, но без переноса остатка между месяцами и без трат «без учёта»',
             neg: bal < 0
         },
         {
             ico: '📊',
-            lbl: 'Сбережения',
+            lbl: 'Остаётся от поступлений, %',
             val: `${sav.toFixed(1)}%`,
             sub: sav >= 20 ? 'Хороший темп' : sav >= 10 ? 'Нормально' : 'Нужно подтянуть'
         },
@@ -391,7 +400,7 @@ function _render() {
         cards.push({
             e: '🔥',
             t: 'Главная статья расходов',
-            b: `<b>${c}</b> — ${p}% бытовых расходов (${_f(a)})${itemList ? '<br>' + itemList : ''}`,
+            b: `<b>${c}</b> — ${p}% расходов (${_f(a)})${itemList ? '<br>' + itemList : ''}`,
             badge: `${p}%`,
             col: '#f43f5e',
             priority: 100
@@ -401,14 +410,15 @@ function _render() {
     // 2
     if (regularCats.length > 0) {
         const total = regularCats.reduce((s, r) => s + r.avg, 0);
-        const rows = regularCats.slice(0, 4).map(r =>
-            `<div class="bi-pd"><span>${r.cat}</span><span class="bi-pd-v">~${_f(r.avg)}/мес</span></div>`
+        const rows = regularCats.slice(0, 6).map(r =>
+            `<div class="bi-pd"><span>${_escA(r.cat)} <em style="opacity:.55;font-style:normal">${r.months} из ${M.regMonths.length} мес</em></span><span class="bi-pd-v">~${_f(r.avg)}/мес</span></div>`
         ).join('');
 
         cards.push({
             e: '🔄',
             t: 'Регулярные расходы',
-            b: `Повторяются почти каждый месяц:<br>${rows}<br><span style="opacity:.6;font-size:11px">Итого ~${_f(total)}/мес обязательных трат</span>`,
+            b: `Повторяются почти каждый месяц (за последние ${M.regMonths.length} мес):<br>${rows}<br><span style="opacity:.6;font-size:11px">Итого ~${_f(total)} в месяц — <b>${mandatoryShare.toFixed(0)}%</b> средних расходов (${_f(M.regLifeAvg)})</span>`,
+            badge: `${mandatoryShare.toFixed(0)}%`,
             wide: true,
             col: '#06b6d4',
             priority: 99
@@ -425,7 +435,7 @@ function _render() {
             e: '💡',
             t: 'Совет по экономии',
             tip: true,
-            b: `Сбережения ${sav.toFixed(1)}%. Если сократить <b>${baseCat}</b> на 20%, можно высвободить ~<b>${_f(save20pct)}</b>/мес`,
+            b: `Остаётся от поступлений ${sav.toFixed(1)}%. Если сократить <b>${baseCat}</b> на 20%, можно высвободить ~<b>${_f(save20pct)}</b>/мес`,
             col: '#f59e0b',
             priority: 98
         });
@@ -434,7 +444,7 @@ function _render() {
             e: '🚀',
             t: 'Финансовый гений',
             tip: true,
-            b: `Сбережения <b>${sav.toFixed(1)}%</b> — очень сильный результат`,
+            b: `От поступлений остаётся <b>${sav.toFixed(1)}%</b> — очень сильный результат`,
             col: '#10b981',
             priority: 98
         });
@@ -444,30 +454,14 @@ function _render() {
             t: 'На правильном пути',
             tip: true,
             b: sav >= 20
-                ? `Сбережений ${sav.toFixed(1)}% — выше комфортных 20%. Так держать`
-                : `Сбережений ${sav.toFixed(1)}%. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
+                ? `Остаётся ${sav.toFixed(1)}% от поступлений — выше комфортных 20%. Так держать`
+                : `Остаётся ${sav.toFixed(1)}% от поступлений. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
             col: '#22d3ee',
             priority: 97
         });
     }
 
-    // 4
-    if (anomaly) {
-        cards.push({
-            e: '🔎',
-            t: 'Нетипичная трата',
-            b: `<b>${anomaly.category}</b> — ${_f(anomaly.amount)}<br>
-<span style="opacity:.72;font-size:11px">${_fd(anomaly.date)} · выше среднего в ${anomaly.timesAvg}x и выше медианы в ${anomaly.timesMedian}x</span><br>
-<div class="bi-anomaly-actions" data-id="${anomaly.id}" data-cat="${anomaly.category}" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-  <button class="bi-action-btn bi-action-ok" data-action="ok" data-id="${anomaly.id}">✓ Норм, это разовая</button>
-  <button class="bi-action-btn bi-action-fin" data-action="exclude" data-id="${anomaly.id}" data-cat="${anomaly.category}">💸 Исключить из анализа</button>
-</div>`,
-            badge: 'аномалия',
-            col: '#f59e0b',
-            interactive: true,
-            priority: 96
-        });
-    }
+    // 4. «Нетипичная трата» убрана: на деле это просто самая крупная операция, пользы мало
 
     // 5
     if (months.length > 0) {
@@ -477,9 +471,21 @@ function _render() {
         cards.push({
             e: plus ? '✅' : '⚠️',
             t: `Итог ${_mn(months.at(-1))}`,
-            b: plus
-                ? `Доходов было больше, чем бытовых расходов. Осталось <b>${_f(mb)}</b>`
-                : `Бытовые расходы превысили доходы на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`,
+            b: (() => {
+                const ym = months.at(-1);
+                const inM = t => String(t.date || '').startsWith(ym);
+                const byCat = {};
+                realExp.filter(inM).forEach(t => { const c = t.category || '🗿 Прочее'; byCat[c] = (byCat[c] || 0) + num(t.amount); });
+                const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 3)
+                    .map(([c, v]) => `<div class="bi-pd"><span>${_escA(c)}</span><span class="bi-pd-v">${_f(v)}</span></div>`).join('');
+                const prev = M.mMap[prevMonthKeyLocal(ym)];
+                const prevLine = prev && (prev.i || prev.e) ? `<br><span style="opacity:.6;font-size:11px">${_mn(prevMonthKeyLocal(ym))}: ${prev.i - prev.e >= 0 ? '+' : '−'}${_f(Math.abs(prev.i - prev.e))}</span>` : '';
+                return (plus
+                    ? `Поступлений больше, чем трат. Осталось <b>${_f(mb)}</b>`
+                    : `Траты превысили поступления на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`) +
+                    `<br><span style="opacity:.72;font-size:12px">Пришло ${_f(lastM.i)} · ушло ${_f(lastM.e)}</span>` +
+                    (top ? `<br><span style="opacity:.6;font-size:11px">Больше всего ушло:</span>${top}` : '') + prevLine;
+            })(),
             badge: `${plus ? '+' : ''}${_f(mb)}`,
             col: plus ? '#10b981' : '#f43f5e',
             priority: 95
@@ -501,7 +507,7 @@ function _render() {
         cards.push({
             e: up ? '📈' : '📉',
             t: 'Тренд расходов',
-            b: `Бытовые расходы ${up
+            b: `Траты ${up
                 ? '<b style="color:#f43f5e">выросли</b>'
                 : '<b style="color:#22d3ee">снизились</b>'} на ${Math.abs(trend).toFixed(1)}% vs ${_mn(M.prevKey)}${partialMonth ? ' (на то же число)' : ''}`,
             badge: `${up ? '+' : ''}${trend.toFixed(1)}%`,
@@ -527,7 +533,7 @@ function _render() {
         cards.push({
             e: '🏠',
             t: 'Средняя стоимость жизни',
-            b: `В среднем тебе нужно <b>${_f(lifeCostAvg)}</b> в месяц на бытовые траты`,
+            b: `В среднем тебе нужно <b>${_f(lifeCostAvg)}</b> в месяц на траты`,
             badge: `~${_f(lifeCostAvg)}/мес`,
             col: '#10b981',
             priority: 91
@@ -535,16 +541,7 @@ function _render() {
     }
 
     // 9
-    if (mandatoryShare > 0) {
-        cards.push({
-            e: '🧱',
-            t: 'Обязательная нагрузка',
-            b: `Регулярные траты занимают около <b>${mandatoryShare.toFixed(0)}%</b> среднемесячных расходов`,
-            badge: `${mandatoryShare.toFixed(0)}%`,
-            col: '#06b6d4',
-            priority: 90
-        });
-    }
+    // «Обязательная нагрузка» объединена с «Регулярными расходами» (там же доля от средних расходов)
 
     // 10
     const maxTx = realExp.length
@@ -642,7 +639,7 @@ function _render() {
         cards.push({
             e: '😬',
             t: 'Тяжелейший месяц',
-            b: `<b>${_mn(ym)}</b> — максимум бытовых расходов`,
+            b: `<b>${_mn(ym)}</b> — максимум расходов`,
             badge: _f(d.e),
             col: '#fb7185',
             priority: 56
@@ -654,7 +651,7 @@ function _render() {
         cards.push({
             e: '🌟',
             t: 'Лучший месяц',
-            b: `<b>${_mn(ym)}</b> — минимум бытовых расходов`,
+            b: `<b>${_mn(ym)}</b> — минимум расходов`,
             badge: _f(d.e),
             col: '#10b981',
             priority: 55
@@ -666,7 +663,7 @@ function _render() {
         cards.push({
             e: '🔮',
             t: 'Прогноз расходов',
-            b: `На следующий месяц ожидается ~<b>${_f(forecast.predicted)}</b> бытовых расходов (тренд ${sign}${forecast.delta.toFixed(0)}% к среднему)`,
+            b: `На следующий месяц ожидается ~<b>${_f(forecast.predicted)}</b> расходов (тренд ${sign}${forecast.delta.toFixed(0)}% к среднему)`,
             badge: `~${_f(forecast.predicted)}`,
             col: '#8b5cf6',
             priority: 54
@@ -694,7 +691,11 @@ function _render() {
         const today = localToday();
         const available = balanceDaily(allTx, makePeriod({ keys: [today.slice(0, 7)] }), null).end; // то же число, что «Доступно» на главной
 
-        const rw = calcRunway(available, realExp, today);
+        // темп — в той же базе, что «Доступно»: всё, что уходит из кошелька (траты, переводы, вклады, долги),
+        // кроме переводов между своими счетами; иначе прогноз выходит слишком оптимистичным
+        const ownTransfer = new Set(allTx.filter(t => /между\s+своими|своими\s+счет/i.test(String(t.category || ''))).map(t => `${t.date}|${t.amount}`));
+        const outflows = cashEvents(allTx).filter(e => e.v < 0 && !ownTransfer.has(`${e.date}|${-e.v}`)).map(e => ({ date: e.date, amount: -e.v }));
+        const rw = calcRunway(available, outflows, today);
         if (rw) {
             const [, mm, dd] = rw.until.split('-');
             cards.push({
@@ -708,7 +709,7 @@ function _render() {
             });
         }
 
-        const sp = calcSafePerDay(available, realExp, today);
+        const sp = calcSafePerDay(available, outflows, today);
         cards.push({
             e: '🎯', t: 'Можно тратить в день',
             b: sp.over
@@ -735,6 +736,65 @@ function _render() {
                 e: '📅', t: 'Будни и выходные',
                 b: `В выходные ты тратишь в среднем <b>${_f(ww.wePer)}</b> в день, в будни — <b>${_f(ww.wdPer)}</b>: на <b>${Math.abs(Math.round((ww.ratio - 1) * 100))}%</b> ${more ? 'больше' : 'меньше'} по выходным`,
                 badge: `${more ? '+' : '−'}${Math.abs(Math.round((ww.ratio - 1) * 100))}%`, col: '#06b6d4', priority: 79
+            });
+        }
+
+        // ── новые тренды ──
+        const pctS = x => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x * 100))}%`;
+        const pl = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many; };
+        const bp = calcBigPurchases(realExp, today);
+        if (bp) {
+            const rows = bp.top.map(t => `<div class="bi-pd"><span>${_escA(t.category || t.name || '—')} · ${_fd(t.date)}</span><span class="bi-pd-v">${_f(t.amount)}</span></div>`).join('');
+            cards.push({
+                e: '💎', t: 'Крупные траты за 90 дней',
+                b: `${bp.count} ${pl(bp.count, 'операция', 'операции', 'операций')} дороже <b>${_f(bp.threshold)}</b> забрали <b>${Math.round(bp.share * 100)}%</b> всех трат (${_f(bp.sum)}). Без них уходит около <b>${_f(bp.restPerMonth)}</b> в месяц.${rows}`,
+                badge: `${Math.round(bp.share * 100)}%`, wide: true, col: '#f59e0b', priority: 90
+            });
+        }
+        const yoy = calcYearOverYear(realExp, incomeTx, today);
+        if (yoy) {
+            const up = yoy.expGrowth > 0;
+            cards.push({
+                e: '📆', t: 'Год к году',
+                b: `${_mn(yoy.month)}: траты <b>${_f(yoy.exp)}</b> — <b style="color:${up ? '#f43f5e' : '#10b981'}">${pctS(yoy.expGrowth)}</b> к ${_mn(yoy.lastYear)} (${_f(yoy.expPrev)})${yoy.incGrowth != null ? `<br>Поступления <b>${_f(yoy.inc)}</b> — <b>${pctS(yoy.incGrowth)}</b> (было ${_f(yoy.incPrev)})` : ''}`,
+                badge: pctS(yoy.expGrowth), col: up ? '#f43f5e' : '#10b981', priority: 89
+            });
+        }
+        const sp3 = calcSavingsPace(_bm?.getCurrentBudget()?.transactions ?? [], today);
+        if (sp3) {
+            cards.push({
+                e: '🐷', t: 'Откладываешь',
+                b: sp3.net > 0
+                    ? `С ${_mn(sp3.from)} по ${_mn(sp3.to)} во вклады ушло <b>${_f(sp3.net)}</b> сверх снятого — в среднем <b>${_f(sp3.avg)}</b> в месяц. В таком темпе за год ≈ <b>${_f(sp3.yearly)}</b>`
+                    : sp3.net < 0
+                        ? `С ${_mn(sp3.from)} по ${_mn(sp3.to)} со вкладов снято на <b>${_f(-sp3.net)}</b> больше, чем внесено`
+                        : `С ${_mn(sp3.from)} по ${_mn(sp3.to)} сколько внесли во вклады, столько и сняли`,
+                badge: sp3.net > 0 ? `${_f(sp3.avg)}/мес` : '', col: '#8b5cf6', priority: 88
+            });
+        }
+        const ns = calcNoSpendDays(realExp, today);
+        if (ns) {
+            cards.push({
+                e: '🧘', t: 'Дни без трат',
+                b: `В ${_mn(ns.month)} — <b>${ns.days}</b> ${pl(ns.days, 'день', 'дня', 'дней')} без трат${ns.best > 1 ? `, самая длинная пауза — <b>${ns.best}</b> дн.` : ''}${ns.curPassed > 0 ? `<br>В этом месяце пока ${ns.curDays} из ${ns.curPassed}` : ''}`,
+                badge: `${ns.days}`, col: '#22c55e', priority: 87
+            });
+        }
+        const ap = calcAfterPayday(incomeTx, realExp, today);
+        if (ap) {
+            const strip = c => _escA(String(c || '').replace(/^\S+\s/, ''));
+            cards.push({
+                e: '💸', t: 'После поступления',
+                b: `За ${ap.days} дня после зарплаты или аванса уходит <b>${Math.round(ap.share * 100)}%</b> трат до следующего поступления — в среднем <b>${_f(ap.avgFirst)}</b>. При ровном темпе было бы ~${Math.round(ap.uniform * 100)}%.${ap.top.length ? `<br><span style="opacity:.7;font-size:11px">Обычно в эти дни: ${ap.top.map(strip).join(', ')}</span>` : ''}`,
+                badge: `${Math.round(ap.share * 100)}%`, col: ap.share > ap.uniform * 1.5 ? '#f59e0b' : '#10b981', priority: 85
+            });
+        }
+        const td = calcTypicalDay(realExp, today);
+        if (td) {
+            cards.push({
+                e: '🌤', t: 'Обычный день',
+                b: `Обычный день стоит <b>${_f(td.median)}</b> (медиана за 30 дней).${td.heavyDays ? ` <b>${td.heavyDays}</b> ${pl(td.heavyDays, 'день был', 'дня были', 'дней были')} дороже ${_f(td.median * 3)} и забрали <b>${Math.round(td.heavyShare * 100)}%</b> всех трат` : ' Дорогих дней не было'}`,
+                badge: _f(td.median), col: '#06b6d4', priority: 86
             });
         }
 
@@ -768,7 +828,7 @@ function _render() {
     if (totI > 0 && totE > totI * 1.05) {
         al.push({
             ico: '🚨',
-            txt: `Бытовые расходы превышают доходы на <b>${_f(totE - totI)}</b>`,
+            txt: `Траты превышают доходы на <b>${_f(totE - totI)}</b>`,
             t: 'danger'
         });
     }
@@ -776,7 +836,7 @@ function _render() {
     if (cats[0] && totE > 0 && cats[0][1] / totE > 0.5) {
         al.push({
             ico: '🎯',
-            txt: `«${cats[0][0]}» занимает больше 50% бытовых расходов`,
+            txt: `«${cats[0][0]}» занимает больше 50% расходов`,
             t: 'warn'
         });
     }
@@ -792,7 +852,7 @@ function _render() {
     if (realExp.length > 0 && realExp.length < 5) {
         al.push({
             ico: '💬',
-            txt: 'Пока мало бытовых расходов для уверенной аналитики',
+            txt: 'Пока мало расходов для уверенной аналитики',
             t: 'info'
         });
     }
@@ -800,7 +860,12 @@ function _render() {
     if (totExcluded > 0) {
         al.push({
             ico: '🚫',
-            txt: `Исключено из аналитики: <b>${_f(totExcluded)}</b>`,
+            txt: (() => {
+                const cats = _getUserExcludedCats();
+                return cats.length
+                    ? `Не считается в трендах: ${cats.map(c => `«${_escA(c)}»`).join(', ')} и траты «без учёта» — <b>${_f(totExcluded)}</b> <button type="button" class="bi-al-restore" data-restore-excluded style="margin-left:6px;padding:3px 10px;border-radius:999px;border:0;background:var(--chip);color:var(--text);font:inherit;font-size:12px;font-weight:700;cursor:pointer">Вернуть категории</button>`
+                    : `Траты «без учёта» в тренды не входят: <b>${_f(totExcluded)}</b>`;
+            })(),
             t: 'info'
         });
     }
@@ -808,7 +873,7 @@ function _render() {
     if (depositTx.length > 0 || debtTx.length > 0) {
         al.push({
             ico: '🧩',
-            txt: 'Вклады и долги показываются отдельно и не увеличивают бытовые расходы',
+            txt: 'Вклады, переводы и долги считаются, как на главной',
             t: 'info'
         });
     }
@@ -834,7 +899,7 @@ function _kpi(items) {
     if (!row) return;
 
     row.innerHTML = items.map(it => `
-      <div class="bi-kpi ${it.neg ? 'bi-kpi--neg' : ''}">
+      <div class="bi-kpi ${it.neg ? 'bi-kpi--neg' : ''}"${it.hint ? ` title="${String(it.hint).replace(/"/g, '&quot;')}"` : ''}>
         <div class="bi-kpi-icon-wrap">
           <span class="bi-kpi-i">${it.ico}</span>
         </div>
@@ -873,14 +938,14 @@ function _cards(list) {
                 _confirmAnomaly(txId);
                 _showActionFeedback(
                     btn.closest('.bi-card'),
-                    '✓ Понял, это разовая трата. Больше не будем её поднимать',
+                    '✓ Понял: разовая. Эту операцию больше не покажу, цифры не меняются',
                     '#10b981'
                 );
             } else if (action === 'exclude') {
                 _addUserExcludedCat(cat);
                 _showActionFeedback(
                     btn.closest('.bi-card'),
-                    `✓ Категория «${cat}» исключена из анализа`,
+                    `✓ «${cat}» больше не считается в трендах. Вернуть — в подсказке ниже`,
                     '#06b6d4'
                 );
             }
@@ -953,6 +1018,12 @@ function _alerts(list) {
         ${a.t === 'info' ? `<button class="bi-al-dismiss" aria-label="Закрыть">✕</button>` : ''}
       </div>
     `).join('');
+
+    r.querySelector('[data-restore-excluded]')?.addEventListener('click', e => {
+        e.stopPropagation();
+        try { localStorage.removeItem(USER_EXCLUDED_CATS_KEY); } catch { /* ignore */ }
+        _render();
+    });
 
     r.querySelectorAll('.bi-al-dismiss').forEach(btn => {
         btn.addEventListener('click', e => {

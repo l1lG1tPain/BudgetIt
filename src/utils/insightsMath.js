@@ -9,9 +9,12 @@ export const SYSTEM_EXCLUDED_CATEGORIES = [
 ];
 
 // Единый список «финансовых» (не бытовых) категорий.
-// Ядро — переводы / вклады / долги: исключается и из расходов, и из поступлений
+// Ядро — вклады / долги / переводы между СВОИМИ счетами: исключается и из расходов, и из поступлений
 // (иначе «Перевод с вклада» раздувает доход, а «Перевод на вклад» не попадает в расход).
-const CORE_FIN = 'вклад|депозит|перевод|p2p|transfer|долг|кредит|ипотек|займ|заём|погашен|рефинанс|накопл';
+// P2P и переводы людям («🔄 P2P переводы», «🔄 Перевод», СБП, «Входящий перевод») — обычные траты/поступления:
+// так платят продавцам и мастерам. Перекидку себе на карту нужно отнести к «🔁 Перевод между своими счетами».
+const OWN_TRANSFER = 'между\\s+своими|своими\\s+(?:сч[её]т|договор|карт)|своих\\s+(?:сч[её]т|карт)|внутренн\\S*\\s+перевод';
+const CORE_FIN = `вклад|депозит|долг|кредит|ипотек|займ|заём|погашен|рефинанс|накопл|${OWN_TRANSFER}`;
 // Только для расходов: у поступлений такие слова — обычный доход
 // («Комиссионные», «Налоговый вычет», «Доход от инвестиций», «Проценты на остаток»).
 const EXPENSE_FIN = 'налог|комисс|инвести|брокер|облигац|пенсион|(?<![а-яё])акци(?:и|й|я|ях)(?![а-яё])';
@@ -20,8 +23,18 @@ export const FINANCIAL_RE = new RegExp(`${CORE_FIN}|${EXPENSE_FIN}`, 'i');
 export const FINANCIAL_INCOME_RE = new RegExp(CORE_FIN, 'i');
 
 export const isFinancialCategory = cat => !!cat && FINANCIAL_RE.test(String(cat));
-export const isFinancialIncomeCategory = cat => !!cat && FINANCIAL_INCOME_RE.test(String(cat));
+// Поступления: проценты по вкладу и возврат долга — настоящие деньги в кошелёк, это обычное поступление.
+// Финансовыми остаются тело вклада («Перевод с вклада», «Депозит»), взятые кредиты/займы и свои переводы.
+const INCOME_KEEP_RE = /процент|interest|percent|(?:вернул|возврат)\S*[^,]*долг|долг\S*\s+(?:вернул|возврат)/i;
+export const isFinancialIncomeCategory = cat => !!cat && !INCOME_KEEP_RE.test(String(cat)) && FINANCIAL_INCOME_RE.test(String(cat));
 export const isSystemExcludedCategory = cat => !!cat && SYSTEM_EXCLUDED_CATEGORIES.includes(String(cat).trim());
+
+// Единые предикаты «потребления»: обычные траты и обычные поступления без переводов, вкладов, долгов
+// и категорий «без учёта». Их используют аналитика, тренды и Акулка — чтобы цифры везде совпадали.
+export const isConsumption = t => !!t && t.type === 'expense'
+    && !isFinancialCategory(t.category) && !isSystemExcludedCategory(t.category);
+export const isPlainIncome = t => !!t && t.type === 'income'
+    && !isFinancialIncomeCategory(t.category) && !isSystemExcludedCategory(t.category);
 
 // ── числа ────────────────────────────────────────────────────
 export const num = v => {
@@ -71,7 +84,7 @@ export const localToday = () => new Date().toLocaleDateString('en-CA');
 
 // ── регулярные расходы ───────────────────────────────────────
 // Категория регулярна, если есть минимум в 75% месяцев (и не меньше 2).
-export function findRegularExpenses(exp, months) {
+export function findRegularExpenses(exp, months, ratio = 0.75) {
     if (months.length < 2 || !exp.length) return [];
     const allowed = new Set(months);
     const catMonths = {};
@@ -81,7 +94,7 @@ export function findRegularExpenses(exp, months) {
         const c = t.category || '🗿 Прочее';
         (catMonths[c] ||= {})[m] = (catMonths[c][m] || 0) + num(t.amount);
     });
-    const threshold = Math.max(2, Math.ceil(months.length * 0.75));
+    const threshold = Math.max(2, Math.ceil(months.length * ratio));
     const result = [];
     Object.entries(catMonths).forEach(([cat, mths]) => {
         const values = Object.values(mths);
@@ -195,11 +208,14 @@ export function computeMetrics(allTx, opts = {}) {
     const today = opts.today || localToday();
     const userExcluded = opts.userExcluded || [];
     const confirmed = opts.confirmed || [];
-    const isExcludedExp = c => isFinancialCategory(c) || isSystemExcludedCategory(c) || userExcluded.includes(c);
+    // allMoney: все деньги, как на главной (вклады, переводы, долги входят) — исключаются только «без учёта»
+    // и категории, убранные пользователем; иначе — прежние «бытовые» правила (без финансовых категорий)
+    const allMoney = !!opts.allMoney;
+    const isExcludedExp = c => (!allMoney && isFinancialCategory(c)) || isSystemExcludedCategory(c) || userExcluded.includes(c);
 
     const expenseTx = allTx.filter(t => t.type === 'expense');
     const incomeTx = allTx.filter(t => t.type === 'income'
-        && !isFinancialIncomeCategory(t.category) && !isSystemExcludedCategory(t.category));
+        && (allMoney || !isFinancialIncomeCategory(t.category)) && !isSystemExcludedCategory(t.category));
     const realExp = expenseTx.filter(t => !isExcludedExp(t.category));
     const excludedExp = expenseTx.filter(t => isExcludedExp(t.category));
 
@@ -268,9 +284,15 @@ export function computeMetrics(allTx, opts = {}) {
     const lifeMonths = withExp(closedMonths).length ? withExp(closedMonths) : withExp(months);
     const lifeCostAvg = lifeMonths.length ? lifeMonths.reduce((s, m) => s + mMap[m].e, 0) / lifeMonths.length : 0;
 
-    const regularCats = findRegularExpenses(realExp, closedMonths.length >= 2 ? closedMonths : months);
+    // регулярные траты — по последним 6 завершённым месяцам (категория хотя бы в 4 из 6): привычки и
+    // названия категорий со временем меняются, за всю историю аренда могла «выпасть» из-за пары месяцев
+    const recentClosed = closedMonths.slice(-6);
+    const regMonths = recentClosed.length >= 3 ? recentClosed : (closedMonths.length >= 2 ? closedMonths : months);
+    const regularCats = findRegularExpenses(realExp, regMonths, recentClosed.length >= 3 ? 0.66 : 0.75);
     const regularSum = regularCats.reduce((s, r) => s + r.avg, 0);
-    const mandatoryShare = lifeCostAvg > 0 ? Math.min(100, regularSum / lifeCostAvg * 100) : 0;
+    const regLife = withExp(regMonths);
+    const regLifeAvg = regLife.length ? regLife.reduce((s, m) => s + mMap[m].e, 0) / regLife.length : lifeCostAvg;
+    const mandatoryShare = regLifeAvg > 0 ? Math.min(100, regularSum / regLifeAvg * 100) : 0;
 
     // лучший/худший месяц — только завершённые (иначе недожитый месяц всегда «лучший»)
     const cmp = closedMonths.length ? closedMonths : months;
@@ -289,7 +311,7 @@ export function computeMetrics(allTx, opts = {}) {
         months, closedMonths, partialMonth, lastMonth, prevKey, mMap, lastM: mMap[lastMonth] || { i: 0, e: 0, txCount: 0 },
         trend, freqTrend, lastCount, prevCount, growth,
         dW, dWCount, hotD, busyD, pricey, avg, med, p90, tpd,
-        lifeCostAvg, regularCats, regularSum, mandatoryShare, worst, best,
+        lifeCostAvg, regularCats, regularSum, mandatoryShare, regLifeAvg, regMonths, worst, best,
         cats, incCats,
         anomaly: findAnomaly(realExp, { avg, med, p90 }, confirmed),
         leaking: findLeakingCategory(realExp),

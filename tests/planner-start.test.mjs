@@ -59,10 +59,22 @@ test('старт: факт основной траты заменяет план
     assert.equal(p.summary.openingBalance, 750);               // 1000 − 250
 });
 
-test('старт: чужие поступления в стартовый день не считаются, поступление плановой категории заменяет план', () => {
+test('старт: любые поступления дня считаются, поступление плановой категории заменяет план', () => {
     const p = proj([inc(1, '2026-10-01', 500, '🎁 Подарок'), inc(2, '2026-10-01', 1200)], mk(), 1);
-    assert.equal(p.summary.openingBalance, 1000);              // 1200 (факт вместо плана 1000) − 200
+    assert.equal(p.summary.openingBalance, 1500);              // 1200 (факт вместо плана 1000) + 500 подарок − 200
     assert.equal(p.summary.incomeReceived, 1200);
+    assert.equal(p.rows[0].fact.extraIncome, 500);
+});
+
+test('старт: поступление другой категории при плане «по факту» не теряется (случай «Конец месяца»)', () => {
+    const planner = mk({ incomePlan: { category: '💼 Аванс', amount: 0, incomeDate: '2026-10-01' }, mainExpenses: [], dailyExpenses: [] });
+    const p = proj([inc(1, '2026-10-01', 7000, '💼 Аванс'), inc(2, '2026-10-01', 78, '🏦 Проценты от вклада'), exp(3, '2026-10-01', 100)], planner, 2);
+    assert.equal(p.summary.openingBalance, 6978);
+});
+
+test('будущие дни без операций помечены isFuture, прошедшие и сегодняшний — нет', () => {
+    const p = proj([], mk(), 3);
+    assert.deepEqual(p.rows.map(r => r.isFuture), [false, false, false, true, true]);
 });
 
 test('зарплата пришла позже плановой даты: считается один раз', () => {
@@ -86,4 +98,29 @@ test('поступление «по факту» (сумма не задана):
     assert.equal(p.summary.openingBalance, 700);
     assert.equal(p.summary.incomeByFact, true);
     assert.equal(incomeSum(proj([inc(1, '2026-10-03', 900)], planner, 4)), 900);
+});
+
+test('дата поступления прошла, факта нет: считаем как раньше, но помечаем overdue', () => {
+    const p = proj([], mk({ mainExpenses: [], dailyExpenses: [] }), 3);
+    assert.equal(p.summary.incomeExpected, 1000);
+    assert.equal(p.summary.incomeOverdue, true);
+    assert.equal(p.summary.incomePlanDate, '2026-10-01');
+});
+
+test('overdue нет: дата сегодня, дата впереди, или поступление пришло', () => {
+    const today = proj([], mk({ mainExpenses: [], dailyExpenses: [] }), 1);
+    assert.equal(today.summary.incomeOverdue, false);
+    const future = proj([], mk({ incomePlan: { category: '💰 Зарплата', amount: 1000, incomeDate: '2026-10-04' }, mainExpenses: [], dailyExpenses: [] }), 2);
+    assert.equal(future.summary.incomeOverdue, false);
+    const got = proj([inc(1, '2026-10-02', 1000)], mk({ mainExpenses: [], dailyExpenses: [] }), 3);
+    assert.equal(got.summary.incomeOverdue, false);
+});
+
+test('правка плана: смена числа дней сдвигает дату окончания; старый план с устаревшим endDate чинится при загрузке', async () => {
+    const { normalizePlanner } = await import('../src/planner/plannerUtils.js');
+    const stale = normalizePlanner({ id: 'p', budgetId: 'b', name: 'x', startDate: '2026-10-20', periodDays: 17, endDate: '2026-11-03',
+        incomePlan: { category: '💼 Аванс', amount: 0, incomeDate: '2026-10-20' } }, 'b');
+    assert.equal(stale.endDate, '2026-11-05');
+    const short = normalizePlanner({ ...stale, periodDays: 15 }, 'b');
+    assert.equal(short.endDate, '2026-11-03');
 });

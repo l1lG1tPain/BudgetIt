@@ -2,7 +2,10 @@
 //   SharkExtra.js — расчёты для новых «разговорных» функций Акулки (чистая логика без DOM):
 //   цель накопления, «что я зря трачу», итог месяца, правило 50/30/20, значки, флаги событий.
 // ===============================
-import { isoDay, shiftDay, readScoped, writeScoped } from './SharkMood.js';
+import { isoDay, shiftDay, readScoped, writeScoped, isDailySpend } from './SharkMood.js';
+import { netSavings } from '../utils/savingsFlow.js';
+import { isPlainIncome } from '../utils/insightsMath.js';
+
 
 const num = v => Number(v) || 0;
 const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
@@ -41,7 +44,8 @@ export function formatGoalDate(iso) {
 export function goalCalc(goal, tx = [], today = isoDay()) {
     if (!goal || !(goal.sum > 0) || !goal.date) return null;
     const start = goal.start || today;
-    const saved = tx.filter(t => t.type === 'deposit' && t.date >= start && t.date <= today).reduce((s, t) => s + num(t.amount), 0);
+    // пополнения минус снятия; «Уже лежало» — не новое накопление
+    const saved = Math.max(0, netSavings(tx, start, today).net);
     const total = Math.max(1, dayDiff(start, goal.date));
     const elapsed = Math.min(total, Math.max(0, dayDiff(start, today)));
     const daysLeft = Math.max(0, dayDiff(today, goal.date));
@@ -97,20 +101,21 @@ export function monthSummary(tx, today = isoDay()) {
     const ym = today.slice(0, 7);
     const list = tx.filter(t => (t.date || '').startsWith(ym));
     if (!list.length) return null;
-    const sum = type => list.filter(t => t.type === type).reduce((s, t) => s + num(t.amount), 0);
+    const sumBy = f => list.filter(f).reduce((s, t) => s + num(t.amount), 0);
     const by = new Map();
-    for (const t of list) if (t.type === 'expense') by.set(t.category || 'Без категории', (by.get(t.category || 'Без категории') || 0) + num(t.amount));
+    for (const t of list) if (isDailySpend(t)) by.set(t.category || 'Без категории', (by.get(t.category || 'Без категории') || 0) + num(t.amount));
     const top = [...by.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'разное';
-    return { exp: sum('expense'), inc: sum('income'), sav: sum('deposit'), top, days: new Set(list.map(t => t.date)).size };
+    const sav = Math.max(0, netSavings(list).net);
+    return { exp: sumBy(isDailySpend), inc: sumBy(isPlainIncome), sav, top, days: new Set(list.map(t => t.date)).size };
 }
 
 // ───────── правило 50/30/20 (упрощённо: доля трат и накоплений от дохода за 30 дней) ─────────
 export function ruleCheck(tx, today = isoDay()) {
     const from = shiftDay(today, -29);
-    const within = type => tx.filter(t => t.type === type && t.date >= from && t.date <= today).reduce((s, t) => s + num(t.amount), 0);
-    const inc = within('income');
+    const within = f => tx.filter(t => f(t) && t.date >= from && t.date <= today).reduce((s, t) => s + num(t.amount), 0);
+    const inc = within(isPlainIncome);
     if (!inc) return { state: 'none' };
-    const exp = within('expense'), sav = within('deposit');
+    const exp = within(isDailySpend), sav = Math.max(0, netSavings(tx, from, today).net);
     const spentPct = Math.round((exp / inc) * 100), savePct = Math.round((sav / inc) * 100);
     return { state: spentPct > 100 ? 'low' : (spentPct <= 60 || (spentPct <= 80 && savePct >= 15)) ? 'good' : 'mid', spentPct, savePct };
 }

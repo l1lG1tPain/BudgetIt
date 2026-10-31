@@ -4,7 +4,7 @@
 //   • ответы на быстрые вопросы («Сколько осталось?», «Куда ушли деньги?» …),
 //   • объяснение, как считается лимит.
 // ===============================
-import { fmt, getSpentOnDay, getThresholds, isoDay, shiftDay, CHARACTER_LABELS } from './SharkMood.js';
+import { fmt, getSpentOnDay, isDailySpend, getThresholds, isoDay, shiftDay, CHARACTER_LABELS } from './SharkMood.js';
 
 import {
     MOTIVATION, CHEER_TASKS, REMINDERS, VERDICT_OK, VERDICT_OVER, GREETINGS, ANSWERS, BACKUP_NUDGES, PROACTIVE, FUN, FLAVOR, ANSWERS_C, GLOSSARY,
@@ -299,53 +299,64 @@ const DAY_TAIL = {
 const ruDate = day => new Date(day + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 const ruWd = day => new Date(day + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'short' });
 
-function expensesByCat(tx, days) {
+// Что идёт в лимит: та же база, что у расхода дня (без переводов/вкладов/«без учёта» и плановых категорий)
+function limitBasis(planner, normalize = c => c) {
+    const planned = new Set();
+    if (planner) [...(planner.mainExpenses || []), ...(planner.regularExpenses || [])].forEach(i => planned.add(normalize(i.category || i.name || '')));
+    return t => isDailySpend(t) && !planned.has(normalize(t.category || ''));
+}
+const BASIS_NOTE = basis => ` В лимит идёт ${fmt(basis)}: свои переводы, вклады и плановые траты не считаются.`;
+
+function expensesByCat(tx, days, counts = isDailySpend) {
     const set = new Set(days);
     const byCat = new Map();
-    let total = 0;
+    let total = 0, basis = 0;
     for (const t of tx) {
         if (t.type !== 'expense' || !set.has(t.date)) continue;
         const a = Number(t.amount) || 0;
         total += a;
+        if (counts(t)) basis += a;
         const c = t.category || 'Без категории';
         byCat.set(c, (byCat.get(c) || 0) + a);
     }
-    return { total, cats: [...byCat.entries()].sort((a, b) => b[1] - a[1]) };
+    return { total, basis, cats: [...byCat.entries()].sort((a, b) => b[1] - a[1]) };
 }
 
-export function dayAnswer({ offset, tx = [], today, limit = 0, character = 'normal' }) {
+export function dayAnswer({ offset, tx = [], today, limit = 0, character = 'normal', planner = null, normalize }) {
     const ch = charOf(character);
     const day = shiftDay(today, offset);
     const name = DAY_NAMES[String(offset)] || ruDate(day);
-    const { total, cats } = expensesByCat(tx, [day]);
+    const { total, basis, cats } = expensesByCat(tx, [day], limitBasis(planner, normalize));
     const choices = DAY_CHOICES[`day:${offset}`];
     if (!total) return { text: `${name} (${ruDate(day)}): ${pickBy(DAY_NONE[ch], `${day}:none`)}`, choices };
     const top = cats.slice(0, 3).map(([c, v]) => `${c} — ${fmt(v)}`).join('; ');
-    const ok = !limit || total <= limit;
+    const ok = !limit || basis <= limit;
     const tail = limit ? ' ' + pickBy(DAY_TAIL[ch][ok ? 'ok' : 'over'], `${day}:${total}`) : '';
-    const cmp = limit ? ` Лимит: ${fmt(limit)}${ok ? '' : `, перерасход ${fmt(total - limit)}`}.` : '';
-    return { text: `${name} (${ruDate(day)}) ушло ${fmt(total)}. Больше всего: ${top}.${cmp}${tail}`, choices };
+    const note = limit && basis !== total ? BASIS_NOTE(basis) : '';
+    const cmp = limit ? ` Лимит: ${fmt(limit)}${ok ? '' : `, перерасход ${fmt(basis - limit)}`}.` : '';
+    return { text: `${name} (${ruDate(day)}) ушло ${fmt(total)}. Больше всего: ${top}.${note}${cmp}${tail}`, choices };
 }
 
-export function lastWeekAnswer({ tx = [], today, limit = 0, character = 'normal' }) {
+export function lastWeekAnswer({ tx = [], today, limit = 0, character = 'normal', planner = null, normalize }) {
     const ch = charOf(character);
     const dow = (new Date(today + 'T00:00:00').getDay() + 6) % 7;      // 0 = понедельник
     const mon = shiftDay(today, -dow - 7);
     const days = Array.from({ length: 7 }, (_, i) => shiftDay(mon, i));
-    const { total, cats } = expensesByCat(tx, days);
+    const counts = limitBasis(planner, normalize);
+    const { total, cats } = expensesByCat(tx, days, counts);
     const head = `Прошлая неделя (${ruDate(days[0])} — ${ruDate(days[6])})`;
     if (!total) return { text: `${head}: ${pickBy(DAY_NONE[ch], `${mon}:none`)}` };
-    const per = days.map(d => ({ d, v: expensesByCat(tx, [d]).total }));
+    const per = days.map(d => { const r = expensesByCat(tx, [d], counts); return { d, v: r.total, b: r.basis }; });
     const withRec = per.filter(x => x.v > 0);
     const worst = withRec.reduce((a, b) => (b.v > a.v ? b : a));
     const best = withRec.reduce((a, b) => (b.v < a.v ? b : a));
     const lines = [`${head}: потрачено ${fmt(total)}, в среднем ${fmt(total / withRec.length)} в день с записями.`, ''];
-    per.forEach(x => lines.push(`• ${ruWd(x.d)} ${ruDate(x.d)} — ${x.v ? fmt(x.v) : '—'}${limit && x.v > limit ? ' ⚠️' : ''}`));
+    per.forEach(x => lines.push(`• ${ruWd(x.d)} ${ruDate(x.d)} — ${x.v ? fmt(x.v) : '—'}${limit && x.b > limit ? ' ⚠️' : ''}`));
     lines.push('');
     lines.push(`• 🔝 Дороже всего: ${ruWd(worst.d)} — ${fmt(worst.v)}${withRec.length > 1 ? `; спокойнее всего: ${ruWd(best.d)} — ${fmt(best.v)}` : ''}`);
     if (limit) {
-        const over = withRec.filter(x => x.v > limit).length;
-        lines.push(`• 🎯 В лимите ${withRec.length - over} из ${withRec.length} дн. (лимит сейчас ${fmt(limit)})`);
+        const over = withRec.filter(x => x.b > limit).length;
+        lines.push(`• 🎯 В лимите ${withRec.length - over} из ${withRec.length} дн. (лимит сейчас ${fmt(limit)}; свои переводы, вклады и плановые траты не считаются)`);
     }
     lines.push(`• 🧺 Больше всего: ${cats.slice(0, 3).map(([c, v]) => `${c} ${Math.round(v / total * 100)}%`).join(' · ')}`);
     return { text: lines.join('\n') };
@@ -379,10 +390,11 @@ export function answerQuestion(id, ctx = {}) {
         if (!total) return { text: say('todayNone'), choices: DAY_CHOICES.today, acts: ADD_ACTS };
         const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
             .map(([c, v]) => `${c} — ${fmt(v)}`).join('; ');
-        return { text: say('todaySome', { total: fmt(total), top }) };
+        const note = limit && spent !== total ? '\n\n' + BASIS_NOTE(spent).trim() : '';
+        return { text: say('todaySome', { total: fmt(total), top }) + note };
     }
-    if (id === 'day:-1' || id === 'day:-2') return dayAnswer({ offset: id === 'day:-1' ? -1 : -2, tx, today, limit, character });
-    if (id === 'lastweek') return lastWeekAnswer({ tx, today, limit, character });
+    if (id === 'day:-1' || id === 'day:-2') return dayAnswer({ offset: id === 'day:-1' ? -1 : -2, tx, today, limit, character, planner: ctx.planner, normalize: ctx.normalize });
+    if (id === 'lastweek') return lastWeekAnswer({ tx, today, limit, character, planner: ctx.planner, normalize: ctx.normalize });
     if (id === 'week') {
         const w = weekReport({ transactions: tx, planner: ctx.planner, today, limit, normalize: ctx.normalize });
         if (!w.daysWith) return { text: say('weekNone'), acts: ADD_ACTS };

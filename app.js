@@ -4,7 +4,7 @@ import { BudgetManager } from './src/BudgetManager.js';
 import { UIManager } from './src/UIManager.js';
 import { StorageManager } from './src/StorageManager.js';
 import { initThemeSelector } from './src/ThemeManager.js';
-import { initSettings } from './src/settings.js';
+import { initSettings, offerStorageProtection } from './src/settings.js';
 import { initRecapEntry } from './src/recap/recapEntry.js';
 import { initSwUpdate } from './src/utils/swUpdate.js';
 import { showLoader } from './src/utils/loader.js';
@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     uiManager.desktopWidgets = desktopWidgets;
 
     initSettings(budgetManager, uiManager);
+    setTimeout(() => offerStorageProtection(budgetManager), 6000);
     initRecapEntry(() => budgetManager.getCurrentBudget()?.transactions || []);
     initPwaInstall();
     // Картинки нельзя сохранить: блокируем меню по долгому нажатию и перетаскивание

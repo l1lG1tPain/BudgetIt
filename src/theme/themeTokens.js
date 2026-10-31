@@ -20,7 +20,7 @@ export const THEME_SOURCE = {
     'hookah':        ['#0d3a3a', '#123c42', '#c084fc', '#f0f0f0', '#00e676', '#ff4d4d', false],
     'trackit':       ['#1c1c24', '#0C0C0E', '#a0ff00', '#f0f0f0', '#a0ff00', '#ff00ff', false],
     'sage':          ['#e8f0ea', '#d4e2da', '#4f9a6f', '#2e4237', '#3f9a66', '#d66b6b', true],
-    'tiffany':       ['#031416', '#0a2a2c', '#81d8d0', '#effffd', '#7be8a8', '#ff7b8c', false]
+    'tiffany':       ['#81d8d0', '#b9ece7', '#0b1d1c', '#0b1d1c', '#0a7a45', '#c8283f', true]
 };
 
 /** «Акулка» — эталонная тема, значения зафиксированы в хэндоффе дословно. */
@@ -39,7 +39,7 @@ const HAND_TUNED = {
     mint: { canvas: '#040a08', bg: '#07120f', orb1: 'rgba(30,140,110,.55)', orb2: 'rgba(40,90,140,.35)', orb3: 'rgba(99,230,190,.14)', glass: 'rgba(255,255,255,.05)', glass2: 'rgba(255,255,255,.09)', stroke: 'rgba(255,255,255,.09)', hi: 'rgba(255,255,255,.08)', sticky: 'rgba(7,18,15,.62)', text: '#e9fff8', muted: '#8aa79e', faint: 'rgba(255,255,255,.07)', accent: '#63e6be', ink: '#04221a', in: '#63e6be', out: '#ff6e7f', save: '#9fb4ff', debt: '#ffc27a', chip: 'rgba(255,255,255,.1)' },
     dark: { canvas: '#040813', bg: '#070d1c', orb1: 'rgba(42,109,240,.5)', orb2: 'rgba(176,33,63,.38)', orb3: 'rgba(31,167,201,.22)', glass: 'rgba(255,255,255,.05)', glass2: 'rgba(255,255,255,.1)', stroke: 'rgba(255,255,255,.12)', hi: 'rgba(255,255,255,.08)', sticky: 'rgba(7,13,28,.64)', text: '#eaf1ff', muted: '#9fb0d0', faint: 'rgba(255,255,255,.07)', accent: '#5bb8ff', ink: '#06101f', in: '#3ddc97', out: '#ff6b81', save: '#ffc857', debt: '#c084fc', chip: 'rgba(255,255,255,.1)' },
     light: { canvas: '#d9e3f2', bg: '#eaf1fb', orb1: 'rgba(60,130,255,.45)', orb2: 'rgba(255,140,170,.34)', orb3: 'rgba(40,190,220,.30)', glass: 'rgba(255,255,255,.58)', glass2: 'rgba(255,255,255,.8)', stroke: 'rgba(255,255,255,.9)', hi: 'rgba(255,255,255,.92)', sticky: 'rgba(234,241,251,.74)', text: '#0b1730', muted: '#5a6b8a', faint: 'rgba(11,23,48,.06)', accent: '#2a6df0', ink: '#ffffff', in: '#0a9a62', out: '#e0384f', save: '#d4900a', debt: '#9b5de5', chip: 'rgba(11,23,48,.08)' },
-    tiffany: { canvas: '#010809', bg: '#031416', orb1: 'rgba(10,186,181,.55)', orb2: 'rgba(129,216,208,.26)', orb3: 'rgba(244,255,254,.10)', glass: 'rgba(200,255,250,.055)', glass2: 'rgba(200,255,250,.10)', stroke: 'rgba(170,255,246,.15)', hi: 'rgba(235,255,253,.16)', sticky: 'rgba(3,20,22,.64)', text: '#effffd', muted: '#86b5b1', faint: 'rgba(200,255,250,.07)', accent: '#81d8d0', ink: '#032624', in: '#7be8a8', out: '#ff7b8c', save: '#efdcae', debt: '#ffb27d', chip: 'rgba(200,255,250,.10)' },
+    tiffany: { canvas: '#6fcfc7', bg: '#81d8d0', orb1: 'rgba(255,255,255,.55)', orb2: 'rgba(195,255,255,.6)', orb3: 'rgba(10,186,181,.35)', glass: 'rgba(255,255,255,.42)', glass2: 'rgba(255,255,255,.62)', stroke: 'rgba(255,255,255,.72)', hi: 'rgba(255,255,255,.88)', sticky: 'rgba(129,216,208,.84)', text: '#0b1d1c', muted: '#2b5552', faint: 'rgba(11,29,28,.08)', accent: '#0b1d1c', primary: '#0abab5', ink: '#81d8d0', in: '#0a7a45', out: '#c8283f', save: '#5b3fc4', debt: '#b35b00', chip: 'rgba(255,255,255,.5)' },
     dolphin: { canvas: '#d3e6f2', bg: '#e6f2fa', orb1: 'rgba(14,165,233,.4)', orb2: 'rgba(120,220,255,.5)', orb3: 'rgba(34,197,94,.2)', glass: 'rgba(255,255,255,.55)', glass2: 'rgba(255,255,255,.75)', stroke: 'rgba(255,255,255,.85)', hi: 'rgba(255,255,255,.9)', sticky: 'rgba(230,242,250,.72)', text: '#0c3550', muted: '#4f7690', faint: 'rgba(12,53,80,.06)', accent: '#0e8fd6', ink: '#ffffff', in: '#16a34a', out: '#e0384f', save: '#6a55e0', debt: '#d9822b', chip: 'rgba(12,53,80,.08)' }
 };
 
@@ -84,7 +84,8 @@ export function applyThemeTokens(theme, root = document.documentElement) {
     const tokens = getThemeTokens(theme);
     Object.entries(tokens).forEach(([name, value]) => root.style.setProperty(`--${name}`, value));
     // Алиасы старых переменных на новые токены (README → «Существующие переменные»): старые компоненты подхватывают палитру темы
-    const alias = { 'primary-color': tokens.accent, 'income-color': tokens.in, 'expense-color': tokens.out, 'deposit-color': tokens.save,
+    // primary: у «Тиффани» акцент чёрный, а старые кнопки берут фон --primary-color и чёрный текст — им нужен свой цвет
+    const alias = { 'primary-color': tokens.primary || tokens.accent, 'income-color': tokens.in, 'expense-color': tokens.out, 'deposit-color': tokens.save,
         'debt-color': tokens.debt, 'secondary-color': tokens.text, 'text-muted': tokens.muted, 'main-ground': tokens.bg };
     Object.entries(alias).forEach(([name, value]) => root.style.setProperty(`--${name}`, value));
     return tokens;

@@ -622,7 +622,7 @@
 :root[data-theme="light-classic"],
 :root[data-theme="dolphin"],
 :root[data-theme="sage"],
-:root[data-theme="yogurt"] {
+:root[data-theme="yogurt"], :root[data-theme="tiffany"] {
 
     /* ── Stat-карточки ── */
     .eip-stat-card {
@@ -791,3 +791,11 @@
         color: #d93040;
     }
 }
+
+/* ── Защита данных ── */
+.eip-protect-card { margin-bottom: 12px; }
+.eip-protect-status { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.35; background: rgba(255, 170, 0, 0.12); }
+.eip-protect-status[data-ok="1"] { background: rgba(39, 174, 96, 0.12); }
+.eip-protect-status b { font-size: 14px; }
+.eip-protect-usage { opacity: 0.7; font-size: 12px; }
+.eip-protect-card .eip-tool-btn:disabled { opacity: 0.55; }

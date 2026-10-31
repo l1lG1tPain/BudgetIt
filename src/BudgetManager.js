@@ -1,6 +1,7 @@
 // BudgetManager.js — финальная версия с planner support
 import { cleanText, cleanTransaction } from './utils/sanitize.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
+import { carryNext, getCarryMode } from './utils/carryOver.js';
 
 export class BudgetManager {
     constructor(storageManager = null) {
@@ -189,7 +190,8 @@ export class BudgetManager {
         if (!budget) return;
         cleanTransaction(tx);
 
-        if (tx.date) {
+        // уже готовую дату не трогаем: new Date(...).toISOString() — это UTC и может сдвинуть день
+        if (tx.date && !/^\d{4}-\d{2}-\d{2}$/.test(tx.date)) {
             const d = new Date(tx.date);
             if (!Number.isNaN(d.getTime())) {
                 tx.date = d.toISOString().slice(0, 10);
@@ -571,7 +573,9 @@ export class BudgetManager {
 
         // 3. Перенос остатка из месяца в месяц.
         // Если месяц закрылся в минус — следующий месяц начинается с 0.
+        const carryMode = getCarryMode();
         let rollingBalance = 0;
+        let rawCarryOver = 0; // закрытие предыдущего месяца до возможного обнуления
         let openingBalance = 0;
         let selectedMonthNet = 0;
         let selectedClosingBalance = 0;
@@ -581,7 +585,8 @@ export class BudgetManager {
                 .filter(monthKey => isBeforeMonth(monthKey, target.monthKey))
                 .forEach(monthKey => {
                     const rawClosing = rollingBalance + getMonthNet(monthKey);
-                    rollingBalance = Math.max(0, rawClosing);
+                    rollingBalance = carryNext(rawClosing, carryMode);
+                    rawCarryOver = rawClosing;
                 });
 
             openingBalance = rollingBalance;
@@ -624,6 +629,8 @@ export class BudgetManager {
 
         // 6. Остаток долгов на конец выбранного периода.
         let totalDebt = 0;
+        let debtIOwe = 0;      // «Я должен»
+        let debtOwedToMe = 0;  // «Мне должны»
 
         txs.forEach(tx => {
             if (tx.type !== 'debt') return;
@@ -644,6 +651,7 @@ export class BudgetManager {
 
             const remaining = Math.max(0, init - paidUntilPeriodEnd);
             totalDebt += remaining;
+            if (tx.direction === 'owe') debtIOwe += remaining; else debtOwedToMe += remaining;
         });
 
         // 7. Бюджет Акулки.
@@ -668,7 +676,7 @@ export class BudgetManager {
                 .filter(monthKey => !endMonthKey || compareMonthKey(monthKey, endMonthKey) <= 0)
                 .forEach(monthKey => {
                     const rawClosing = allRollingBalance + getMonthNet(monthKey);
-                    allRollingBalance = Math.max(0, rawClosing);
+                    allRollingBalance = carryNext(rawClosing, carryMode);
                 });
 
             overallBudget = allRollingBalance;
@@ -685,7 +693,10 @@ export class BudgetManager {
             monthlyExpense: visibleExpense,
             depositBalance,
             totalDebt,
+            debtIOwe,
+            debtOwedToMe,
             carryOver,
+            rawCarryOver: target.isSingleMonth ? rawCarryOver : 0,
 
             openingBalance,
             closingBalance,
@@ -713,7 +724,12 @@ export class BudgetManager {
         const getDateInfo = dateStr => {
             if (!dateStr) return null;
 
-            const raw = String(dateStr);
+            // ISO-метка времени (платежи по долгам) → локальная дата, как в calculateTotals
+            let raw = String(dateStr);
+            if (raw.includes('T')) {
+                const dt = new Date(raw);
+                if (!Number.isNaN(dt.getTime())) raw = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            }
             const match = raw.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
             if (!match) return null;
 
@@ -843,7 +859,8 @@ export class BudgetManager {
                     bucket.income += amount;
                     bucket.depositWithdraw += amount;
                 } else {
-                    bucket.expense += amount;
+                    // «Уже лежало» не уходило из кошелька: на вкладе оно есть, а расходом месяца не является
+                    if (!String(tx.status || '').includes('Уже лежало')) bucket.expense += amount;
                     bucket.depositTopup += amount;
                 }
 
@@ -869,12 +886,14 @@ export class BudgetManager {
             if (tx.type !== 'debt') return;
 
             const payments = Array.isArray(tx.payments) ? tx.payments : [];
+            const init = toNumber(tx.initialAmount ?? tx.amount);
+            let paidSoFar = 0; // платёж сверх суммы долга не засчитывается (как в calculateTotals)
 
             payments.forEach(payment => {
                 const info = getDateInfo(payment.date);
+                const amount = Math.min(toNumber(payment.amount), Math.max(0, init - paidSoFar));
+                paidSoFar += amount;
                 if (!info?.monthKey) return;
-
-                const amount = toNumber(payment.amount);
                 if (amount <= 0) return;
 
                 const bucket = ensureBucket(info.monthKey);
@@ -893,6 +912,7 @@ export class BudgetManager {
 
         // Накопительный баланс бюджета:
         // если месяц ушёл в минус, следующий месяц начинается с 0.
+        const carryMode = getCarryMode();
         let rollingBudget = 0;
         allKnownMonths.forEach(monthKey => {
             const bucket = buckets.get(monthKey);
@@ -902,7 +922,7 @@ export class BudgetManager {
 
             const rawClosing = rollingBudget + bucket.budgetNet;
             bucket.budgetClosing = rawClosing;
-            rollingBudget = Math.max(0, rawClosing);
+            rollingBudget = carryNext(rawClosing, carryMode);
         });
 
         // Накопительный баланс вкладов.

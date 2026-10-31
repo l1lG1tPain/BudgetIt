@@ -30,9 +30,9 @@ test('ink: тёмный на светлых акцентах, белый на т
     assert.equal(getThemeTokens('unknown').accent, '#3dffa0');
 });
 
-test('«Тиффани»: бирюзовый акцент, тёмное стекло, читаемый ink', () => {
+test('«Тиффани»: светлая — фон Tiffany Blue, белое стекло, чёрный акцент', () => {
     const t = getThemeTokens('tiffany');
-    assert.equal(t.accent, '#81d8d0'); assert.equal(t.bg, '#031416'); assert.equal(t.glass, 'rgba(200,255,250,.055)');
+    assert.equal(t.bg, '#81d8d0'); assert.equal(t.accent, '#0b1d1c'); assert.ok(/^rgba\(255,255,255,/.test(t.glass));
     assert.notEqual(t.in, t.accent); assert.notEqual(t.ink, '#ffffff');
 });
 

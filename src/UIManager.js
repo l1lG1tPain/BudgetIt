@@ -18,6 +18,7 @@ import {
 
 import { monthNames } from '../constants/constants.js';
 import { markFlag } from './shark/SharkExtra.js';
+import { getCarryMode } from './utils/carryOver.js';
 import { addCustomCategory, removeCustomCategory } from './utils/customCategories.js';
 import { openDateSheet, formatDateLabel } from './ui/DateSheet.js';
 import { refreshExportAnalytics, createAutoBackup } from './settings.js';
@@ -211,7 +212,10 @@ export class UIManager {
                 value += carryOver;
             }
 
+            if (type === 'debt') value = this.updateDebtBlock(totals);
+
             const el = document.querySelector(`#block-${type} .block-value`);
+            if (type === 'budget') document.getElementById('block-budget')?.classList.toggle('is-negative', value < 0);
             this.animateValue(el, value, 800);
 
             const emojiFnByType = {
@@ -228,6 +232,7 @@ export class UIManager {
             }
         });
 
+        this.updateBudgetNote(totals, carryOver, isSingleMonth);
         this.updateAkulkaCard(totals, carryOver, isSingleMonth);
         this.desktopWidgets?.refresh();
 
@@ -624,6 +629,41 @@ export class UIManager {
         });
     }
 
+    // Карточка долгов: основное число — «я должен», под ним «мне должны». Возвращает показанное число.
+    updateDebtBlock(totals) {
+        const owe = Number(totals.debtIOwe) || 0;
+        const owed = Number(totals.debtOwedToMe) || 0;
+        const block = document.getElementById('block-debt');
+        const note = document.getElementById('debt-note');
+        let value = 0, kind = '', text = '';
+        if (owe > 0) {
+            value = owe; kind = 'owe';
+            text = owed > 0 ? `мне должны ${formatNumber(owed)}` : 'я должен';
+        } else if (owed > 0) {
+            value = owed; kind = 'owed'; text = 'мне должны';
+        }
+        if (block) { block.classList.toggle('debt-owe', kind === 'owe'); block.classList.toggle('debt-owed', kind === 'owed'); }
+        if (note) { note.textContent = text; note.classList.toggle('hidden', !text); }
+        return value;
+    }
+
+    // Подпись под «Доступно»: откуда взялся минус / что не перенесено (зависит от режима переноса)
+    updateBudgetNote(totals, carryOver, isSingleMonth) {
+        const note = document.getElementById('budget-carry-note');
+        if (!note) return;
+        let text = '';
+        if (isSingleMonth) {
+            const raw = Number(totals.rawCarryOver) || 0;
+            if (getCarryMode() === 'reset') {
+                if (raw < 0) text = `перерасход прошлого месяца ${formatNumber(raw)} не перенесён`;
+            } else if (carryOver < 0) {
+                text = `из прошлого месяца ${formatNumber(carryOver)}`;
+            }
+        }
+        note.textContent = text;
+        note.classList.toggle('hidden', !text);
+    }
+
     // Карточка Акулки на главной. Этап 3 — простой статический вариант по доле трат;
     // полноценные настроения/лимит дня приедут в SharkMood (этап 6).
     updateAkulkaCard(totals, carryOver, isSingleMonth) {
@@ -777,12 +817,13 @@ export class UIManager {
 
     animateValue(el, end, duration) {
         if (!el) return;
-        const start = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+        const prevText = el.textContent || '';
+        const start = (parseInt(prevText.replace(/\D/g, '')) || 0) * (/^\s*[−-]/.test(prevText) ? -1 : 1);
         let timestampStart = null;
         const step = now => {
             if (!timestampStart) timestampStart = now;
             const progress = Math.min((now - timestampStart) / duration, 1);
-            el.textContent = formatNumber(Math.floor(progress * (end - start) + start));
+            el.textContent = formatNumber(Math.trunc(progress * (end - start) + start));
             if (progress < 1) window.requestAnimationFrame(step);
         };
         window.requestAnimationFrame(step);
@@ -1834,7 +1875,8 @@ export class UIManager {
         // Проценты капают в конце месяца: «сейчас» = старт текущего месяца + его пополнения/снятия
         const curIdx = rows.findIndex(r => r.monthKey === nowKey);
         let balanceNow;
-        if (curIdx >= 0) balanceNow = rows[curIdx].startBalance + rows[curIdx].topups - rows[curIdx].withdrawals;
+        // вклад закрыт в этом месяце (снято всё вместе с процентами) — на нём 0, а не минус
+        if (curIdx >= 0) balanceNow = rows[curIdx].withdrawals > 0 && rows[curIdx].endBalance === 0 ? 0 : Math.max(0, rows[curIdx].startBalance + rows[curIdx].topups - rows[curIdx].withdrawals);
         else if (rows.length && nowKey > rows[rows.length - 1].monthKey) balanceNow = rows[rows.length - 1].endBalance;
         else balanceNow = meta.initialAmount;
         const accruedNow = rows.filter(r => r.monthKey < nowKey).reduce((sum, r) => sum + r.interest, 0);
@@ -1912,7 +1954,8 @@ export class UIManager {
         return { summaryHtml, listsHtml };
     }
 
-    buildDepositSchedule(tx) {
+    // until (YYYY-MM-DD) — посчитать только до этой даты и вернуть balanceUntil (остаток + набежавшие проценты)
+    buildDepositSchedule(tx, until = '') {
         const group = this.getDepositGroup(tx);
         if (!group.length) {
             const rate = tx.annualRate || 0;
@@ -1931,11 +1974,15 @@ export class UIManager {
         const root = group[0];
         const annualRate  = root.annualRate || 0;
         const termMonths  = root.termMonths || 0;
-        const monthlyRate = annualRate > 0 ? (annualRate / 100) / 12 : 0;
+        // Проценты начисляются каждый день на фактический остаток (ставка / 365), в конце месяца
+        // сумма округляется и капитализируется. Операция дня учитывается в тот же день:
+        // пополнение начинает «работать» с даты внесения, снятая сумма за этот день процентов уже не даёт.
+        const dailyRate = annualRate > 0 ? annualRate / 100 / 365 : 0;
 
-        const startDate       = new Date(root.date);
-        const startYear       = startDate.getFullYear();
-        const startMonthIndex = startDate.getMonth(); // 0-11
+        const rootDate        = String(root.date || '');
+        const startYear       = Number(rootDate.slice(0, 4));
+        const startMonthIndex = Number(rootDate.slice(5, 7)) - 1; // 0-11
+        const rootDay         = Number(rootDate.slice(8, 10)) || 1;
 
         const maxMonths = termMonths > 0 ? termMonths : 12;
 
@@ -1944,35 +1991,67 @@ export class UIManager {
 
         const rows = [];
         let totalInterest = 0;
+        let stopped = false;
 
         for (let i = 0; i < maxMonths; i++) {
             const year       = startYear + Math.floor((startMonthIndex + i) / 12);
             const monthIndex = (startMonthIndex + i) % 12;
             const monthKey   = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
             const label      = `${this.monthNames[String(monthIndex + 1).padStart(2, '0')] || ''} ${year}`;
+            const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 
-            const ops = group.filter(t => (t.date || '').slice(0, 7) === monthKey);
+            const ops = group.filter(t => t !== root && (t.date || '').slice(0, 7) === monthKey);
 
             const startBalance = balance;
             let topups = 0;
             let withdrawals = 0;
+            let accrued = 0;
+            let paidOnClose = 0; // проценты, выплаченные при закрытии (снятии всего остатка)
 
-            ops.forEach(op => {
-                if (op === root) return;
-
-                const status = (op.status || '').trim();
-                const amount = op.amount || 0;
-                if (status === '➖ Снятие') {
-                    withdrawals += amount;
-                    balance -= amount;
-                } else {
-                    topups += amount;
-                    balance += amount;
+            // в первый месяц вклад существует только с даты открытия
+            for (let day = (i === 0 ? rootDay : 1); day <= daysInMonth; day++) {
+                const dayStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+                if (until && dayStr > until) { stopped = true; break; }
+                for (const op of ops) {
+                    if (op.date !== dayStr) continue;
+                    const status = (op.status || '').trim();
+                    const amount = op.amount || 0;
+                    if (status === '➖ Снятие') {
+                        if (amount > 0 && amount >= balance) {
+                            // закрытие: сначала выплачиваем набежавшие проценты, потом снимаем всё;
+                            // остаток не уходит в минус (старые закрытия считались по прежней формуле)
+                            const due = Math.round(accrued);
+                            paidOnClose += due; accrued = 0; balance += due;
+                            withdrawals += amount; balance -= amount;
+                            if (balance < 0) balance = 0;
+                        } else { withdrawals += amount; balance -= amount; }
+                    }
+                    else { topups += amount; balance += amount; }
                 }
-            });
+                if (until && dayStr === until) { stopped = true; break; } // в день закрытия проценты уже не идут
+                accrued += Math.max(0, balance) * dailyRate;
+            }
+            if (stopped) {
+                // остаток на дату `until` вместе с процентами, набежавшими к этому дню (для суммы закрытия)
+                return { rows, balanceUntil: balance + Math.round(accrued) };
+            }
+            // операции первого месяца, датированные раньше даты открытия, применяем без процентов
+            if (i === 0) {
+                for (const op of ops) {
+                    if (Number(String(op.date).slice(8, 10)) >= rootDay) continue;
+                    const status = (op.status || '').trim();
+                    const amount = op.amount || 0;
+                    if (status === '➖ Снятие') { withdrawals += amount; balance -= amount; }
+                    else { topups += amount; balance += amount; }
+                }
+            }
 
-            const interest = monthlyRate > 0 ? Math.floor(balance * monthlyRate) : 0;
-            balance += interest;
+            const interest = (dailyRate > 0 ? Math.round(accrued) : 0) + paidOnClose;
+            balance += interest - paidOnClose;
+            // последний месяц срока: старое закрытие (снятие 1-го числа на сумму по прежней формуле) оставило
+            // копейки (<1% снятого) — вклад закрыт, остаток 0
+            const legacyClose = ops.some(o => (o.status || '').trim() === '➖ Снятие' && String(o.date).slice(8, 10) === '01');
+            if (i === maxMonths - 1 && legacyClose && balance > 0 && balance < withdrawals * 0.01) balance = 0;
             totalInterest += interest;
 
             rows.push({
@@ -2049,13 +2128,24 @@ export class UIManager {
         const safeIndex = Math.min(index, rows.length - 1);
         const row = rows[safeIndex];
 
-        const withdrawAmount = row.endBalance || 0;
+        // Дата закрытия: текущий месяц — сегодня, прошлый или будущий — последний день месяца.
+        // Сумма — остаток на эту дату плюс проценты, набежавшие к ней (раньше снятие ставилось на 1-е число
+        // с процентами за весь месяц, и последний месяц уходил в минус).
+        const monthKey = row.monthKey || (rootDepositTx.date || '').slice(0, 7) || '';
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        let date = rootDepositTx.date;
+        if (monthKey) {
+            const [y, m] = monthKey.split('-').map(Number);
+            const lastDay = `${monthKey}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+            date = monthKey === todayStr.slice(0, 7) ? todayStr : lastDay;
+            if (rootDepositTx.date && date < rootDepositTx.date) date = rootDepositTx.date;
+        }
+        const upTo = this.buildDepositSchedule(rootDepositTx, date);
+        const withdrawAmount = Math.round(upTo.balanceUntil ?? row.endBalance ?? 0);
         if (withdrawAmount <= 0) {
             return;
         }
-
-        const monthKey = row.monthKey || (rootDepositTx.date || '').slice(0, 7) || '';
-        const date = monthKey ? `${monthKey}-01` : rootDepositTx.date;
 
         const tx = {
             id        : Date.now(),

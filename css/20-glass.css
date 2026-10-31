@@ -756,7 +756,7 @@ html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-sh
 #transaction-sheet #expense-form[data-split="true"] #split-start { display: none !important; }
 #transaction-sheet .split-toggle { order: 6; width: 100%; margin-top: 10px; padding: 14px; border-radius: 16px; background: transparent;
     border: 1.5px dashed var(--accent, #7aa); color: var(--accent, inherit); font-weight: 700; font-size: 14px; cursor: pointer; }
-#transaction-sheet .dir-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); margin: 12px 0 0; order: 2; }
+#transaction-sheet .dir-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); margin: 0; order: 2; }
 #transaction-sheet .dir-seg button { flex: 1; min-height: 40px; border: none; border-radius: 12px; background: transparent; color: var(--muted, inherit); font-weight: 700; }
 #transaction-sheet .dir-seg button.active { background: var(--glass2, rgba(255,255,255,.14)); color: var(--text, inherit); }
 #transaction-sheet #debt-direction, #transaction-sheet label[for="debt-direction"] { display: none; }
@@ -1025,7 +1025,7 @@ html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-sh
 .pl-day b{display:block;font-weight:700;color:var(--text)}
 .pl-day small{color:var(--muted);font-size:11px}
 .pl-in{color:var(--in)}.pl-out{color:var(--out)}
-.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}
+.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}.pl-bal.carry{color:var(--muted);font-weight:600}
 .pl-tr.is-today{background:var(--chip);box-shadow:inset 3px 0 0 var(--accent)}
 .pl-more{display:block;width:100%;margin-top:10px;min-height:42px;border:1px solid var(--stroke);border-radius:14px;background:var(--glass2);color:var(--accent);font-weight:700;cursor:pointer}
 
@@ -1982,61 +1982,55 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
 .sc-form-goal input[type="date"] { flex: 1 1 140px; }
 
 
-/* ═══════════ Тема «Тиффани»: бирюзовое глубокое стекло, жемчужные блики, серебристая «лента» ═══════════
-   Без backdrop-blur на карточках и списках (см. правила производительности выше): всё делается градиентами и тенями. */
+/* ═══════════ Тема «Тиффани» (светлая): Tiffany Blue #81D8D0, белое стекло, чёрные акценты ═══════════
+   Без backdrop-blur на карточках и списках: всё градиентами и тенями. */
 :root[data-theme="tiffany"] {
-  --tf-a: #81d8d0; --tf-b: #0abab5; --tf-pearl: #f2fffd;
-  --tf-grad: linear-gradient(135deg, #b4f3ed 0%, #81d8d0 38%, #2cc6bd 74%, #0abab5 100%);
-  --tf-sheen: linear-gradient(145deg, rgba(255,255,255,.11) 0%, rgba(255,255,255,0) 34%, rgba(10,186,181,.08) 100%);
+  --tf-blue: #81d8d0; --tf-deep: #0abab5; --tf-ink: #0b1d1c;
+  /* текст на кнопках с фоном --accent (чёрным): во всех других темах акцент яркий и текст тёмный по умолчанию */
+  --on-accent: #81d8d0;
+  --tf-sheen: linear-gradient(150deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 45%, rgba(255,255,255,.08) 100%);
 }
-/* фон: к трём бликам добавляется диагональный «атласный» отлив */
+/* фон: фирменная бирюза с мягкими белыми бликами */
 @media (max-width:1099px){
   :root[data-theme="tiffany"] main{
     background-image:
-      radial-gradient(circle 360px at -40px 40px, var(--orb1), transparent 72%),
-      radial-gradient(circle 320px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
-      radial-gradient(circle 280px at 60px calc(100% - 10px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.045) 46%, transparent 54% 100%) !important}
+      radial-gradient(circle 380px at -40px 30px, var(--orb1), transparent 72%),
+      radial-gradient(circle 320px at calc(100% + 60px) 360px, var(--orb2), transparent 72%),
+      radial-gradient(circle 300px at 50px calc(100% - 10px), var(--orb3), transparent 72%) !important}
 }
 @media (min-width:1100px){
   :root[data-theme="tiffany"] body{
     background-image:
-      radial-gradient(circle 420px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
-      radial-gradient(circle 380px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
-      radial-gradient(circle 340px at 40% calc(100% + 40px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.04) 46%, transparent 54% 100%) !important}
+      radial-gradient(circle 440px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
+      radial-gradient(circle 400px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
+      radial-gradient(circle 360px at 40% calc(100% + 40px), var(--orb3), transparent 72%) !important}
 }
-/* карточки: стеклянный отлив, холодная кромка и бирюзовое свечение снизу */
+/* карточки: белое матовое стекло с мягкой бирюзовой тенью */
 :root[data-theme="tiffany"] :is(.glass, .glass-2, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row,
   #settings-page .sp-hero-card, #settings-page .sp-nav-group, .faq-item, .set-card, .empty-card, .about-hero,
-  #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .bi-card,
+  #analytics-page .bi-kpi, #analytics-page .bi-health, #analytics-page .bi-card, #analytics-page .an-card,
   #planner-page .planner-hero, #planner-page .planner-stat-card, #planner-page .planner-section-card, #planner-page .planner-day-card) {
   background-image: var(--tf-sheen);
   border-color: var(--stroke);
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.22), inset 0 -1px 0 rgba(10,186,181,.14), 0 14px 32px -18px rgba(10,186,181,.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 12px 28px -16px rgba(7,90,88,.35);
 }
-/* строки операций: только отлив (сотни элементов, тени не добавляем) */
 :root[data-theme="tiffany"] #transaction-list li.tx-item{ background-image: var(--tf-sheen); border-color: var(--stroke); }
-/* шторки и шапка: тонкая светящаяся кромка */
 :root[data-theme="tiffany"] .bottom-sheet:not(.fullscreen-sheet), :root[data-theme="tiffany"] .sheet{
-  border-top-color: rgba(170,255,246,.3);
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.28), 0 -22px 60px rgba(0,0,0,.45), 0 -2px 30px rgba(10,186,181,.16);
+  border-top-color: rgba(255,255,255,.95);
+  box-shadow: inset 0 1px 0 #fff, 0 -18px 50px rgba(7,70,68,.25);
 }
-/* главные кнопки: градиент «Тиффани» с мягким свечением */
+/* главные кнопки: чёрные с бирюзовой иконкой — как лента на коробке Tiffany */
 :root[data-theme="tiffany"] footer.liquid-footer #add-btn.fab-btn,
 :root[data-theme="tiffany"] .add-btn, :root[data-theme="tiffany"] .chip-btn.active,
 :root[data-theme="tiffany"] .sl-save, :root[data-theme="tiffany"] .sl-seg button.active{
-  background: var(--tf-grad) !important; color: var(--ink) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -6px rgba(10,186,181,.65);
+  background: var(--tf-ink) !important; color: var(--tf-blue) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 22px -8px rgba(11,29,28,.55);
 }
 :root[data-theme="tiffany"] footer.liquid-footer .lnav-item.active{
-  background: linear-gradient(180deg, rgba(129,216,208,.22), rgba(129,216,208,.08));
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.25), 0 0 18px rgba(129,216,208,.2);
+  background: rgba(255,255,255,.55);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 16px -8px rgba(7,90,88,.35);
 }
-/* Акулка: индикатор с градиентом (общий блик карточки — в конце файла, для всех тем) */
-:root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 55%, #fff)); }
-/* заголовки сумм: лёгкое свечение, чтобы цифры «светились» изнутри */
-:root[data-theme="tiffany"] #summary-blocks .block-value{ text-shadow: 0 0 18px rgba(129,216,208,.28); }
+:root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 60%, #fff)); }
 
 
 /* Пауза анимации Акулки, когда карточки не видно (SharkUI.watchCardVisibility) */
@@ -2236,3 +2230,74 @@ img, picture, svg image {
 #shark-page .sk-gal-item b { font-size: 12px; color: var(--text); }
 #shark-page .sk-gal-item small { font-size: 10.5px; line-height: 1.25; color: var(--muted); }
 html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
+/* «Доступно» в минусе и пояснение про перенос остатка */
+#summary-blocks #block-budget.is-negative .block-value { color: var(--out, var(--expense-color)); }
+#summary-blocks #block-budget .block-note { margin-top: 2px; font-size: 12px; font-weight: 600; color: var(--muted, inherit); text-align: center; }
+#summary-blocks #block-budget .block-note.hidden { display: none; }
+/* Аналитика: строка сверки с «Доступно» и доля трат от поступлений */
+.an-hero-recon { margin-top: 8px; }
+.an-hero-recon[hidden] { display: none; }
+.an-hero-recon .an-recon-line { display: block; width: 100%; padding: 6px 0; border: none; background: none !important; color: var(--muted) !important; font: inherit; font-size: 12px; font-weight: 700; line-height: 1.35; text-align: left; cursor: pointer; }
+.an-hero-recon .an-recon-line i { font-style: normal; opacity: .7; margin-left: 2px; }
+.an-hero-recon .an-recon-body { display: none; padding: 4px 0 2px; }
+.an-hero-recon.open .an-recon-body { display: block; }
+.an-hero-recon ul { list-style: none; margin: 0 0 6px; padding: 0; }
+.an-hero-recon li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid var(--faint); }
+.an-hero-recon li b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.an-hero-recon li em { font-style: normal; font-size: 10.5px; opacity: .65; }
+.an-hero-recon p { margin: 0; font-size: 11px; color: var(--muted); }
+.an-ratio { margin: 2px 0 0; font-size: 13px; font-weight: 800; color: var(--text); }
+.an-ratio.over { color: var(--out, var(--expense-color)); }
+/* Карточка долгов: «я должен» — основной цвет долга, «мне должны» — цвет поступлений */
+#summary-blocks #block-debt.debt-owe .block-value { color: var(--debt, var(--debt-color)); }
+#summary-blocks #block-debt.debt-owed .block-value { color: var(--in, var(--income-color)); }
+#summary-blocks #block-debt .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
+#summary-blocks #block-debt .block-note.hidden { display: none; }
+#summary-blocks #block-deposit .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
+/* Кнопка «Сегодня без трат» на карточке Акулки */
+.akulka-card .ak-nospend { margin-top: 8px; padding: 7px 12px; border: none; border-radius: 12px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink, #fff) !important; background: var(--accent) !important; cursor: pointer; }
+.akulka-card .ak-nospend[hidden] { display: none; }
+.akulka-card[data-shark="hoodie"] .ak-nospend { margin-left: -96px; }
+/* Шторка месяца в «Сводке» */
+.sm-row.dead{opacity:.4;cursor:default}
+.ms-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13.5px;font-weight:600;color:var(--text)}
+.ms-row span{min-width:0}
+.ms-row b{font-family:var(--font-num);font-weight:800;white-space:nowrap}
+.ms-row.ms-res{margin-top:4px;padding:10px 12px;border-radius:12px;background:var(--faint)}
+.ms-row.ms-res.pos b{color:var(--in,#2fbf71)}
+.ms-row.ms-res.neg b{color:var(--out,#e0435f)}
+.ms-sub{display:flex;justify-content:space-between;gap:12px;padding:2px 0 2px 12px;font-size:12px;font-weight:600;color:var(--muted)}
+.ms-sub em{font-style:normal;font-size:10.5px;opacity:.7}
+.ms-show{display:block;width:100%;margin-top:16px}
+.an-ratio small { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
+
+/* «Все категории трат» — компактный список */
+.allcat-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.allcat-row{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:7px 2px;background:none;border:0;border-radius:12px;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.allcat-row:active{background:var(--chip)}
+.allcat-emoji{flex:0 0 32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--chip);font-size:17px}
+.allcat-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.allcat-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0}
+.allcat-h b{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.allcat-h em{font-style:normal;font-weight:800;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.allcat-sub{display:flex;align-items:center;gap:8px}
+.allcat-track{flex:1;height:5px;border-radius:3px;background:var(--faint);overflow:hidden}
+.allcat-track i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--out),color-mix(in srgb,var(--out) 45%,transparent))}
+.allcat-sub small{flex:0 0 auto;min-width:52px;text-align:right;color:var(--muted);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.allcat-more{margin-top:6px;padding:10px;border:0;border-radius:12px;background:var(--chip);color:var(--text);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+
+/* прогноз остатка на «Динамике баланса» */
+.bal-fc{margin-top:8px;padding:9px 12px;border-radius:12px;background:var(--chip);font-size:13px;font-weight:700;color:var(--text);display:flex;flex-direction:column;gap:3px}
+.bal-fc b{font-variant-numeric:tabular-nums}
+.bal-fc small{font-size:11px;font-weight:600;color:var(--muted);line-height:1.35}
+.bal-fc.low{box-shadow:inset 3px 0 0 var(--out)}
+
+/* «Категории по месяцам» */
+.cbm-wrap{position:relative;width:100%;height:220px;margin-top:10px}
+.cbm-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:12px;font-weight:700;color:var(--text)}
+.cbm-legend span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.cbm-legend i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.cbm-legend em{font-style:normal;color:var(--muted);font-weight:800}
+.cbm-legend em.up{color:var(--out)}
+.cbm-legend em.down{color:var(--in)}
+.cbm-legend small{flex-basis:100%;color:var(--muted);font-size:11px;font-weight:600}

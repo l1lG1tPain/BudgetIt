@@ -2,7 +2,8 @@
 //   SharkPlus.js — расчёты для «болтливой» Акулки (чистая логика без DOM):
 //   челленджи, звания, статистика для ответов в чате и инициативные реплики в карточке.
 // ===============================
-import { isoDay, shiftDay, getSpentOnDay } from './SharkMood.js';
+import { isoDay, shiftDay, getSpentOnDay, isDailySpend, getNoSpendDays } from './SharkMood.js';
+import { netSavings } from '../utils/savingsFlow.js';
 
 const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
 const num = v => Number(v) || 0;
@@ -82,13 +83,16 @@ export const RANKS = [
     { min: 52, name: 'Легенда океана', emoji: '👑' }
 ];
 
-// Сколько из последних 60 дней (кроме сегодняшнего) уложились в лимит и записывали траты
-export function countDaysInLimit({ transactions = [], planner = null, limit = 0, today = isoDay(), normalize } = {}) {
+// Сколько из последних 60 дней (кроме сегодняшнего) уложились в лимит или были отмечены «без трат»
+export function countDaysInLimit({ transactions = [], planner = null, limit = 0, today = isoDay(), normalize, noSpend = getNoSpendDays() } = {}) {
     if (!limit) return 0;
     let n = 0;
     for (let i = 1; i <= 60; i++) {
         const day = shiftDay(today, -i);
-        if (!transactions.some(t => t.type === 'expense' && t.date === day)) continue;
+        if (!transactions.some(t => t.type === 'expense' && t.date === day)) {
+            if (noSpend.includes(day)) n++; // отмеченный день без трат — тоже «в лимите»
+            continue;
+        }
         const s = getSpentOnDay({ transactions, planner, day, normalize });
         if (s > 0 && s <= limit) n++;
     }
@@ -108,7 +112,7 @@ export function topCategories(tx, today, days = 30) {
     const by = new Map();
     let total = 0;
     for (const t of tx) {
-        if (t.type !== 'expense' || !t.date || t.date < from || t.date > today) continue;
+        if (!isDailySpend(t) || !t.date || t.date < from || t.date > today) continue;
         const a = num(t.amount);
         total += a;
         const c = t.category || 'Без категории';
@@ -163,8 +167,9 @@ export function oldestDebt(tx, today, direction, minDays = 14) {
 
 export function savingsMonth(tx, today) {
     const ym = today.slice(0, 7);
-    const list = tx.filter(t => t.type === 'deposit' && (t.date || '').startsWith(ym));
-    return { sum: list.reduce((s, t) => s + num(t.amount), 0), count: list.length };
+    // пополнения минус снятия за месяц; «Уже лежало» не считается; count — число пополнений
+    const { net, topups } = netSavings(tx, `${ym}-01`, `${ym}-31`);
+    return { sum: Math.max(0, net), count: net > 0 ? topups : 0 };
 }
 
 export const incomeToday = (tx, today) => tx.filter(t => t.type === 'income' && t.date === today).reduce((s, t) => s + num(t.amount), 0);
@@ -172,11 +177,11 @@ export const incomeToday = (tx, today) => tx.filter(t => t.type === 'income' && 
 // Сегодняшняя трата заметно больше обычной (минимум в 3 раза от медианы за 30 дней)
 export function detectSpike(tx, today) {
     const from = shiftDay(today, -30);
-    const past = tx.filter(t => t.type === 'expense' && t.date >= from && t.date < today).map(t => num(t.amount)).filter(a => a > 0);
+    const past = tx.filter(t => isDailySpend(t) && t.date >= from && t.date < today).map(t => num(t.amount)).filter(a => a > 0);
     if (past.length < 8) return null;
     const m = median(past);
     if (!(m > 0)) return null;
-    const todays = tx.filter(t => t.type === 'expense' && t.date === today).sort((a, b) => num(b.amount) - num(a.amount));
+    const todays = tx.filter(t => isDailySpend(t) && t.date === today).sort((a, b) => num(b.amount) - num(a.amount));
     const big = todays[0];
     if (!big) return null;
     const times = Math.floor(num(big.amount) / m);
@@ -194,7 +199,7 @@ export function weekRecapData({ transactions = [], planner = null, today = isoDa
         total += s; daysWith++;
         if (limit && s <= limit) inLimit++;
         for (const t of transactions) {
-            if (t.type === 'expense' && t.date === day) by.set(t.category || 'Без категории', (by.get(t.category || 'Без категории') || 0) + num(t.amount));
+            if (isDailySpend(t) && t.date === day) by.set(t.category || 'Без категории', (by.get(t.category || 'Без категории') || 0) + num(t.amount));
         }
     }
     const top = [...by.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
@@ -216,7 +221,7 @@ export function weekReport({ transactions = [], planner = null, today = isoDay()
         const spent = getSpentOnDay({ transactions, planner, day, normalize });
         days.push({ day, wd: WD[new Date(`${day}T00:00:00`).getDay()], has, spent });
         for (const t of transactions) {
-            if (t.type !== 'expense' || t.date !== day || planned.has(normalize(t.category || ''))) continue;
+            if (!isDailySpend(t) || t.date !== day || planned.has(normalize(t.category || ''))) continue;
             const c = t.category || 'Без категории';
             cats.set(c, (cats.get(c) || 0) + num(t.amount));
         }

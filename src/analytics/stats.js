@@ -3,7 +3,8 @@
 //   Все суммы — только операции типа income/expense (вклады и долги считаются отдельно в приложении).
 //   Даты — строки 'YYYY-MM-DD' (никогда не парсим через new Date(str)).
 // ===============================
-import { num, median, isSystemExcludedCategory, isFinancialCategory } from '../utils/insightsMath.js';
+import { num, median, isSystemExcludedCategory, isFinancialCategory, isFinancialIncomeCategory, isConsumption, isPlainIncome } from '../utils/insightsMath.js';
+import { carryNext, getCarryMode } from '../utils/carryOver.js';
 import { inPeriod, keyOf, monthRange, addMonths, previousPeriod, periodSpan, keyYear, keyMonth, ymKey, makePeriod } from './period.js';
 
 export const WEEKDAYS_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
@@ -20,6 +21,17 @@ export const catName = t => String(t.category || '').trim() || 'Без кате�
 /** Только доходы/расходы с датой; системные «без учёта» категории отброшены */
 export const baseTx = all => (all || []).filter(t =>
     (t.type === 'income' || t.type === 'expense') && t.date && !isSystemExcludedCategory(t.category));
+
+/**
+ * Потребление: обычные траты и обычные поступления (без переводов, вкладов, долгов и «без учёта»).
+ * На этой базе считаются графики аналитики; разницу с «Доступно» показывает reconcile().
+ */
+export const consumptionTx = all => (all || []).filter(t => t.date && (isConsumption(t) || isPlainIncome(t)));
+
+/** Число месяцев, в которых у бюджета есть хоть какие-то записи (для «в среднем за месяц» по всему времени) */
+export function activeMonths(tx) {
+    return new Set((tx || []).map(t => keyOf(t.date))).size;
+}
 
 export function dataRange(tx) {
     let a = null, b = null;
@@ -106,7 +118,7 @@ export function topTransactions(tx, p, n = 7, type = 'expense') {
  * Подробности по одной категории (для нижней шторки).
  * othersNames — если нажали «Прочее»: набор имён категорий, которые в него входят.
  */
-export function categoryDetail(tx, p, name, { type = 'expense', todayISO, othersNames = null, trendMonths = 6 } = {}) {
+export function categoryDetail(tx, p, name, { type = 'expense', todayISO, othersNames = null, trendMonths = 6, allMonths = 0 } = {}) {
     const match = othersNames ? (t => othersNames.has(catName(t))) : (t => catName(t) === name);
     const inType = tx.filter(t => t.type === type && num(t.amount) > 0);
     const mine = inType.filter(t => inPeriod(p, t.date) && match(t));
@@ -118,7 +130,8 @@ export function categoryDetail(tx, p, name, { type = 'expense', todayISO, others
 
     // месяцы с тратами — для среднего «в месяц»
     const monthsWith = new Set(mine.map(t => keyOf(t.date)));
-    const spanMonths = p.all ? Math.max(1, monthsWith.size) : p.keys.length;
+    // «всё время»: делим на месяцы с любыми записями бюджета (если передано), иначе на месяцы этой категории
+    const spanMonths = p.all ? Math.max(1, allMonths || monthsWith.size) : p.keys.length;
 
     // дни недели
     const weekday = Array(7).fill(0);
@@ -189,39 +202,102 @@ function localYmd(s) {
 
 export function cashEvents(raw) {
     const ev = [];
-    const push = (date, v) => { if (date && v) ev.push({ date: String(date).slice(0, 10), v }); };
+    const push = (date, v, kind, cat) => { if (date && v) ev.push({ date: String(date).slice(0, 10), v, kind, cat }); };
     for (const t of raw || []) {
         const a = num(t.amount);
-        if (t.type === 'income') push(t.date, a);
-        else if (t.type === 'expense') push(t.date, -a);
+        if (t.type === 'income') push(t.date, a, 'income', catName(t));
+        else if (t.type === 'expense') push(t.date, -a, 'expense', catName(t));
         else if (t.type === 'deposit') {
             const st = String(t.status || '');
-            if (!st.includes('Уже лежало')) push(t.date, st.trim() === '➖ Снятие' ? a : -a); // «Уже лежало» кошелёк не трогает
+            if (!st.includes('Уже лежало')) push(t.date, st.trim() === '➖ Снятие' ? a : -a, 'deposit'); // «Уже лежало» кошелёк не трогает
         }
         else if (t.type === 'debt') {
             const init = num(t.initialAmount ?? t.amount);
-            if (init > 0) push(t.date, t.direction === 'owe' ? init : -init);
+            if (init > 0) push(t.date, t.direction === 'owe' ? init : -init, 'debt');
             let paid = 0; // платёж сверх остатка долга не считаем (как в «Доступно»)
             for (const pm of Array.isArray(t.payments) ? t.payments : []) {
                 const pa = Math.min(num(pm.amount), Math.max(0, init - paid)); paid += pa;
-                if (pa > 0) push(localYmd(pm.date), t.direction === 'owe' ? -pa : pa);
+                if (pa > 0) push(localYmd(pm.date), t.direction === 'owe' ? -pa : pa, 'debt');
             }
         }
     }
     return ev;
 }
 
+/**
+ * Сверка с главным экраном: что ещё входит в «Ушло»/«Пришло» кроме потребления.
+ * consumed + fin + excluded = total — это ровно monthlyExpense/monthlyIncome из calculateTotals за те же месяцы.
+ *  fin — переводы, вклады, долги и прочие «финансовые» категории; excluded — «без учёта».
+ */
+/**
+ * Все деньги бюджета в виде операций income/expense — ровно как «Ушло»/«Пришло» на главной:
+ * обычные траты и поступления (кроме «без учёта»), пополнение вклада = трата, снятие = поступление
+ * («Уже лежало» кошелёк не трогает), долги — по направлению, платежи по датам платежей (не больше суммы долга).
+ * Категории по смыслу ничего не угадываются: что ушло из кошелька — трата, что пришло — поступление.
+ */
+export function moneyTx(raw) {
+    const out = [];
+    for (const t of raw || []) {
+        if (!t || !t.date) continue;
+        if (t.type === 'income' || t.type === 'expense') {
+            if (!isSystemExcludedCategory(t.category)) out.push(t);
+            continue;
+        }
+        const a = num(t.amount);
+        if (t.type === 'deposit') {
+            const st = String(t.status || '');
+            if (st.includes('Уже лежало') || !a) continue;
+            const wd = st.trim() === '➖ Снятие';
+            out.push({ id: `dep:${t.id}`, type: wd ? 'income' : 'expense', date: String(t.date).slice(0, 10), amount: a,
+                category: wd ? '🏦 Со вклада' : '🏦 Вклад', name: t.name || '', synthetic: true });
+        } else if (t.type === 'debt') {
+            const init = num(t.initialAmount ?? t.amount);
+            const owe = t.direction === 'owe';
+            if (init > 0) out.push({ id: `debt:${t.id}`, type: owe ? 'income' : 'expense', date: String(t.date).slice(0, 10), amount: init,
+                category: owe ? '🤝 Взял в долг' : '🤝 Дал в долг', name: t.name || '', synthetic: true });
+            let paid = 0;
+            (Array.isArray(t.payments) ? t.payments : []).forEach((pm, i) => {
+                const pa = Math.min(num(pm.amount), Math.max(0, init - paid)); paid += pa;
+                if (pa > 0) out.push({ id: `debt:${t.id}:${i}`, type: owe ? 'expense' : 'income', date: localYmd(pm.date), amount: pa,
+                    category: owe ? '🤝 Отдал долг' : '🤝 Вернули долг', name: t.name || '', synthetic: true });
+            });
+        }
+    }
+    return out;
+}
+
+export function reconcile(raw, p) {
+    const mk = () => ({ total: 0, consumed: 0, fin: 0, excluded: 0, cats: new Map() });
+    const out = mk(), inn = mk();
+    const bump = (side, group, label, a) => {
+        side.total += a; side[group] += a;
+        if (group === 'consumed') return;
+        const key = `${group}|${label}`;
+        const r = side.cats.get(key) || { name: label, group, sum: 0 };
+        r.sum += a; side.cats.set(key, r);
+    };
+    for (const e of cashEvents(raw)) {
+        if (!inPeriod(p, e.date)) continue;
+        const side = e.v < 0 ? out : inn, a = Math.abs(e.v);
+        // графики считают все деньги (moneyTx); в стороне остаются только операции «без учёта»
+        if (e.kind !== 'deposit' && e.kind !== 'debt' && isSystemExcludedCategory(e.cat)) bump(side, 'excluded', e.cat, a);
+        else bump(side, 'consumed', e.cat || '', a);
+    }
+    const fin = side => { const rows = [...side.cats.values()].sort((x, y) => y.sum - x.sum); return { ...side, cats: rows }; };
+    return { out: fin(out), in: fin(inn) };
+}
+
 /** Остаток на начало месяца `key`: перенос из месяца в месяц, ушедший в минус месяц дальше начинается с 0 (как «Доступно»). */
-function openingFor(ev, key) {
+function openingFor(ev, key, mode = getCarryMode()) {
     const net = new Map();
     for (const e of ev) { const k = keyOf(e.date); if (k < key) net.set(k, (net.get(k) || 0) + e.v); }
     let run = 0;
-    for (const k of [...net.keys()].sort()) run = Math.max(0, run + net.get(k));
+    for (const k of [...net.keys()].sort()) run = carryNext(run + net.get(k), mode);
     return run;
 }
 
 /** Остаток на конец каждого месяца окна. Стартует с переноса (как «Доступно» на главной), конец последнего месяца = «Доступно». */
-export function balanceSeries(raw, p) {
+export function balanceSeries(raw, p, mode = getCarryMode()) {
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const { first, last } = dataRange(ev);
@@ -234,16 +310,16 @@ export function balanceSeries(raw, p) {
         net.set(k, (net.get(k) || 0) + e.v);
         if (e.v > 0) plus.set(k, (plus.get(k) || 0) + e.v); else minus.set(k, (minus.get(k) || 0) - e.v);
     }
-    const start = openingFor(ev, a);
+    const start = openingFor(ev, a, mode);
     let run = start;
-    const points = keys.map((k, i) => { if (i) run = Math.max(0, run); run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0, plus: plus.get(k) || 0, minus: minus.get(k) || 0 }; });
+    const points = keys.map((k, i) => { if (i) run = carryNext(run, mode); run += net.get(k) || 0; return { key: k, balance: run, net: net.get(k) || 0, plus: plus.get(k) || 0, minus: minus.get(k) || 0 }; });
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
     return { points, start, end: run, change: run - start, min, max };
 }
 
 /** Дневной остаток для коротких периодов: от 1-го числа первого месяца (с переносом) до последнего дня периода. Последняя точка = «Доступно». */
-export function balanceDaily(raw, p, todayISO) {
+export function balanceDaily(raw, p, todayISO, mode = getCarryMode()) {
     if (p.all || !p.keys.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
@@ -254,7 +330,7 @@ export function balanceDaily(raw, p, todayISO) {
     let to = monthEnd;
     if (todayISO && todayISO < to && todayISO >= from) to = todayISO;
     const net = new Map(), plus = new Map(), minus = new Map();
-    let later = 0, laterPlus = 0, laterMinus = 0; // операции позже «сегодня» в последнем месяце — учитываем в последней точке, чтобы сошлось с «Доступно»
+    let later = 0, laterPlus = 0, laterMinus = 0; // операции позже «сегодня» в последнем месяце: в линию не попадают (их ещё не было), но входят в итог, чтобы он сошёлся с «Доступно»
     for (const e of ev) {
         if (e.date < from) continue;
         if (e.date <= to) {
@@ -262,20 +338,20 @@ export function balanceDaily(raw, p, todayISO) {
             if (e.v > 0) plus.set(e.date, (plus.get(e.date) || 0) + e.v); else minus.set(e.date, (minus.get(e.date) || 0) - e.v);
         } else if (e.date <= monthEnd) { later += e.v; if (e.v > 0) laterPlus += e.v; else laterMinus -= e.v; }
     }
-    const start = openingFor(ev, a);
+    const start = openingFor(ev, a, mode);
     const points = [];
     let run = start;
     const end = Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)) - 1, Number(to.slice(8, 10)));
     for (let ms = Date.UTC(Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1, 1); ms <= end; ms += 86400000) {
         const d = new Date(ms).toISOString().slice(0, 10);
-        if (d.slice(8, 10) === '01' && d.slice(0, 7) !== a) run = Math.max(0, run);
+        if (d.slice(8, 10) === '01' && d.slice(0, 7) !== a) run = carryNext(run, mode);
         run += net.get(d) || 0;
         points.push({ date: d, balance: run, net: net.get(d) || 0, plus: plus.get(d) || 0, minus: minus.get(d) || 0 });
     }
-    if (later && points.length) { const l = points[points.length - 1]; l.balance += later; l.net += later; l.plus += laterPlus; l.minus += laterMinus; run += later; }
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
-    return { points, start, end: run, change: run - start, min, max };
+    const total = run + later;
+    return { points, start, end: total, change: total - start, min, max, later, laterPlus, laterMinus };
 }
 
 /** Ключи месяцев для таблицы «Сводка»: год на графике (или все месяцы данных для «всё время») */

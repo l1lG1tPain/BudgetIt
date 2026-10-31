@@ -5,14 +5,16 @@ import { sharkImage } from '../shark/SharkMood.js';
 import { refreshAnalyticsInsights } from '../Analyticsinsights.js';
 import {
     MONTHS_FULL, MONTHS_SHORT, makePeriod, allTime, monthPeriod, inPeriod, presetOf, fromPreset, anchorOf,
-    toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth
+    toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth, addMonths
 } from '../analytics/period.js';
 import {
-    baseTx, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
+    baseTx, moneyTx, reconcile, activeMonths, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
     categoryDetail, balanceSeries, balanceDaily, summaryKeys, summaryRows, heroSeries, weekdayMon
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
-import { setUiDeps, openPeriodSheet, openCategorySheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
+import { netSavings } from '../utils/savingsFlow.js';
+import { forecastBalance } from '../analytics/forecast.js';
+import { setUiDeps, openPeriodSheet, openCategorySheet, openMonthSheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
 // --- tiny-guard: если Chart.js не загрузился (офлайн / проблемы с CDN),
 // просто отключаем аналитику, но приложение не ломаем
 let chartsAvailable = true;
@@ -264,7 +266,7 @@ function getRichTooltipLines(tx, categoryLabel, totalAmt) {
  */
 function buildTooltipDefaults() {
     const isLight = document.documentElement.dataset.theme &&
-        ['light','yogurt','dolphin','mint','sage'].includes(
+        ['light','light-classic','yogurt','dolphin','sage','tiffany'].includes(
             document.documentElement.dataset.theme
         );
     return {
@@ -417,7 +419,8 @@ function renderCharts(opts = {}) {
         renderCategoryHistoryChart,
         renderSpendingByWeekdayChart,
         renderIncomeBySourceChart,
-        renderAnnualSummaryChart
+        renderAnnualSummaryChart,
+        renderCategoriesByMonthChart
     ].forEach(fn => { try { fn(); } catch (e) { console.warn('[Charts]', fn.name, e); } });
     fillYearSteppers();
 }
@@ -462,19 +465,20 @@ function ensureHero() {
     const scroll = document.querySelector('#analytics-page .analytics-scroll');
     if (!scroll) return null;
     let hero = document.getElementById('an-hero');
-    if (hero && hero.dataset.v === '2') return hero;
+    if (hero && hero.dataset.v === '3') return hero;
     hero?.remove();
     hero = document.createElement('section');
-    hero.id = 'an-hero'; hero.className = 'an-hero an-card'; hero.dataset.v = '2'; hero.dataset.chart = 'an-hero';
+    hero.id = 'an-hero'; hero.className = 'an-hero an-card'; hero.dataset.v = '3'; hero.dataset.chart = 'an-hero';
     hero.innerHTML =
         '<div class="an-hero-top"><div class="an-hero-title"></div><div class="an-year"></div></div>' +
         '<div class="an-hero-sum"></div>' +
         '<div class="an-hero-deltarow"></div>' +
+        '<div class="an-hero-recon" hidden></div>' +
         '<div class="an-hero-chart"><canvas id="anHeroCanvas"></canvas></div>' +
         '<div class="an-metrics" role="group">' +
             Object.entries(METRICS).map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join('') +
         '</div>' +
-        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Вклады и долги в расчёт не входят.</div>';
+        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Считаются все деньги, как на главной: вклады, переводы и долги входят. Не входят только траты «без учёта».</div>';
     const seg = document.getElementById('analytics-period-seg');
     if (seg) seg.insertAdjacentElement('afterend', hero); else scroll.insertAdjacentElement('afterbegin', hero);
     hero.querySelector('.an-metrics').addEventListener('click', e => {
@@ -487,11 +491,36 @@ function ensureHero() {
     return hero;
 }
 
+// Строка сверки: что ещё входит в «Ушло»/«Пришло» на главной. Тап раскрывает список.
+let reconOpen = false;
+function renderHeroRecon(hero) {
+    const el = hero.querySelector('.an-hero-recon');
+    if (!el) return;
+    if (heroMetric === 'net') { el.hidden = true; el.innerHTML = ''; return; }
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const r = reconcile(raw, period);
+    const isOut = heroMetric === 'expense';
+    const side = isOut ? r.out : r.in;
+    if (side.fin <= 0 && side.excluded <= 0) { el.hidden = true; el.innerHTML = ''; return; }
+    const cur = getCurrencyLabel();
+    const money = v => `${formatNumber(Math.round(v))} ${cur}`;
+    const parts = [];
+    if (side.fin > 0) parts.push(`${isOut ? 'свои переводы, вклады, долги' : 'свои переводы, тело вклада, кредиты и долги'} ${money(side.fin)}`);
+    if (side.excluded > 0) parts.push(`без учёта ${money(side.excluded)}`);
+    const rows = side.cats.map(c => `<li><span>${escHtml(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${escHtml(money(c.sum))}</b></li>`).join('');
+    el.hidden = false;
+    el.classList.toggle('open', reconOpen);
+    el.innerHTML =
+        `<button type="button" class="an-recon-line" aria-expanded="${reconOpen}">Ещё ${isOut ? 'ушло' : 'пришло'}: ${parts.join(' · ')} <i>${reconOpen ? '▴' : '▾'}</i></button>` +
+        `<div class="an-recon-body"><ul>${rows}</ul><p>Всего на главной: ${escHtml(money(side.total))}. С ними сумма совпадает с главной.</p></div>`;
+    el.querySelector('.an-recon-line').addEventListener('click', () => { reconOpen = !reconOpen; renderHeroRecon(hero); });
+}
+
 function renderAnalyticsHero() {
     const hero = ensureHero();
     if (!hero || !period) return;
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const today = todayISO();
     const inc = sumTx(all, period, 'income');
     const exp = sumTx(all, period, 'expense');
@@ -527,6 +556,7 @@ function renderAnalyticsHero() {
         }
     }
     hero.querySelector('.an-hero-deltarow').innerHTML = deltaHtml;
+    renderHeroRecon(hero);
     fillYearSteppers();
 
     // график по месяцам
@@ -697,10 +727,15 @@ function destroyAllCharts(keep = []) {
 // ------------------------------------------------------------------
 const todayISO = () => isoOf(new Date());
 const todayKeyNow = () => todayISO().slice(0, 7);
-function allAnalyticsTx() { return baseTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+// «Траты» и «Поступления» в аналитике — все деньги, как на главной (вклады, переводы, долги входят);
+// в стороне только «без учёта» — их показывает строка сверки под hero.
+function allAnalyticsTx() { return moneyTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+// Для навигации по периодам нужны все месяцы с движением денег, а не только с обычными тратами.
+function rangeTx() { return moneyTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+const allMonthsCount = () => activeMonths(rangeTx());
 
 function defaultPeriod() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const tk = todayKeyNow();
     if (all.some(t => keyOf(t.date) === tk)) return monthPeriod(tk);
     const { last } = dataRange(all);
@@ -708,7 +743,7 @@ function defaultPeriod() {
 }
 
 function yearBounds() {
-    const ys = availableYears(allAnalyticsTx(), new Date().getFullYear());
+    const ys = availableYears(rangeTx(), new Date().getFullYear());
     return { min: ys[0], max: ys[ys.length - 1] };
 }
 
@@ -752,7 +787,7 @@ function syncPeriodUi() {
 
 /** Опорный месяц при смене пресета: последний выбранный (не позже текущего); если на графике другой год — последний месяц этого года с данными */
 function presetAnchor() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const { last } = dataRange(all);
     const tk = todayKeyNow();
     if (period.all) return anchorOf(period, tk, last);
@@ -788,7 +823,7 @@ function ensureSegment() {
 }
 
 function openPeriodPicker() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const { last } = dataRange(all);
     openPeriodSheet({
         period,
@@ -813,7 +848,7 @@ function initAnalyticsUi() {
     try { const m = localStorage.getItem(HERO_METRIC_KEY); if (m && METRICS[m]) heroMetric = m; } catch (e) {}
     if (!period) {
         period = loadPeriod() || defaultPeriod();
-        const { last } = dataRange(allAnalyticsTx());
+        const { last } = dataRange(rangeTx());
         viewYear = keyYear(anchorOf(period, todayKeyNow(), last));
     }
     ensureSegment();
@@ -940,7 +975,7 @@ function renderExpensesByCategoryChart() {
         if (empty || idx == null || idx < 0 || idx >= labels.length) return;
         const isOther = hasOthers && idx === labels.length - 1;
         const d = categoryDetail(allAnalyticsTx(), period, labels[idx], {
-            type: 'expense', todayISO: todayISO(), othersNames: isOther ? restNames : null
+            type: 'expense', todayISO: todayISO(), othersNames: isOther ? restNames : null, allMonths: allMonthsCount()
         });
         openCategorySheet(d, { type: 'expense', color: colors[idx], periodText: periodLabel(period), selected: period });
         if (!isOther) {
@@ -1015,7 +1050,7 @@ function renderMonthlyExpensesChart() {
 
     const ctx = canvas.getContext('2d');
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const keys = summaryKeys(period, viewYear, first, last);
     const rows = monthlyTotals(all, keys);
     const multiYear = new Set(keys.map(keyYear)).size > 1;
@@ -1086,16 +1121,31 @@ function renderIncomeVsExpensesChart() {
 
     const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + amtOf(t), 0);
     const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + amtOf(t), 0);
-    const total   = income + expense;
 
-    // чтобы бар всегда был >0 пикселей
-    const safeIncome  = total > 0 ? income  : 0.5;
-    const safeExpense = total > 0 ? expense : 0.5;
-    const safeTotal   = total > 0 ? total   : 1;
+    // Шкала = большее из двух. Красное — траты в пределах поступлений, зелёное — что осталось,
+    // тёмно-красное — траты сверх поступлений (перерасход). Черта отмечает 100% поступлений.
+    const spentPart = Math.min(expense, income);
+    const leftPart  = Math.max(0, income - expense);
+    const overPart  = Math.max(0, expense - income);
+    const scaleMax  = Math.max(income, expense, 1);
+    const pct       = income > 0 ? Math.round(expense / income * 100) : null;
+
+    // подпись «Траты от поступлений, N%» над баром
+    let ratioEl = canvas.parentElement.querySelector('.an-ratio');
+    if (!ratioEl) {
+        ratioEl = document.createElement('p');
+        ratioEl.className = 'an-ratio';
+        canvas.insertAdjacentElement('beforebegin', ratioEl);
+    }
+    ratioEl.classList.toggle('over', pct != null && pct > 100);
+    ratioEl.innerHTML = (pct == null
+        ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
+        : `Траты от поступлений, ${pct}%`) +
+        (income > 0 ? `<small>Поступления за период: ${compactNumber(Math.round(income))}</small>` : '') +
+        '<small>Все траты ко всем поступлениям, как на главной (без трат «без учёта»)</small>';
 
     const labels = ['']; // один ряд, как прогресс-бар
 
-    // плагин, который рисует подписи под баром
     // подписи под баром
     const summaryPlugin = {
         id: 'incomeExpenseSummary',
@@ -1107,24 +1157,30 @@ function renderIncomeVsExpensesChart() {
             ctx.fillStyle = getCssVar('--muted', '#999');
             ctx.textBaseline = 'top';
 
-            // округляем до целых
-            const roundedIncome  = Math.round(income);
-            const roundedExpense = Math.round(expense);
-
-            const textIncome  = `Поступления ${compactNumber(roundedIncome)}`;
-            const textExpense = `Траты ${compactNumber(roundedExpense)}`;
-
+            // подписи совпадают с цветами полосы: слева красное — траты, справа зелёное — остаток (или перерасход)
             ctx.textAlign = 'left';
-            ctx.fillText(textIncome, left, bottom + 8);
+            ctx.fillStyle = PALETTE.expense();
+            ctx.fillText(`Траты ${compactNumber(Math.round(expense))}`, left, bottom + 8);
 
             ctx.textAlign = 'right';
-            ctx.fillText(textExpense, right, bottom + 8);
+            if (overPart > 0) {
+                ctx.fillStyle = PALETTE.expense();
+                ctx.fillText(`Сверх поступлений ${compactNumber(Math.round(overPart))}`, right, bottom + 8);
+            } else if (income > 0) {
+                ctx.fillStyle = PALETTE.income();
+                ctx.fillText(`Осталось ${compactNumber(Math.round(leftPart))}`, right, bottom + 8);
+            }
 
+            // черта «100% поступлений», когда траты больше
+            if (overPart > 0 && income > 0) {
+                const x = chart.scales.x.getPixelForValue(income);
+                ctx.strokeStyle = getCssVar('--text', '#fff');
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(x, chartArea.top - 4); ctx.lineTo(x, chartArea.bottom + 4); ctx.stroke();
+            }
             ctx.restore();
         }
     };
-
-
 
     charts.incomeVsExpenses = new Chart(ctx, {
         type: 'bar',
@@ -1132,16 +1188,23 @@ function renderIncomeVsExpensesChart() {
             labels,
             datasets: [
                 {
-                    label: 'Поступления',
-                    data : [safeIncome],
+                    label: 'Траты',
+                    data : [spentPart],
+                    backgroundColor: PALETTE.expense(),
+                    borderRadius   : 999,
+                    borderSkipped  : false
+                },
+                {
+                    label: 'Осталось от поступлений',
+                    data : [leftPart],
                     backgroundColor: PALETTE.income(),
                     borderRadius   : 999,
                     borderSkipped  : false
                 },
                 {
-                    label: 'Траты',
-                    data : [safeExpense],
-                    backgroundColor: PALETTE.expense(),
+                    label: 'Сверх поступлений',
+                    data : [overPart],
+                    backgroundColor: cssRgba(getCssVar('--out', '#ef4444'), 0.45),
                     borderRadius   : 999,
                     borderSkipped  : false
                 }
@@ -1151,28 +1214,18 @@ function renderIncomeVsExpensesChart() {
             indexAxis: 'y',
             layout   : { padding: { top: 10, left: 16, right: 16, bottom: 32 } },
             scales   : {
-                x: {
-                    stacked : true,
-                    display : false,
-                    min     : 0,
-                    max     : safeTotal
-                },
-                y: {
-                    stacked : true,
-                    display : false
-                }
+                x: { stacked: true, display: false, min: 0, max: scaleMax },
+                y: { stacked: true, display: false }
             },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: c => {
-                            const v   = c.raw;
-                            const pct = total ? Math.round(v / total * 100) : 0;
-                            const label = c.dataset.label;
-                            const value = label === 'Поступления' ? income : expense;
-                            return `${label}: ${withCurrency(value)} (${pct}%)`;
-                        }
+                        label: c => c.dataset.label === 'Траты'
+                            ? `Траты: ${withCurrency(expense)}${pct != null ? ` (${pct}% от поступлений)` : ''}`
+                            : c.dataset.label === 'Сверх поступлений'
+                                ? `Сверх поступлений: ${withCurrency(overPart)}`
+                                : `Осталось от поступлений: ${withCurrency(leftPart)}`
                     }
                 }
             }
@@ -1222,14 +1275,33 @@ function renderBalanceDynamicsChart() {
     const col = PALETTE.primary(); // линия нейтральная: снижение остатка — норма, красным её не пугаем
     const ranOut = res.min.balance <= 0;
 
+    // прогноз до конца месяца: только по дням, если в периоде текущий месяц и он ещё не кончился
+    let fc = null;
+    const tISO = todayISO();
+    if (daily && pts.length && pts[pts.length - 1].date === tISO) {
+        const ym = tISO.slice(0, 7);
+        const [yy, mm] = ym.split('-').map(Number);
+        const monthEnd = `${ym}-${String(new Date(Date.UTC(yy, mm, 0)).getUTCDate()).padStart(2, '0')}`;
+        if (tISO < monthEnd) { try { fc = forecastBalance(raw, tISO, monthEnd, pts[pts.length - 1].balance); } catch (e) { fc = null; } }
+    }
+    const fcPts = fc ? fc.points : [];
+    const allPts = pts.concat(fcPts);
+
     if (head) {
         head.innerHTML =
             `<div class="bal-top"><div class="bal-big"><b>${formatNumber(Math.round(res.end))}</b><small>${getCurrencyLabel()}</small></div>` +
             `<span class="bal-chg ${res.change >= 0 ? 'good' : 'bad'}">${res.change >= 0 ? '▲ Выросло на' : '▼ Снизилось на'} ${formatNumber(Math.abs(Math.round(res.change)))}</span></div>` +
             `<div class="bal-mm"><span>Пик <b>${formatNumber(Math.round(res.max.balance))}</b><em>${lbl(res.max)}</em></span>` +
             `<span>Минимум <b>${formatNumber(Math.round(res.min.balance))}</b><em>${lbl(res.min)}</em></span></div>` +
-            (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ Остаток ушёл в минус (${lbl(res.min)}: −${formatNumber(Math.abs(Math.round(res.min.balance)))}). Возможно, не внесены все поступления или начальный остаток` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
-            `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов</div>`;
+            (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ ${lbl(res.min)} по записям потрачено больше, чем было: −${formatNumber(Math.abs(Math.round(res.min.balance)))}. Значит, часть трат оплачена деньгами, которых нет в приложении (наличные, другая карта, кредитка), или поступление записано позже, чем пришло` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
+            (fc ? (() => {
+                const ev = fc.events.filter(e => !e.recorded).slice(0, 3)
+                    .map(e => `${e.type === 'income' ? '+' : '−'}${compactNumber(Math.round(e.amount))} ${escHtml(String(e.category || '').replace(/^\S+\s/, ''))} ~${Number(e.date.slice(8, 10))}-го`).join(', ');
+                const low = fc.min && fc.min.balance < 0;
+                return `<div class="bal-fc${low ? ' low' : ''}">Прогноз на ${dm(fc.points[fc.points.length - 1].date)}: <b>${sgn(fc.end)}${formatNumber(Math.abs(Math.round(fc.end)))}</b>` +
+                    `<small>Темп ~${compactNumber(Math.round(fc.pace))} в день${ev ? ` · ожидается: ${ev}` : ''}${low ? ` · ⚠ около ${dm(fc.min.date)} может уйти в минус` : ''}</small></div>`;
+            })() : '') +
+            `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов${res.later ? `. Записи на будущие даты (${sgn(res.later)}${formatNumber(Math.abs(Math.round(res.later)))}) в итоге учтены, на линии — нет` : ''}</div>`;
     }
 
     const muted = getCssVar('--muted', '#8a93a6');
@@ -1241,9 +1313,9 @@ function renderBalanceDynamicsChart() {
     charts.balanceDynamics = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
-            labels: pts.map(lbl),
+            labels: allPts.map(lbl),
             datasets: [{
-                data: pts.map(p => p.balance),
+                data: allPts.map((p, i) => (i <= last ? p.balance : null)),
                 borderColor: col, borderWidth: 2.5, tension: 0.3, fill: true,
                 backgroundColor: c => {
                     const a = c.chart.chartArea; if (!a) return 'transparent';
@@ -1254,7 +1326,12 @@ function renderBalanceDynamicsChart() {
                 pointRadius: c => c.dataIndex === last ? 4.5 : 0,
                 pointBackgroundColor: col, pointBorderColor: getCssVar('--bg', '#0b0f1a'), pointBorderWidth: 2,
                 pointHoverRadius: 5
-            }]
+            }, ...(fcPts.length ? [{
+                // пунктир прогноза: начинается в точке «сегодня»
+                data: allPts.map((p, i) => (i >= last ? p.balance : null)),
+                borderColor: cssRgba(col, 0.75), borderWidth: 2, borderDash: [5, 4], tension: 0.25, fill: false,
+                pointRadius: 0, pointHoverRadius: 4, spanGaps: false
+            }] : [])]
         },
         options: {
             maintainAspectRatio: false,
@@ -1268,11 +1345,12 @@ function renderBalanceDynamicsChart() {
                 legend: { display: false },
                 tooltip: {
                     ...buildTooltipDefaults(),
+                    filter: it => !(it.datasetIndex === 1 && it.dataIndex === last),
                     callbacks: {
-                        title: items => { const p = pts[items[0]?.dataIndex]; return p ? fullTitle(p) : ''; },
-                        label: c => `Остаток: ${withCurrencyR(c.raw)}`,
+                        title: items => { const p = allPts[items[0]?.dataIndex]; return p ? fullTitle(p) + (items[0]?.dataIndex > last ? ' · прогноз' : '') : ''; },
+                        label: c => `${c.datasetIndex === 1 ? 'Прогноз' : 'Остаток'}: ${withCurrencyR(c.raw)}`,
                         afterLabel: c => {
-                            const p = pts[c.dataIndex]; if (!p || (!p.plus && !p.minus)) return [];
+                            const p = allPts[c.dataIndex]; if (!p || c.datasetIndex === 1 || (!p.plus && !p.minus)) return [];
                             const per = daily ? 'За день' : 'За месяц';
                             return [`${per} +: ${withCurrencyR(p.plus)}`, `${per} −: ${withCurrencyR(p.minus)}`];
                         }
@@ -1305,7 +1383,7 @@ function renderCategoryHistoryChart() {
     let cat = selectedAnalyticsCategory;
     if (!ranked.includes(cat)) cat = ranked[0] || '';
     selectedAnalyticsCategory = cat;
-    const d = cat ? categoryDetail(all, period, cat, { type: 'expense', todayISO: todayISO() }) : null;
+    const d = cat ? categoryDetail(all, period, cat, { type: 'expense', todayISO: todayISO(), allMonths: allMonthsCount() }) : null;
     const trend = d ? d.trend : [];
     if (!cat) {
         const hd = canvas.closest('section')?.querySelector('.ch-head'); if (hd) hd.innerHTML = '';
@@ -1424,126 +1502,124 @@ function wrapLabel(src, maxLen = 15) {
     }
     return lines;
 }
-// === 7. Категории по убыванию (фикс налезаний/wrap/клик) ===
-function renderCategoriesByDescendingChart() {
-    const canvas = document.getElementById('categoriesByDescendingChart');
+// === Категории по месяцам: топ-5 категорий трат за 12 месяцев, стопкой ===
+function renderCategoriesByMonthChart() {
+    const canvas = document.getElementById('categoriesByMonthChart');
     if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const tx  = getCurrentBudgetTransactions();
-
-    const map = {};
-    tx.filter(t => t.type === 'expense').forEach(t => {
-        const cat = t.category || 'Без категории';
-        map[cat]  = (map[cat] || 0) + amtOf(t);
-    });
-
-    const sorted     = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 30);
-    if (emptyGuard(canvas, !sorted.length, 'За выбранный период трат нет', 'categoriesByDescending')) return;
-    const fullLabels = sorted.map(([c]) => c);
-    const data       = sorted.map(([, a]) => a);
-
-    // визуальные подписи: многострочные
-    const labels = fullLabels.map(l => wrapLabel(l, 28));
-    ensureNonEmptyData(labels, data);
-
-    // динамическая высота под количество строк
-    const rowH     = 30; // ~высота строки с межстрочным
-    const extra    = 70; // сверху/снизу + ось X
-    const desiredH = Math.max(260, labels.length * rowH + extra);
-    ensureWrap(canvas, desiredH);
-
-    // толщина баров из высоты
-    const barThickness = Math.max(
-        12,
-        Math.min(
-            28,
-            Math.floor((desiredH - extra) / Math.max(labels.length, 1)) - 6
-        )
-    );
-
-    const colors = labels.map((_, i) => PALETTE.catHue(i, labels.length));
-
-    // уничтожаем старый график при перерисовке
-    if (charts.categoriesByDescending) {
-        try { charts.categoriesByDescending.destroy(); } catch (e) {}
-        delete charts.categoriesByDescending;
+    try { charts.categoriesByMonth?.destroy(); } catch (e) {}
+    delete charts.categoriesByMonth;
+    const legend = document.getElementById('anCbmLegend');
+    const all = allAnalyticsTx().filter(t => t.type === 'expense');
+    if (!all.length) { if (legend) legend.innerHTML = '<p class="an-empty">Пока нет трат</p>'; return; }
+    // 12 месяцев, заканчивая последним месяцем периода (или последним месяцем с данными)
+    const { last: lastData } = dataRange(rangeTx());
+    const endKey = period.all ? lastData : [...period.keys].sort().pop();
+    const keys = []; let k = endKey;
+    for (let i = 0; i < 12 && k; i++) { keys.unshift(k); k = addMonths(k, -1); }
+    const inWin = new Set(keys);
+    const byCat = new Map(), cell = new Map();
+    for (const t of all) {
+        const mk = keyOf(t.date); if (!inWin.has(mk)) continue;
+        const c = t.category || 'Без категории', a = amtOf(t);
+        byCat.set(c, (byCat.get(c) || 0) + a);
+        cell.set(`${c}|${mk}`, (cell.get(`${c}|${mk}`) || 0) + a);
     }
-
-    charts.categoriesByDescending = new Chart(ctx, {
+    const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([c]) => c);
+    const topSet = new Set(top);
+    const restByMonth = keys.map(mk => [...byCat.keys()].filter(c => !topSet.has(c)).reduce((s, c) => s + (cell.get(`${c}|${mk}`) || 0), 0));
+    const set = PALETTE.catSet();
+    const datasets = top.map((c, i) => ({
+        label: c, data: keys.map(mk => cell.get(`${c}|${mk}`) || 0),
+        backgroundColor: set[i % set.length], borderRadius: 4, borderSkipped: false, stack: 's', maxBarThickness: 22
+    }));
+    if (restByMonth.some(v => v > 0)) datasets.push({ label: 'Прочее', data: restByMonth, backgroundColor: PALETTE.other(), borderRadius: 4, borderSkipped: false, stack: 's', maxBarThickness: 22 });
+    const muted = getCssVar('--muted', '#8a93a6');
+    const multiYear = new Set(keys.map(keyYear)).size > 1;
+    const labels = keys.map(mk => MONTHS_SHORT[keyMonth(mk) - 1] + (multiYear && keyMonth(mk) === 1 ? ` ${String(keyYear(mk)).slice(2)}` : ''));
+    charts.categoriesByMonth = new Chart(canvas.getContext('2d'), {
         type: 'bar',
-        data: {
-            labels, // массивы строк → многострочные подписи
-            datasets: [{
-                data,
-                backgroundColor: colors,
-                borderRadius: 8,
-                borderSkipped: false,
-                barThickness
-            }]
-        },
+        data: { labels, datasets },
         options: {
-            indexAxis: 'y',
-            layout   : { padding: { left: 16, right: 14, top: 8, bottom: 20 } },
-            scales   : {
-                y: {
-                    offset: true,
-                    grid  : { display: false },
-                    ticks : {
-                        autoSkip   : false,
-                        color      : getCssVar('--secondary-color', '#fff'),
-                        font       : { size: 11, lineHeight: 1.1 }
-                    }
-                },
-                x: {
-                    grid : {
-                        color: 'rgba(255,255,255,0.06)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: getCssVar('--text-muted', '#888'),
-                        callback: v => formatNumber(v)
-                    }
-                }
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: muted, font: { size: 10, weight: '700' }, maxRotation: 0, autoSkip: false } },
+                y: { stacked: true, keepTicks: true, border: { display: false }, ticks: { color: muted, maxTicksLimit: 4, callback: v => compactNumber(v) }, grid: { color: getCssVar('--faint', 'rgba(255,255,255,.08)') } }
             },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     ...buildTooltipDefaults(),
+                    filter: it => it.raw > 0,
+                    itemSort: (a, b) => b.raw - a.raw,
                     callbacks: {
-                        title: c => Array.isArray(c[0]?.label) ? c[0].label.join(' ') : (c[0]?.label || ''),
-                        label: ctx => {
-                            const val = ctx.raw || 0;
-                            const totalAll = sorted.reduce((s, [,v]) => s + v, 0);
-                            const pct = totalAll > 0 ? (val / totalAll * 100).toFixed(1) : 0;
-                            return `${withCurrency(val)}  ·  ${pct}%`;
-                        },
-                        afterLabel: ctx => {
-                            const catName = fullLabels[ctx.dataIndex];
-                            if (!catName) return [];
-                            return getRichTooltipLines(getCurrentBudgetTransactions(), catName, ctx.raw);
-                        }
+                        title: items => { const mk = keys[items[0]?.dataIndex]; return mk ? `${MONTHS_FULL[keyMonth(mk) - 1]} ${keyYear(mk)}` : ''; },
+                        label: c => `${c.dataset.label}: ${withCurrencyR(c.raw)}`
                     }
                 }
-            },
-            animation: {
-                duration: 500,
-                easing  : 'easeOutCubic'
             }
         }
     });
+    if (legend) {
+        const items = datasets.map((d, i) => {
+            const first = d.data.slice(0, 6).reduce((s, v) => s + v, 0), second = d.data.slice(6).reduce((s, v) => s + v, 0);
+            const ch = first > 0 ? Math.round((second - first) / first * 100) : null;
+            const arrow = ch == null ? '' : `<em class="${ch > 10 ? 'up' : ch < -10 ? 'down' : ''}">${ch > 0 ? '+' : ''}${ch}%</em>`;
+            return `<span><i style="background:${d.backgroundColor}"></i>${escHtml(d.label)}${arrow}</span>`;
+        }).join('');
+        legend.innerHTML = items + '<small>% — последние 6 месяцев против предыдущих 6</small>';
+    }
+}
 
-    // 💡 КЛИК ПО НАЗВАНИЮ/СТОЛБЦУ → ПОДСВЕТКА И СУММА
-    const chart  = charts.categoriesByDescending;
-    const yScale = chart.scales.y;
-
-    const clickHandler = evt => {
-        const { offsetY } = evt;
-        const idx = indexFromY(yScale, offsetY); // уже есть утилита ниже в файле
-        activateBar(chart, idx);                // выставляет active + tooltip
+// === 7. Все категории трат — компактный список (вместо высокого бар-чарта с пустым местом) ===
+let allCatsExpanded = false;
+function renderCategoriesByDescendingChart() {
+    let el = document.getElementById('anAllCats');
+    if (!el) {
+        const canvas = document.getElementById('categoriesByDescendingChart');
+        if (!canvas) return;
+        el = document.createElement('div');
+        el.id = 'anAllCats';
+        el.className = 'allcat-list';
+        canvas.replaceWith(el);
+    }
+    const map = new Map();
+    getCurrentBudgetTransactions().filter(t => t.type === 'expense').forEach(t => {
+        const cat = t.category || 'Без категории';
+        const r = map.get(cat) || { sum: 0, count: 0 };
+        r.sum += amtOf(t); r.count++; map.set(cat, r);
+    });
+    const rows = [...map.entries()].map(([name, r]) => ({ name, ...r })).filter(r => r.sum > 0).sort((a, b) => b.sum - a.sum);
+    if (!rows.length) { el.innerHTML = '<p class="an-empty">За выбранный период трат нет</p>'; return; }
+    const total = rows.reduce((s, r) => s + r.sum, 0);
+    const max = rows[0].sum || 1;
+    const LIMIT = 10;
+    const shown = allCatsExpanded ? rows : rows.slice(0, LIMIT);
+    const split = name => {
+        const m = String(name).match(/^\s*(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*(.*)$/u);
+        return m ? { emoji: m[1], text: m[2] || name } : { emoji: '', text: name };
     };
-
-    bindClickOnce(canvas, clickHandler);
+    el.innerHTML = shown.map((r, i) => {
+        const { emoji, text } = split(r.name);
+        const pct = total > 0 ? r.sum / total * 100 : 0;
+        return `<button type="button" class="allcat-row" data-i="${i}">
+            <span class="allcat-emoji">${escHtml(emoji || '💸')}</span>
+            <span class="allcat-main">
+              <span class="allcat-h"><b>${escHtml(text)}</b><em>${formatNumber(Math.round(r.sum))}</em></span>
+              <span class="allcat-sub"><span class="allcat-track"><i style="width:${Math.max(2, r.sum / max * 100).toFixed(1)}%"></i></span><small>${pct < 1 ? '<1' : Math.round(pct)}% · ${r.count}</small></span>
+            </span>
+        </button>`;
+    }).join('') + (rows.length > LIMIT
+        ? `<button type="button" class="allcat-more">${allCatsExpanded ? 'Свернуть' : `Показать все (${rows.length})`}</button>` : '');
+    el.querySelectorAll('.allcat-row').forEach(b => b.addEventListener('click', () => {
+        const r = shown[Number(b.dataset.i)];
+        if (!r) return;
+        const d = categoryDetail(allAnalyticsTx(), period, r.name, { type: 'expense', todayISO: todayISO(), allMonths: allMonthsCount() });
+        openCategorySheet(d, { type: 'expense', color: 'var(--out)', periodText: periodLabel(period), selected: period });
+        selectedAnalyticsCategory = r.name;
+        renderCategoryHistoryChart();
+    }));
+    el.querySelector('.allcat-more')?.addEventListener('click', () => { allCatsExpanded = !allCatsExpanded; renderCategoriesByDescendingChart(); });
 }
 
 
@@ -1618,23 +1694,46 @@ function renderIncomeBySourceChart() {
     if (!el) return;
     const bd = categoryBreakdown(getCurrentBudgetTransactions(), period, 'income');
     renderSources(el, bd, pick => {
-        const d = categoryDetail(allAnalyticsTx(), period, pick.name, { type: 'income', todayISO: todayISO() });
+        const d = categoryDetail(allAnalyticsTx(), period, pick.name, { type: 'income', todayISO: todayISO(), allMonths: allMonthsCount() });
         openCategorySheet(d, { type: 'income', color: pick.color, periodText: periodLabel(period), selected: period });
     });
 }
 // -----------------------------------------------------------------
 // 10. Годовая сводка
 // -----------------------------------------------------------------
+// Тап по месяцу в «Сводке»: шторка со сверкой «Итог ↔ Доступно» (выбор периода — в шторке «Период» и на столбиках)
+function openMonthDetails(key) {
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const mp = monthPeriod(key);
+    const row = summaryRows(allAnalyticsTx(), [key]).rows[0];
+    const recon = reconcile(raw, mp);
+    const bal = balanceSeries(raw, mp);
+    const top = type => {
+        const m = new Map();
+        allAnalyticsTx().filter(t => t.type === type && inPeriod(mp, t.date)).forEach(t => { const c = t.category || 'Без категории'; m.set(c, (m.get(c) || 0) + amtOf(t)); });
+        return [...m.entries()].map(([name, sum]) => ({ name, sum })).sort((a, b) => b.sum - a.sum).slice(0, type === 'expense' ? 5 : 3);
+    };
+    openMonthSheet({ key, row, recon, balanceEnd: bal.points.length ? bal.end : null, topOut: top('expense'), topIn: top('income') }, {
+        onShow: k => setPeriod(monthPeriod(k), { keepHero: true })
+    });
+}
+
 function renderAnnualSummaryChart() {
     const el = document.getElementById('anSummary');
     if (!el) return;
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const keys = summaryKeys(period, viewYear, first, last);
+    // реально отложено за те же месяцы: пополнения вкладов минус снятия («Уже лежало» не считается)
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const ks = [...keys].sort();
+    const saved = ks.length ? netSavings(raw, `${ks[0]}-01`, `${ks[ks.length - 1]}-31`).net : 0;
     renderSummary(el, summaryRows(all, keys), {
         period,
+        saved,
         title: period.all ? 'Всё время' : String(viewYear),
-        onToggle: key => setPeriod(toggleMonth(period, key, viewYear), { keepHero: true })
+        activeKeys: new Set(rangeTx().map(t => keyOf(t.date))),
+        onPick: key => openMonthDetails(key)
     });
 }
 
@@ -1662,6 +1761,14 @@ window.addEventListener('themechange', () => {
 });
 window.addEventListener('budgetit:analytics-open', () => {
     if (!chartsStale) return;
+    chartsStale = false;
+    destroyAllCharts();
+    renderCharts();
+});
+// перенос остатка изменился: линии баланса считаются иначе
+window.addEventListener('budgetit:carry-changed', () => {
+    transactionsCache.clear();
+    if (!analyticsIsOpen()) { chartsStale = true; return; }
     chartsStale = false;
     destroyAllCharts();
     renderCharts();

@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.4';
+const CACHE_VERSION = 'v5.0.5';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -62,6 +62,7 @@ const STATIC_ASSETS = [
     '/src/shark/texts/live.js',
     '/src/shark/texts/live2.js',
     '/src/shark/texts/live3.js',
+    '/src/shark/texts/nospend.js',
     '/src/shark/texts/emotionInfo.js',
     '/src/shark/texts/rude.js',
     '/src/shark/texts/stats-more.js',
@@ -80,6 +81,7 @@ const STATIC_ASSETS = [
     '/src/ui/DesktopWidgets.js',
     '/src/utils/customCategories.js',
     '/src/utils/sanitize.js',
+    '/src/utils/persistStorage.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
     '/src/profilePage.js',
@@ -114,6 +116,10 @@ const STATIC_ASSETS = [
     '/src/analytics/stats.js',
     '/src/analytics/ui.js',
     '/src/utils/insightsMath.js',
+    '/src/utils/savingsFlow.js',
+    '/src/utils/insightsNew.js',
+    '/src/analytics/forecast.js',
+    '/src/utils/carryOver.js',
     '/src/utils/insightsExtra.js',
     '/src/utils/emojiMap.js',
     '/src/utils/loader.js',

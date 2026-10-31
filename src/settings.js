@@ -13,7 +13,9 @@ import { refreshUserProfile } from './profileAnalytics.js';
 import { openProfilePage, renderProfilePage, refreshHeroName } from './profilePage.js';
 import { canOfferInstall, openInstall } from './ui/PwaInstall.js';
 import { sanitizeDeep } from './utils/sanitize.js';
+import { getStorageStatus, requestPersistentStorage, describeStatus, formatBytes, shareBackupFile, shouldOfferProtection, getDismissedAt, markDismissed } from './utils/persistStorage.js';
 import { getNumberFormat, NUMBER_FORMAT_KEY } from './utils/utils.js';
+import { getCarryMode, setCarryMode } from './utils/carryOver.js';
 
 let localBudgetManager = null;
 let localUI = null;
@@ -445,6 +447,19 @@ function ensureDataToolsUI() {
             <button id="eip-refresh-tools-btn" class="eip-mini-icon-btn" type="button" aria-label="Обновить">↻</button>
         </div>
 
+        <div class="eip-tool-card eip-protect-card" id="eip-protect-card">
+            <div class="eip-tool-card-title">🔒 Защита данных</div>
+            <div class="eip-protect-status" id="eip-protect-status" data-ok="0">
+                <b id="eip-protect-title">Проверяю…</b>
+                <span id="eip-protect-text"></span>
+                <span class="eip-protect-usage" id="eip-protect-usage"></span>
+            </div>
+            <div class="eip-tool-actions">
+                <button id="eip-protect-btn" class="eip-tool-btn eip-tool-btn-safe" type="button">🔒 Защитить</button>
+                <button id="eip-share-backup-btn" class="eip-tool-btn" type="button">📤 Отправить копию</button>
+            </div>
+        </div>
+
         <div class="eip-tools-grid">
             <div class="eip-tool-card eip-tool-card-primary">
                 <div class="eip-tool-card-title">Период</div>
@@ -640,6 +655,76 @@ function refreshDataToolsUI(budgetManager) {
     updateMonthSummary(budgetManager);
     renderImportBatches(budgetManager);
     renderAutoBackups();
+    bindProtectCard();
+    refreshProtectCard();
+}
+
+/* ================= Защита данных ================= */
+
+async function refreshProtectCard() {
+    const box = document.getElementById('eip-protect-status');
+    if (!box) return;
+    const st = await getStorageStatus();
+    const d = describeStatus(st);
+    box.dataset.ok = d.ok ? '1' : '0';
+    _setText('eip-protect-title', d.title);
+    _setText('eip-protect-text', d.text);
+    _setText('eip-protect-usage', st.quota ? `Занято: ${formatBytes(st.usage)} из ${formatBytes(st.quota)}` : '');
+    const btn = document.getElementById('eip-protect-btn');
+    if (btn) btn.disabled = !st.supported || st.persisted;
+}
+
+function bindProtectCard() {
+    const protect = document.getElementById('eip-protect-btn');
+    if (protect && !protect.dataset.bound) {
+        protect.dataset.bound = '1';
+        protect.addEventListener('click', async () => {
+            const ok = await requestPersistentStorage();
+            await refreshProtectCard();
+            showTweak(
+                ok ? '🔒 Хранилище закреплено' : 'Браузер не закрепил данные. Установи BudgetIt на главный экран и отправь копию',
+                ok ? 'success' : 'error',
+                3500
+            );
+        });
+    }
+    const share = document.getElementById('eip-share-backup-btn');
+    if (share && !share.dataset.bound) {
+        share.dataset.bound = '1';
+        share.addEventListener('click', async () => {
+            if (!localBudgetManager) return;
+            const name = `budgetit_full_backup_${getDateStamp()}.json`;
+            const payload = buildFullExportPayload(localBudgetManager);
+            const res = await shareBackupFile(payload, name);
+            if (res === 'shared') {
+                markFlag('export');
+                showTweak('Копия отправлена', 'success', 2000);
+            } else if (res === 'unsupported' || res === 'error') {
+                downloadJSON(payload, name);
+                showTweak('Системная отправка недоступна, файл сохранён', 'success', 2500);
+            }
+        });
+    }
+}
+
+/** Тихо просит закрепить хранилище, а если браузер отказал, один раз в 14 дней предлагает защиту. */
+export async function offerStorageProtection(budgetManager) {
+    try {
+        if (await requestPersistentStorage()) return;
+        const st = await getStorageStatus();
+        const txCount = (budgetManager?.budgets || []).reduce((n, b) => n + (b.transactions?.length || 0), 0);
+        if (!shouldOfferProtection({ supported: st.supported, persisted: st.persisted, txCount, dismissedAt: getDismissedAt() })) return;
+        markDismissed();
+        const yes = await showDataConfirmModal({
+            variant: 'safe',
+            icon: '🔒',
+            title: 'Защитить данные?',
+            message: 'Браузер может удалить данные приложения при очистке истории или нехватке места. Отправь копию в Диск или Telegram: так они точно не пропадут.',
+            confirmText: 'Открыть защиту',
+            cancelText: 'Позже'
+        });
+        if (yes) openSubPage('export-import-page');
+    } catch (e) { console.warn('[Persist] offer', e); }
 }
 
 function getCurrentBudgetSafe(budgetManager) {
@@ -1892,9 +1977,27 @@ function renderRegionCards() {
         </div>
         <div class="rg-note">Меняется сразу во всём приложении — проверь баланс на главной.</div>`;
 
-    grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml;
+    const cm = getCarryMode();
+    const carryHtml = `
+        <div class="rg-label">Перерасход прошлого месяца</div>
+        <div class="numfmt-seg" role="group">
+            <button type="button" data-carry="carry" class="${cm === 'carry' ? 'active' : ''}">Переносить</button>
+            <button type="button" data-carry="reset" class="${cm === 'reset' ? 'active' : ''}">С нуля</button>
+        </div>
+        <div class="rg-note">«С нуля» — месяц, закрытый в минус, не тянется дальше. «Переносить» — перерасход вычитается из следующего месяца.</div>`;
 
-    grid.querySelectorAll('.numfmt-seg button').forEach(b => {
+    grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml + carryHtml;
+
+    grid.querySelectorAll('[data-carry]').forEach(b => {
+        b.addEventListener('click', e => {
+            e.stopPropagation();
+            setCarryMode(b.dataset.carry);
+            renderRegionCards();
+            try { localUI?.updateUI?.(); } catch {}
+        });
+    });
+
+    grid.querySelectorAll('.numfmt-seg button[data-nf]').forEach(b => {
         b.addEventListener('click', e => {
             e.stopPropagation();
             try { localStorage.setItem(NUMBER_FORMAT_KEY, b.dataset.nf); } catch {}

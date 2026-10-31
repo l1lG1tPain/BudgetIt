@@ -80,6 +80,8 @@ export class PlannerManager {
                 ...(payload.incomePlan || {})
             }
         };
+        // новая длительность или старт → новая дата окончания
+        merged.endDate = addDays(merged.startDate, (Number(merged.periodDays) || 15) - 1);
 
         const validation = validatePlannerPayload(merged);
         if (!validation.isValid) {
@@ -229,6 +231,8 @@ export class PlannerManager {
 
         if (type === 'deposit') {
             const status = String(tx?.status || '').trim();
+            // «Уже лежало» — деньги, что и так были на вкладе: из бюджета не уходили (как в calculateTotals)
+            if (status.includes('Уже лежало')) return null;
             const isWithdraw = status === '➖ Снятие';
 
             return {
@@ -242,22 +246,56 @@ export class PlannerManager {
             };
         }
 
-        if (type === 'debt') {
-            const direction = String(tx?.direction || '').trim();
-            const isOwe = direction === 'owe';
+        return null;
+    }
 
-            return {
-                id: tx.id || `${date}_${category}_${amount}_debt`,
-                date,
-                amount,
-                category: category || (isOwe ? 'Долг' : 'Возврат долга'),
-                kind: isOwe ? 'expense' : 'income',
-                sourceType: isOwe ? 'debt_owe' : 'debt_lent',
-                original: tx
-            };
+    // Одна операция бюджета → список движений денег для плана.
+    // Долг даёт несколько движений: создание (я должен → приход, мне должны → расход) и платежи по датам платежей;
+    // платежи сверх суммы долга не засчитываются — так же, как в BudgetManager.calculateTotals.
+    expandTransaction(tx) {
+        if (tx?.type !== 'debt') {
+            const one = this.classifyTransaction(tx);
+            return one ? [one] : [];
         }
 
-        return null;
+        const init = Number(tx.initialAmount ?? tx.amount) || 0;
+        if (init <= 0) return [];
+
+        const isOwe = tx.direction === 'owe';
+        const name = this.normalizeCategory(tx.name || tx.category || '');
+        const out = [];
+
+        const createdDate = normalizeISODate(tx.date);
+        if (createdDate) {
+            out.push({
+                id: `${tx.id}_debt_created`,
+                date: createdDate,
+                amount: init,
+                category: name || (isOwe ? 'Долг' : 'Займ'),
+                kind: isOwe ? 'income' : 'expense',
+                sourceType: isOwe ? 'debt_owe' : 'debt_lent',
+                original: tx
+            });
+        }
+
+        let paidSoFar = 0;
+        (Array.isArray(tx.payments) ? tx.payments : []).forEach((payment, i) => {
+            const amount = Math.min(Number(payment?.amount) || 0, Math.max(0, init - paidSoFar));
+            paidSoFar += amount;
+            const date = normalizeISODate(payment?.date);
+            if (amount <= 0 || !date) return;
+            out.push({
+                id: `${tx.id}_debt_payment_${i}`,
+                date,
+                amount,
+                category: name || (isOwe ? 'Погашение долга' : 'Возврат долга'),
+                kind: isOwe ? 'expense' : 'income',
+                sourceType: isOwe ? 'debt_payment_owe' : 'debt_payment_lent',
+                original: tx
+            });
+        });
+
+        return out;
     }
 
     getRealTransactionsForPlannerPeriod(plannerId) {
@@ -270,9 +308,32 @@ export class PlannerManager {
         const end = planner.endDate;
 
         return budget.transactions
-            .map(tx => this.classifyTransaction(tx))
-            .filter(Boolean)
+            .flatMap(tx => this.expandTransaction(tx))
             .filter(tx => tx.date >= start && tx.date <= end);
+    }
+
+    // Сколько денег было «на руках» к началу плана: перенос из прошлых месяцев (как «Доступно» на главной)
+    // плюс всё, что произошло в месяце старта до даты старта. Без этого план начинал с нуля и расходился с главной.
+    getCarryBeforeStart(planner) {
+        const budget = this.getCurrentBudget();
+        const start = planner?.startDate;
+        if (!budget || !start || !/^\d{4}-\d{2}-\d{2}$/.test(start)) return 0;
+
+        const year = Number(start.slice(0, 4));
+        const month = Number(start.slice(5, 7));
+        const monthStart = `${start.slice(0, 7)}-01`;
+
+        const totals = this.budgetManager?.calculateTotals?.(month, year);
+        let balance = Number(totals?.openingBalance) || 0;
+
+        (budget.transactions || [])
+            .flatMap(tx => this.expandTransaction(tx))
+            .filter(e => e.date >= monthStart && e.date < start)
+            .forEach(e => {
+                balance += e.kind === 'income' ? e.amount : -e.amount;
+            });
+
+        return balance;
     }
 
     buildRealTransactionsByDate(plannerId) {
@@ -360,7 +421,9 @@ export class PlannerManager {
         const expected = !planDate ? 0
             : planDate > todayIso ? Math.max(0, planned - received)
             : (received > 0 ? 0 : planned);
-        return { category, received, planned, planDate, expected };
+        // дата прошла, а поступления нет: считаем, что придёт по плану, но помечаем «просрочку» для интерфейса
+        const overdue = !!planDate && planned > 0 && planDate < todayIso && received <= 0;
+        return { category, received, planned, planDate, expected, overdue };
     }
 
     buildDayFacts({
@@ -383,8 +446,8 @@ export class PlannerManager {
             .filter(dep => dep.startDate === currentDate)
             .reduce((sum, dep) => sum + (Number(dep.amount) || 0), 0);
 
-        // Стартовый день: реальные расходы считаются, как в любой другой день.
-        // Реальные поступления — только плановой категории (остальные деньги этого дня в расчёт не входят).
+        // Стартовый день считается так же, как любой другой: все реальные расходы и все реальные поступления дня
+        // входят в расчёт (поступление плановой категории заменяет план, остальные — «доп. поступления»).
         const allRealDay = [...(realByDate.get(currentDate) || [])];
         const planCategory = this.normalizeCategory(planner.incomePlan?.category);
         const realIncomeEntries = allRealDay.filter(item => item.kind === 'income');
@@ -395,11 +458,9 @@ export class PlannerManager {
         const plannedIncomeFact = planIncomeEntries
             .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
-        const extraIncome = isStartDay
-            ? 0
-            : realIncomeEntries
-                .filter(entry => this.normalizeCategory(entry.category) !== planCategory)
-                .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+        const extraIncome = realIncomeEntries
+            .filter(entry => this.normalizeCategory(entry.category) !== planCategory)
+            .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
         const mainMatch = this.matchPlanEntries(plannedMainEntries, realExpenseEntries);
         realExpenseEntries = mainMatch.leftovers;
@@ -596,7 +657,8 @@ export class PlannerManager {
         // Стартовый день: плановое поступление (или полученное) минус траты этого дня по факту (или по плану).
         // Ежедневные и регулярные траты начинаются со 2-го дня.
         let startBase = { openingBalance: 0, incomeAtStart: 0, startMain: 0, startDaily: 0, startRegular: 0, startDeposits: 0, startExtra: 0 };
-        let runningBalance = 0;
+        const carryIn = this.getCarryBeforeStart(planner);
+        let runningBalance = carryIn;
         const rows = [];
 
         if (periodDays.length > 0) {
@@ -609,7 +671,7 @@ export class PlannerManager {
                 incomeState
             });
             startBase = {
-                openingBalance: startCalc.netDay,
+                openingBalance: carryIn + startCalc.netDay,
                 incomeAtStart: startCalc.totalIncomeDay,
                 startMain: startCalc.effective.main,
                 startDaily: 0,
@@ -617,14 +679,15 @@ export class PlannerManager {
                 startDeposits: startCalc.effective.deposits,
                 startExtra: startCalc.fact.extraExpenses
             };
-            runningBalance = startCalc.netDay;
+            runningBalance = carryIn + startCalc.netDay;
 
             rows.push({
                 dayIndex: 1,
                 date: planner.startDate,
                 isToday: planner.startDate === todayIso,
+                isFuture: planner.startDate > todayIso,
                 isStartDay: true,
-                balanceStartOfDay: 0,
+                balanceStartOfDay: carryIn,
                 startBreakdown: {
                     income: startBase.incomeAtStart,
                     main: startBase.startMain,
@@ -665,6 +728,7 @@ export class PlannerManager {
                 dayIndex: day.dayIndex,
                 date: currentDate,
                 isToday: currentDate === todayIso,
+                isFuture: currentDate > todayIso,
                 isStartDay,
                 balanceStartOfDay,
                 planned: dayCalc.planned,
@@ -752,6 +816,8 @@ export class PlannerManager {
                 incomeAmount: Number(planner.incomePlan.amount) || 0,
                 incomeReceived: incomeState.received,
                 incomeExpected: incomeState.expected,
+                incomeOverdue: !!incomeState.overdue,
+                incomePlanDate: incomeState.planDate || null,
                 incomeByFact: !(Number(planner.incomePlan.amount) > 0),
                 periodDays: planner.periodDays,
                 startDate: planner.startDate,
@@ -759,6 +825,7 @@ export class PlannerManager {
                 totalPlannedDeposits,
                 expectedDepositInterest,
                 openingBalance: startBase.openingBalance,
+                carryIn,
                 finalBalance,
                 remainingBudget,
                 dailyLimit,

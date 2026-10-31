@@ -92,7 +92,7 @@ export class DesktopWidgets {
         const transactions = budget?.transactions || [];
         const today = isoDay();
         const planners = this.pm?.getAllPlanners?.() || [];
-        const planner = findActivePlanner(planners, budget?.id || this.pm?.getCurrentBudgetId?.(), today);
+        const planner = findActivePlanner(planners, this.pm?.getCurrentBudgetId?.() || budget?.id, today);
         const normalize = c => this.pm?.normalizeCategory?.(c) ?? String(c || '').trim();
         const { limit } = getLimitInfo({ transactions, planner, today, settings: getSharkSettings(), normalize, planLimit: planner ? planAverageLimit(this.pm, planner) : 0 });
         const now = new Date();

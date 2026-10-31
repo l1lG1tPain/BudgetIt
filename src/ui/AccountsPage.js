@@ -5,32 +5,12 @@
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// Категории «Залётом», связанные со вкладами (👉 с их эмодзи): «🏦 Вклад», «🏦 Перевод на вклад»,
-// «🏦 Перевод с вклада», «🏦 Депозит», «🏦 Проценты от вклада». Это обычные траты/поступления,
-// поэтому «Счета» отдельно считают по ним движение: на вклад (+), со вклада (−), проценты.
-const DEPOSIT_CAT_RE = /(вклад|депозит|deposit|vklad|depozit)/i;
-const INTEREST_RE = /процент|interest|percent/i;
-const FROM_RE = /(с|со|из)\s+(вклада|депозита)|снят|списан/i;
-const TO_RE = /(на|в)\s+(вклад|депозит)|пополн/i;
+import { INTEREST_RE, classifyDepositFlow } from '../utils/savingsFlow.js';
+export { classifyDepositFlow };
 
 function splitCategory(cat) {
     const m = /^(\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*(.*)$/u.exec(String(cat || '').trim());
     return m ? { emoji: m[1], label: m[2] || cat } : { emoji: '🏦', label: String(cat || '') };
-}
-
-// kind: 'in' — деньги ушли на вклад, 'out' — вернулись со вклада, 'interest' — проценты, null — не про вклады
-export function classifyDepositFlow(tx) {
-    if (!tx || (tx.type !== 'expense' && tx.type !== 'income')) return null;
-    const cat = String(tx.category || '');
-    if (!DEPOSIT_CAT_RE.test(cat)) return null;
-    // «Проценты от вклада» из выписок (Click/Alliance Pay) на деле — все поступления с вклада: тело + проценты,
-    // отличить проценты от возврата тела нельзя, поэтому считаем их возвратом со вклада (см. «получено сверх внесённого»)
-    if (INTEREST_RE.test(cat)) return tx.type === 'income' ? 'out' : null;
-    // направление берём из самой категории: в выписке вклада «Перевод с вклада» приходит расходом,
-    // а «Перевод на вклад» — поступлением; для нейтральных «Вклад»/«Депозит» решает тип операции
-    if (FROM_RE.test(cat)) return 'out';
-    if (TO_RE.test(cat)) return 'in';
-    return tx.type === 'expense' ? 'in' : 'out';
 }
 
 export class AccountsPage {

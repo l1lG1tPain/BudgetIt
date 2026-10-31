@@ -37,7 +37,7 @@
 
 
 
-  <link rel="manifest" href="manifest.json?v=5.0.4">
+  <link rel="manifest" href="manifest.json?v=5.0.5">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -88,7 +88,7 @@
   <meta name="twitter:image:alt"   content="Акулка в бордовом худи — талисман BudgetIt">
 
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.4","image":"https://budgetit.app/assets/og-cover.png"}
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.5","image":"https://budgetit.app/assets/og-cover.png"}
   </script>
 
   <style>
@@ -271,6 +271,7 @@
       <div class="summary-block full" id="block-budget">
         <div class="block-title">Доступно<span class="emoji"></span></div>
         <div class="block-value">0</div>
+        <div class="block-note hidden" id="budget-carry-note"></div>
       </div>
 
       <!-- Чипы валют «≈ 381 $» + «Курсы» (рисует src/widgets/currencyChips.js) -->
@@ -288,10 +289,12 @@
       <div class="summary-block half" id="block-deposit">
         <div class="block-title">Накопления <span class="emoji"></span></div>
         <div class="block-value">0</div>
+        <div class="block-note" id="deposit-note">внесено, без процентов</div>
       </div>
       <div class="summary-block half" id="block-debt">
         <div class="block-title">Долги <span class="emoji"></span></div>
         <div class="block-value">0</div>
+        <div class="block-note hidden" id="debt-note"></div>
       </div>
     </div>
 
@@ -308,6 +311,7 @@
       <div id="akulka-title" class="ak-title">Акулка на посту</div>
       <div id="akulka-text" class="ak-text">Слежу за твоим бюджетом.</div>
       <div id="akulka-extra" class="ak-extra" hidden></div>
+      <button type="button" id="shark-nospend-btn" class="ak-nospend" hidden>Сегодня без трат</button>
       <div class="ak-bar"><span id="akulka-bar"></span></div>
     </div>
     </div>
@@ -735,7 +739,7 @@
                   <img src="assets/icons/budgetit-icon.png" class="product-icon">
                   <h3>BudgetIt</h3>
                   <p>Учёт финансов с аналитикой</p>
-                  <span class="product-version">v5.0.4</span>
+                  <span class="product-version">v5.0.5</span>
               </div>
 
               <a href="https://migry-bice.vercel.app/" target="_blank" rel="noopener noreferrer" class="product-card link">
@@ -949,7 +953,7 @@
       </section>
 
       <section class="an-card" data-chart="incomeVsExpensesChart">
-        <h4>⚖️ Поступления и траты</h4>
+        <h4>⚖️ Траты от поступлений</h4>
         <canvas id="incomeVsExpensesChart"></canvas>
       </section>
       <section class="an-card" data-chart="monthlyExpensesChart">
@@ -971,7 +975,7 @@
 
       <section class="an-card" data-chart="categoriesByDescendingChart">
         <h4>📥 Все категории трат</h4>
-        <canvas id="categoriesByDescendingChart"></canvas>
+        <div id="anAllCats" class="allcat-list"></div>
       </section>
 
       <section class="an-card" data-chart="categoryHistoryChart">
@@ -992,6 +996,12 @@
       <section class="an-card" data-chart="annualSummaryChart">
         <div class="an-sec-head"><h4>📆 Сводка по месяцам</h4><div class="an-year"></div></div>
         <div id="anSummary" class="sm-table"></div>
+      </section>
+
+      <section class="an-card" data-chart="categoriesByMonthChart">
+        <h4>🧱 Категории по месяцам</h4>
+        <div class="cbm-wrap"><canvas id="categoriesByMonthChart"></canvas></div>
+        <div id="anCbmLegend" class="cbm-legend"></div>
       </section>
     </div>
 
@@ -1111,7 +1121,7 @@
               <div class="about-hero">
                   <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
                   <div class="about-title">BudgetIt</div>
-                  <div class="about-version">Версия 5.0.4</div>
+                  <div class="about-version">Версия 5.0.5</div>
                   <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
               </div>
 
@@ -1191,11 +1201,20 @@
                   </div>
                   <div class="about-changelog">
                       <div class="about-changelog-row">
+                          <div class="about-changelog-ver">5.0.5</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Честные цифры
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Аналитика и тренды считают все деньги, как главный экран: вклады, долги и переводы; прогноз остатка до конца месяца, график «Категории по месяцам» и новые тренды; исправлены расчёты: план после смены числа дней, закрытие вклада, проценты по дням; тема «Тиффани» стала светлой — в фирменном цвете</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
                           <div class="about-changelog-ver">5.0.4</div>
                           <div class="about-changelog-info">
                               <div class="about-changelog-name">
                                   Итоги в сторис
-                                  <span class="about-badge-now">Сейчас</span>
                               </div>
                               <div class="about-changelog-desc">Новый вид трендов — сторисы (итоги месяца, недели и года); импорт выписок российских банков (Т-Банк, Ozon Банк, Газпромбанк)</div>
                           </div>

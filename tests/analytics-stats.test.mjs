@@ -72,12 +72,22 @@ test('categoryDetail «Прочее»', () => {
     assert.equal(d.total, 30); assert.equal(d.count, 1);
 });
 test('balanceSeries: нарастающий итог на конец месяца', () => {
-    const b = S.balanceSeries(tx, OCT);
-    assert.equal(b.start, 850); assert.equal(b.end, 1240); assert.equal(b.change, 390); // отрицательный декабрь-2025 не переносится (как «Доступно»)
+    const b = S.balanceSeries(tx, OCT, 'reset');
+    assert.equal(b.start, 850); assert.equal(b.end, 1240); assert.equal(b.change, 390); // отрицательный декабрь-2025 не переносится (режим reset)
     assert.deepEqual(b.points.map(p => p.key), ['2026-10']);
-    const all = S.balanceSeries(tx, P.allTime());
+    const all = S.balanceSeries(tx, P.allTime(), 'reset');
     assert.equal(all.points[0].key, '2025-12'); assert.equal(all.points[0].balance, -10);
     assert.equal(all.end, 1240); assert.equal(all.points.length, 11);
+});
+test('balanceSeries: режим carry переносит отрицательный остаток со знаком', () => {
+    const b = S.balanceSeries(tx, OCT, 'carry');
+    assert.equal(b.start, 840); assert.equal(b.end, 1230); assert.equal(b.change, 390);
+    const all = S.balanceSeries(tx, P.allTime(), 'carry');
+    assert.equal(all.points[0].balance, -10); assert.equal(all.end, 1230);
+});
+test('balanceDaily: carry и reset различаются начальным остатком', () => {
+    const r = S.balanceDaily(tx, OCT, null, 'reset'), c = S.balanceDaily(tx, OCT, null, 'carry');
+    assert.equal(r.start - c.start, 10); assert.equal(r.end - c.end, 10);
 });
 test('summaryRows: итоги и доля сбережений', () => {
     const keys = P.monthRange('2026-09', '2026-10');
@@ -107,8 +117,9 @@ test('balanceDaily: нарастающий баланс по дням, стар�
     const r = S.balanceDaily(tx, P.makePeriod({ keys: ['2026-10'] }), '2026-10-05');
     assert.equal(r.start, 100);
     assert.equal(r.points.length, 5);
-    assert.deepEqual(r.points.map(x => x.balance), [100, 70, 120, 120, 115]);
-    assert.equal(r.end, 115); // операция 9 окт (после «сегодня») учтена в последней точке
+    assert.deepEqual(r.points.map(x => x.balance), [100, 70, 120, 120, 120]); // будущей операции на линии нет
+    assert.equal(r.end, 115); // операция 9 окт (после «сегодня») учтена в итоге, как в «Доступно»
+    assert.equal(r.later, -5);
     assert.equal(r.change, 15);
 });
 
