@@ -1322,34 +1322,34 @@
 
 /* 💎 Тиффани — глубокое бирюзовое стекло (старые переменные для компонентов без токенов) */
 :root[data-theme="tiffany"] {
-    --main-ground:        #031416;
-    --sidebar-bg:         #031416;
-    --bg-secondary-color: #082123;
-    --tertiary-color:     #0d2e30;
-    --secondary-color:    #effffd;
-    --text-muted:         #86b5b1;
-    --border-color:       rgba(170, 255, 246, 0.15);
+    --main-ground:        #010b0c;
+    --sidebar-bg:         #010b0c;
+    --bg-secondary-color: #031617;
+    --tertiary-color:     #06201f;
+    --secondary-color:    #eaffff;
+    --text-muted:         #7aa6a4;
+    --border-color:       rgba(134, 255, 255, 0.13);
 
-    --primary-color:      #81d8d0;
+    --primary-color:      #0abab5;
     --income-color:       #7be8a8;
     --expense-color:      #ff7b8c;
     --deposit-color:      #efdcae;
     --debt-color:         #ffb27d;
 
-    --accent-color:       #0a2a2c;
+    --accent-color:       #041b1c;
     --dark-color:         #000000;
 
     --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(129, 216, 208, 0.18);
-    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.75), 0 0 24px rgba(129, 216, 208, 0.24);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(10, 186, 181, 0.18);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.75), 0 0 24px rgba(10, 186, 181, 0.24);
 
-    --an-primary-color:    #81d8d0;
-    --an-income-color:     #7be8a8;
+    --an-primary-color:    #0abab5;
+    --an-income-color:     #5fe3a8;
     --an-expense-color:    #ff7b8c;
     --an-debt-color:       #ffb27d;
-    --an-secondary-color:  #effffd;
-    --an-tertiary-color:   #031416;
-    --an-accent-color:     #0a2a2c;
-    --an-shadow-md:        0 4px 16px rgba(129, 216, 208, 0.28);
+    --an-secondary-color:  #eaffff;
+    --an-tertiary-color:   #010b0c;
+    --an-accent-color:     #041b1c;
+    --an-shadow-md:        0 4px 16px rgba(10, 186, 181, 0.28);
     --an-border-radius-md: var(--border-radius-md);
 }

@@ -1985,9 +1985,10 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
 /* ═══════════ Тема «Тиффани»: бирюзовое глубокое стекло, жемчужные блики, серебристая «лента» ═══════════
    Без backdrop-blur на карточках и списках (см. правила производительности выше): всё делается градиентами и тенями. */
 :root[data-theme="tiffany"] {
-  --tf-a: #81d8d0; --tf-b: #0abab5; --tf-pearl: #f2fffd;
-  --tf-grad: linear-gradient(135deg, #b4f3ed 0%, #81d8d0 38%, #2cc6bd 74%, #0abab5 100%);
-  --tf-sheen: linear-gradient(145deg, rgba(255,255,255,.11) 0%, rgba(255,255,255,0) 34%, rgba(10,186,181,.08) 100%);
+  /* Tiffany Blue #0ABAB5; блики #C3FFFF / #86FFFF, глубокий тон #078282 */
+  --tf-a: #0abab5; --tf-b: #078282; --tf-pearl: #c3ffff;
+  --tf-grad: linear-gradient(135deg, #c3ffff 0%, #86ffff 22%, #0abab5 60%, #078282 100%);
+  --tf-sheen: linear-gradient(145deg, rgba(195,255,255,.08) 0%, rgba(195,255,255,0) 34%, rgba(10,186,181,.07) 100%);
 }
 /* фон: к трём бликам добавляется диагональный «атласный» отлив */
 @media (max-width:1099px){
@@ -1996,7 +1997,7 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
       radial-gradient(circle 360px at -40px 40px, var(--orb1), transparent 72%),
       radial-gradient(circle 320px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
       radial-gradient(circle 280px at 60px calc(100% - 10px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.045) 46%, transparent 54% 100%) !important}
+      linear-gradient(115deg, transparent 0 38%, rgba(195,255,255,.03) 46%, transparent 54% 100%) !important}
 }
 @media (min-width:1100px){
   :root[data-theme="tiffany"] body{
@@ -2004,7 +2005,7 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
       radial-gradient(circle 420px at calc(var(--sb,280px) - 60px) 40px, var(--orb1), transparent 72%),
       radial-gradient(circle 380px at calc(100% + 60px) 340px, var(--orb2), transparent 72%),
       radial-gradient(circle 340px at 40% calc(100% + 40px), var(--orb3), transparent 72%),
-      linear-gradient(115deg, transparent 0 38%, rgba(235,255,253,.04) 46%, transparent 54% 100%) !important}
+      linear-gradient(115deg, transparent 0 38%, rgba(195,255,255,.028) 46%, transparent 54% 100%) !important}
 }
 /* карточки: стеклянный отлив, холодная кромка и бирюзовое свечение снизу */
 :root[data-theme="tiffany"] :is(.glass, .glass-2, #summary-blocks .summary-block, .akulka-card, .dw-card, .rg-card, .accounts-row,
@@ -2013,14 +2014,14 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
   #planner-page .planner-hero, #planner-page .planner-stat-card, #planner-page .planner-section-card, #planner-page .planner-day-card) {
   background-image: var(--tf-sheen);
   border-color: var(--stroke);
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.22), inset 0 -1px 0 rgba(10,186,181,.14), 0 14px 32px -18px rgba(10,186,181,.45);
+  box-shadow: inset 0 1px 0 rgba(195,255,255,.16), inset 0 -1px 0 rgba(10,186,181,.16), 0 14px 32px -18px rgba(10,186,181,.4);
 }
 /* строки операций: только отлив (сотни элементов, тени не добавляем) */
 :root[data-theme="tiffany"] #transaction-list li.tx-item{ background-image: var(--tf-sheen); border-color: var(--stroke); }
 /* шторки и шапка: тонкая светящаяся кромка */
 :root[data-theme="tiffany"] .bottom-sheet:not(.fullscreen-sheet), :root[data-theme="tiffany"] .sheet{
-  border-top-color: rgba(170,255,246,.3);
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.28), 0 -22px 60px rgba(0,0,0,.45), 0 -2px 30px rgba(10,186,181,.16);
+  border-top-color: rgba(134,255,255,.26);
+  box-shadow: inset 0 1px 0 rgba(195,255,255,.22), 0 -22px 60px rgba(0,0,0,.45), 0 -2px 30px rgba(10,186,181,.16);
 }
 /* главные кнопки: градиент «Тиффани» с мягким свечением */
 :root[data-theme="tiffany"] footer.liquid-footer #add-btn.fab-btn,
@@ -2030,13 +2031,13 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
   box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 22px -6px rgba(10,186,181,.65);
 }
 :root[data-theme="tiffany"] footer.liquid-footer .lnav-item.active{
-  background: linear-gradient(180deg, rgba(129,216,208,.22), rgba(129,216,208,.08));
-  box-shadow: inset 0 1px 0 rgba(235,255,253,.25), 0 0 18px rgba(129,216,208,.2);
+  background: linear-gradient(180deg, rgba(10,186,181,.24), rgba(10,186,181,.08));
+  box-shadow: inset 0 1px 0 rgba(195,255,255,.22), 0 0 18px rgba(10,186,181,.22);
 }
 /* Акулка: индикатор с градиентом (общий блик карточки — в конце файла, для всех тем) */
 :root[data-theme="tiffany"] .akulka-card .ak-bar span{ background: linear-gradient(90deg, var(--mood), color-mix(in srgb, var(--mood) 55%, #fff)); }
 /* заголовки сумм: лёгкое свечение, чтобы цифры «светились» изнутри */
-:root[data-theme="tiffany"] #summary-blocks .block-value{ text-shadow: 0 0 18px rgba(129,216,208,.28); }
+:root[data-theme="tiffany"] #summary-blocks .block-value{ text-shadow: 0 0 18px rgba(10,186,181,.3); }
 
 
 /* Пауза анимации Акулки, когда карточки не видно (SharkUI.watchCardVisibility) */

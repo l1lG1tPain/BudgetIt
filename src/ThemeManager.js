@@ -325,12 +325,12 @@ export const THEMES = [
         desc: 'Бирюзовое глубокое стекло и жемчужные блики',
         badge: 'ULTIMA',
         preview: {
-            bg:     '#031416',
-            card:   '#0a2a2c',
-            accent: '#81d8d0',
-            text:   '#effffd',
-            bar:    '#81d8d0',
-            income: '#7be8a8',
+            bg:     '#010b0c',
+            card:   '#041b1c',
+            accent: '#0abab5',
+            text:   '#eaffff',
+            bar:    '#0abab5',
+            income: '#5fe3a8',
             expense:'#ff7b8c',
         }
     },
