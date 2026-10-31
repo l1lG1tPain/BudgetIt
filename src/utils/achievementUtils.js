@@ -19,7 +19,8 @@ export function calculateAchievementContext(transactions = [], budget = {}) {
 
     const transactionsToday = [];
     const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
+    // локальная дата (toISOString — это UTC: в Ташкенте до 05:00 там ещё «вчера»)
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const currentMonth = todayStr.slice(0, 7);
 
     let lastIncomeCategory = '';
@@ -89,7 +90,7 @@ export function calculateAchievementContext(transactions = [], budget = {}) {
         lastCoffeeAmount,
         hasExpenseButNoFood,
         txOnBudgetBirthday: budget?.createdAt
-            ? now.toISOString().slice(5, 10) === budget.createdAt.slice(5, 10)
+            ? todayStr.slice(5, 10) === budget.createdAt.slice(5, 10)
             : false,
         currentBalance: budget?.balance || 0,
         monthlyIncome,

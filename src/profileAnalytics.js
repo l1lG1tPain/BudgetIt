@@ -26,15 +26,19 @@ export function updateUserLevelInfo(txCount = 0, emoji = '❔') {
     const levels = [50, 100, 200, 500, 1000, 2500, 5000];
     let currentLevel = 1;
     let nextThreshold = levels[0];
+    let prevThreshold = 0;
 
     for (let i = 0; i < levels.length; i++) {
         if (totalPoints >= levels[i]) {
             currentLevel = i + 2;
+            prevThreshold = levels[i];
             nextThreshold = levels[i + 1] || levels.at(-1);
         }
     }
 
-    const progress = Math.min(100, Math.round((totalPoints / nextThreshold) * 100));
+    // прогресс внутри текущего уровня: от его порога до следующего (раньше считался от нуля и «падал» при новом уровне)
+    const span = nextThreshold - prevThreshold;
+    const progress = span > 0 ? Math.min(100, Math.max(0, Math.round(((totalPoints - prevThreshold) / span) * 100))) : 100;
 
     const levelEl = document.getElementById('user-level-profile');
     if (levelEl) levelEl.textContent = currentLevel;

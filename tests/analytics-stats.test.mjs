@@ -107,8 +107,9 @@ test('balanceDaily: нарастающий баланс по дням, стар�
     const r = S.balanceDaily(tx, P.makePeriod({ keys: ['2026-10'] }), '2026-10-05');
     assert.equal(r.start, 100);
     assert.equal(r.points.length, 5);
-    assert.deepEqual(r.points.map(x => x.balance), [100, 70, 120, 120, 115]);
-    assert.equal(r.end, 115); // операция 9 окт (после «сегодня») учтена в последней точке
+    assert.deepEqual(r.points.map(x => x.balance), [100, 70, 120, 120, 120]); // будущей операции на линии нет
+    assert.equal(r.end, 115); // операция 9 окт (после «сегодня») учтена в итоге, как в «Доступно»
+    assert.equal(r.later, -5);
     assert.equal(r.change, 15);
 });
 

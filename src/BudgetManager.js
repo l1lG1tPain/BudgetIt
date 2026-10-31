@@ -189,7 +189,8 @@ export class BudgetManager {
         if (!budget) return;
         cleanTransaction(tx);
 
-        if (tx.date) {
+        // уже готовую дату не трогаем: new Date(...).toISOString() — это UTC и может сдвинуть день
+        if (tx.date && !/^\d{4}-\d{2}-\d{2}$/.test(tx.date)) {
             const d = new Date(tx.date);
             if (!Number.isNaN(d.getTime())) {
                 tx.date = d.toISOString().slice(0, 10);

@@ -5,6 +5,7 @@
 // ===============================
 
 import { MOOD_TEXTS, TOAST_TEXTS, FLAVOR } from './texts/index.js';
+import { isFinancialCategory, isSystemExcludedCategory } from '../utils/insightsMath.js';
 import { EMOTION_TEXTS, EMOTION_TITLES } from './texts/emotion.js';
 import { RUDE_TEXTS, RUDE_TITLES } from './texts/rude.js';
 import { LIVE_TEXTS, EMOTION_MORE } from './texts/live.js';
@@ -305,6 +306,11 @@ export function getLimitInfo({ transactions = [], planner = null, today = isoDay
 }
 
 // Траты за день без плановых «Основных» и «Регулярных» категорий активного плана
+// «Дневная» трата для Акулки: обычный расход без переводов, вкладов, долгов, налогов и «без учёта» —
+// то же определение потребления, что в аналитике и трендах (isFinancialCategory).
+export const isDailySpend = t => !!t && t.type === 'expense'
+    && !isFinancialCategory(t.category) && !isSystemExcludedCategory(t.category);
+
 export function getSpentOnDay({ transactions = [], planner = null, day = isoDay(), normalize = c => c } = {}) {
     const planned = new Set();
     if (planner) {
@@ -312,7 +318,7 @@ export function getSpentOnDay({ transactions = [], planner = null, day = isoDay(
             .forEach(i => planned.add(normalize(i.category || i.name || '')));
     }
     return transactions
-        .filter(t => t.type === 'expense' && t.date === day && !planned.has(normalize(t.category || '')))
+        .filter(t => isDailySpend(t) && t.date === day && !planned.has(normalize(t.category || '')))
         .reduce((s, t) => s + (Number(t.amount) || 0), 0);
 }
 

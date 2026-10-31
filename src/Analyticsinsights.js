@@ -10,7 +10,7 @@ let _bm = null;
 
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
-import { balanceDaily } from './analytics/stats.js';
+import { balanceDaily, cashEvents } from './analytics/stats.js';
 import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
@@ -694,7 +694,11 @@ function _render() {
         const today = localToday();
         const available = balanceDaily(allTx, makePeriod({ keys: [today.slice(0, 7)] }), null).end; // то же число, что «Доступно» на главной
 
-        const rw = calcRunway(available, realExp, today);
+        // темп — в той же базе, что «Доступно»: всё, что уходит из кошелька (траты, переводы, вклады, долги),
+        // кроме переводов между своими счетами; иначе прогноз выходит слишком оптимистичным
+        const ownTransfer = new Set(allTx.filter(t => /между\s+своими|своими\s+счет/i.test(String(t.category || ''))).map(t => `${t.date}|${t.amount}`));
+        const outflows = cashEvents(allTx).filter(e => e.v < 0 && !ownTransfer.has(`${e.date}|${-e.v}`)).map(e => ({ date: e.date, amount: -e.v }));
+        const rw = calcRunway(available, outflows, today);
         if (rw) {
             const [, mm, dd] = rw.until.split('-');
             cards.push({
@@ -708,7 +712,7 @@ function _render() {
             });
         }
 
-        const sp = calcSafePerDay(available, realExp, today);
+        const sp = calcSafePerDay(available, outflows, today);
         cards.push({
             e: '🎯', t: 'Можно тратить в день',
             b: sp.over

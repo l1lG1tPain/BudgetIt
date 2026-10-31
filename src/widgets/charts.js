@@ -1229,7 +1229,7 @@ function renderBalanceDynamicsChart() {
             `<div class="bal-mm"><span>Пик <b>${formatNumber(Math.round(res.max.balance))}</b><em>${lbl(res.max)}</em></span>` +
             `<span>Минимум <b>${formatNumber(Math.round(res.min.balance))}</b><em>${lbl(res.min)}</em></span></div>` +
             (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ Остаток ушёл в минус (${lbl(res.min)}: −${formatNumber(Math.abs(Math.round(res.min.balance)))}). Возможно, не внесены все поступления или начальный остаток` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
-            `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов</div>`;
+            `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов${res.later ? `. Записи на будущие даты (${sgn(res.later)}${formatNumber(Math.abs(Math.round(res.later)))}) в итоге учтены, на линии — нет` : ''}</div>`;
     }
 
     const muted = getCssVar('--muted', '#8a93a6');

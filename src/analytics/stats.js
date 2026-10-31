@@ -254,7 +254,7 @@ export function balanceDaily(raw, p, todayISO) {
     let to = monthEnd;
     if (todayISO && todayISO < to && todayISO >= from) to = todayISO;
     const net = new Map(), plus = new Map(), minus = new Map();
-    let later = 0, laterPlus = 0, laterMinus = 0; // операции позже «сегодня» в последнем месяце — учитываем в последней точке, чтобы сошлось с «Доступно»
+    let later = 0, laterPlus = 0, laterMinus = 0; // операции позже «сегодня» в последнем месяце: в линию не попадают (их ещё не было), но входят в итог, чтобы он сошёлся с «Доступно»
     for (const e of ev) {
         if (e.date < from) continue;
         if (e.date <= to) {
@@ -272,10 +272,10 @@ export function balanceDaily(raw, p, todayISO) {
         run += net.get(d) || 0;
         points.push({ date: d, balance: run, net: net.get(d) || 0, plus: plus.get(d) || 0, minus: minus.get(d) || 0 });
     }
-    if (later && points.length) { const l = points[points.length - 1]; l.balance += later; l.net += later; l.plus += laterPlus; l.minus += laterMinus; run += later; }
     let min = points[0], max = points[0];
     points.forEach(pt => { if (pt.balance < min.balance) min = pt; if (pt.balance > max.balance) max = pt; });
-    return { points, start, end: run, change: run - start, min, max };
+    const total = run + later;
+    return { points, start, end: total, change: total - start, min, max, later, laterPlus, laterMinus };
 }
 
 /** Ключи месяцев для таблицы «Сводка»: год на графике (или все месяцы данных для «всё время») */

@@ -3,7 +3,7 @@
 //   шторка «Дневной лимит» и мини-чат «Спросить Акулку»
 // ===============================
 import {
-    getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, computeMood,
+    getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, isDailySpend, computeMood,
     countStreakInLimit, countOverStreak, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
 } from './SharkMood.js';
 import { recapAvailability, recapChatVisible } from '../recap/recapStats.js';
@@ -437,7 +437,7 @@ export class SharkUI {
         const planned = new Set();
         if (c.planner) [...(c.planner.mainExpenses || []), ...(c.planner.regularExpenses || [])]
             .forEach(i => planned.add(c.normalize(i.category || i.name || '')));
-        const isVar = t => t.type === 'expense' && t.date === c.today && !planned.has(c.normalize(t.category || ''));
+        const isVar = t => isDailySpend(t) && t.date === c.today && !planned.has(c.normalize(t.category || ''));
         const added = list.filter(isVar).reduce((s, t) => s + (Number(t.amount) || 0), 0);
         const after = c.spent;
         const before = Math.max(0, after - added);
