@@ -1139,6 +1139,7 @@ function renderIncomeVsExpensesChart() {
     ratioEl.innerHTML = (pct == null
         ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
         : `Траты от поступлений, ${pct}%`) +
+        (income > 0 ? `<small>Поступления за период: ${compactNumber(Math.round(income))}</small>` : '') +
         '<small>Все траты ко всем поступлениям, как на главной (без трат «без учёта»)</small>';
 
     const labels = ['']; // один ряд, как прогресс-бар
@@ -1154,11 +1155,19 @@ function renderIncomeVsExpensesChart() {
             ctx.fillStyle = getCssVar('--muted', '#999');
             ctx.textBaseline = 'top';
 
+            // подписи совпадают с цветами полосы: слева красное — траты, справа зелёное — остаток (или перерасход)
             ctx.textAlign = 'left';
-            ctx.fillText(`Поступления ${compactNumber(Math.round(income))}`, left, bottom + 8);
+            ctx.fillStyle = PALETTE.expense();
+            ctx.fillText(`Траты ${compactNumber(Math.round(expense))}`, left, bottom + 8);
 
             ctx.textAlign = 'right';
-            ctx.fillText(`Траты ${compactNumber(Math.round(expense))}`, right, bottom + 8);
+            if (overPart > 0) {
+                ctx.fillStyle = PALETTE.expense();
+                ctx.fillText(`Сверх поступлений ${compactNumber(Math.round(overPart))}`, right, bottom + 8);
+            } else if (income > 0) {
+                ctx.fillStyle = PALETTE.income();
+                ctx.fillText(`Осталось ${compactNumber(Math.round(leftPart))}`, right, bottom + 8);
+            }
 
             // черта «100% поступлений», когда траты больше
             if (overPart > 0 && income > 0) {
