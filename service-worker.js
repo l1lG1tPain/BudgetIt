@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.4-r2';
+const CACHE_VERSION = 'v5.0.4-r3';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */

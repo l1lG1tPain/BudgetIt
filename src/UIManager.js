@@ -1972,11 +1972,15 @@ export class UIManager {
         const root = group[0];
         const annualRate  = root.annualRate || 0;
         const termMonths  = root.termMonths || 0;
-        const monthlyRate = annualRate > 0 ? (annualRate / 100) / 12 : 0;
+        // Проценты начисляются каждый день на фактический остаток (ставка / 365), в конце месяца
+        // сумма округляется и капитализируется. Операция дня учитывается в тот же день:
+        // пополнение начинает «работать» с даты внесения, снятая сумма за этот день процентов уже не даёт.
+        const dailyRate = annualRate > 0 ? annualRate / 100 / 365 : 0;
 
-        const startDate       = new Date(root.date);
-        const startYear       = startDate.getFullYear();
-        const startMonthIndex = startDate.getMonth(); // 0-11
+        const rootDate        = String(root.date || '');
+        const startYear       = Number(rootDate.slice(0, 4));
+        const startMonthIndex = Number(rootDate.slice(5, 7)) - 1; // 0-11
+        const rootDay         = Number(rootDate.slice(8, 10)) || 1;
 
         const maxMonths = termMonths > 0 ? termMonths : 12;
 
@@ -1991,28 +1995,39 @@ export class UIManager {
             const monthIndex = (startMonthIndex + i) % 12;
             const monthKey   = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
             const label      = `${this.monthNames[String(monthIndex + 1).padStart(2, '0')] || ''} ${year}`;
+            const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 
-            const ops = group.filter(t => (t.date || '').slice(0, 7) === monthKey);
+            const ops = group.filter(t => t !== root && (t.date || '').slice(0, 7) === monthKey);
 
             const startBalance = balance;
             let topups = 0;
             let withdrawals = 0;
+            let accrued = 0;
 
-            ops.forEach(op => {
-                if (op === root) return;
-
-                const status = (op.status || '').trim();
-                const amount = op.amount || 0;
-                if (status === '➖ Снятие') {
-                    withdrawals += amount;
-                    balance -= amount;
-                } else {
-                    topups += amount;
-                    balance += amount;
+            // в первый месяц вклад существует только с даты открытия
+            for (let day = (i === 0 ? rootDay : 1); day <= daysInMonth; day++) {
+                const dayStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+                for (const op of ops) {
+                    if (op.date !== dayStr) continue;
+                    const status = (op.status || '').trim();
+                    const amount = op.amount || 0;
+                    if (status === '➖ Снятие') { withdrawals += amount; balance -= amount; }
+                    else { topups += amount; balance += amount; }
                 }
-            });
+                accrued += Math.max(0, balance) * dailyRate;
+            }
+            // операции первого месяца, датированные раньше даты открытия, применяем без процентов
+            if (i === 0) {
+                for (const op of ops) {
+                    if (Number(String(op.date).slice(8, 10)) >= rootDay) continue;
+                    const status = (op.status || '').trim();
+                    const amount = op.amount || 0;
+                    if (status === '➖ Снятие') { withdrawals += amount; balance -= amount; }
+                    else { topups += amount; balance += amount; }
+                }
+            }
 
-            const interest = monthlyRate > 0 ? Math.floor(balance * monthlyRate) : 0;
+            const interest = dailyRate > 0 ? Math.round(accrued) : 0;
             balance += interest;
             totalInterest += interest;
 

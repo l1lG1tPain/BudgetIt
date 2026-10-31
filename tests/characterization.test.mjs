@@ -241,7 +241,7 @@ test('план: нераспознанная трата уходит в extraExp
 let UI = null;
 try { ({ UIManager: UI } = await import('../src/UIManager.js')); } catch (e) { console.warn('UIManager не импортируется в Node:', e.message); }
 
-test('график вклада: капитализация floor(баланс·ставка/12), пополнения внутри месяца', { skip: !UI }, () => {
+test('график вклада: проценты по дням (ставка/365), капитализация раз в месяц, пополнение считается с даты внесения', { skip: !UI }, () => {
     const root = { id: 10, type: 'deposit', depositId: 10, date: '2026-01-05', name: 'B', amount: 1000, status: '📥 Вклад', annualRate: 12, termMonths: 3 };
     const top  = { id: 11, type: 'deposit', depositId: 10, date: '2026-02-10', name: 'B', amount: 500, status: '➕ Пополнение', annualRate: 12, termMonths: 3 };
     const bm = makeBM([root, top]);
@@ -249,10 +249,27 @@ test('график вклада: капитализация floor(баланс·
     fake.budgetManager = bm;
     fake.monthNames = { '01': 'Январь', '02': 'Февраль', '03': 'Март' };
     const { rows, meta } = UI.prototype.buildDepositSchedule.call(fake, root);
-    assert.deepEqual(rows.map(r => r.endBalance), [1010, 1525, 1540]);
-    assert.deepEqual(rows.map(r => r.interest), [10, 15, 15]);
+    // янв: 27 дн. (с 5-го) × 1000 × 0,12/365 = 8,88 → 9
+    // фев: 9 дн. × 1009 + 19 дн. × 1509 (пополнение 10-го) = 37 752 × 0,12/365 = 12,41 → 12
+    // мар: 31 дн. × 1521 = 47 151 × 0,12/365 = 15,50 → 16
+    assert.deepEqual(rows.map(r => r.interest), [9, 12, 16]);
+    assert.deepEqual(rows.map(r => r.endBalance), [1009, 1521, 1537]);
     assert.equal(rows[1].topups, 500);
-    assert.equal(meta.totalInterest, 40);
+    assert.equal(meta.totalInterest, 37);
+});
+
+test('график вклада: вклад в последний день месяца даёт 1 день процентов; в день снятия проценты на снятое не идут', { skip: !UI }, () => {
+    const mkUi = bm => { const f = Object.create(UI.prototype); f.budgetManager = bm; f.monthNames = {}; return f; };
+    const root = { id: 10, type: 'deposit', depositId: 10, date: '2026-01-31', name: 'B', amount: 1000, status: '📥 Вклад', annualRate: 12, termMonths: 2 };
+    const r1 = UI.prototype.buildDepositSchedule.call(mkUi(makeBM([root])), root).rows;
+    assert.equal(r1[0].interest, 0);                 // 1 день = 0,33 → 0
+    assert.equal(r1[1].interest, 9);                 // 28 дн. × 1000 × 0,12/365 = 9,21
+    const root2 = { id: 20, type: 'deposit', depositId: 20, date: '2026-02-01', name: 'B', amount: 36500, status: '📥 Вклад', annualRate: 10, termMonths: 1 };
+    const wd = { id: 21, type: 'deposit', depositId: 20, date: '2026-02-11', name: 'B', amount: 36500, status: '➖ Снятие', annualRate: 10, termMonths: 1 };
+    const r2 = UI.prototype.buildDepositSchedule.call(mkUi(makeBM([root2, wd])), root2).rows;
+    assert.equal(r2[0].interest, 100);               // 10 дней (1–10 февраля) × 36 500 × 0,10/365 = 100
+    assert.equal(r2[0].withdrawals, 36500);
+    assert.equal(r2[0].endBalance, 100);
 });
 
 test('график вклада: бессрочный (termMonths=0) строится на 12 месяцев', { skip: !UI }, () => {
