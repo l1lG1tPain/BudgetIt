@@ -7092,6 +7092,9 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
 #summary-blocks #block-debt .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
 #summary-blocks #block-debt .block-note.hidden { display: none; }
 #summary-blocks #block-deposit .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
+.akulka-card .ak-nospend { margin-top: 8px; padding: 7px 12px; border: none; border-radius: 12px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink, #fff) !important; background: var(--accent) !important; cursor: pointer; }
+.akulka-card .ak-nospend[hidden] { display: none; }
+.akulka-card[data-shark="hoodie"] .ak-nospend { margin-left: -96px; }
 /* ── 30-statement-import.css ── */
 .ei-detected-source {
     font-size: 12px;

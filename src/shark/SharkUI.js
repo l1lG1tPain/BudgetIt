@@ -4,7 +4,8 @@
 // ===============================
 import {
     getSharkSettings, saveSharkSettings, readScoped, writeScoped, sharkScope, findActivePlanner, planStatus, planAverageLimit, getLimitInfo, planIncomeWaiting, getSpentOnDay, isDailySpend, computeMood,
-    countStreakInLimit, countOverStreak, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText
+    countStreakInLimit, countOverStreak, reactToSave, shiftDay, isQuietNow, isoDay, sharkImage, forShark, computeCard, getThresholds, fmt, CHARACTER_LABELS, limitSetText,
+    getNoSpendDays, markNoSpend, syncNoSpend, canMarkNoSpend, noSpendText
 } from './SharkMood.js';
 import { recapAvailability, recapChatVisible } from '../recap/recapStats.js';
 import { showRecap } from '../recap/recapUI.js';
@@ -140,6 +141,7 @@ export class SharkUI {
     initCardActions() {
         // весь блок Акулки на главной открывает чат; лимит меняется только в настройках Акулки
         document.addEventListener('click', e => {
+            if (e.target.closest('#shark-nospend-btn')) { this.markNoSpendToday(); return; }
             if (e.target.closest('#akulka-card')) { this.openChat(); return; }
             if (e.target.closest('#shark-limit-open')) this.openLimitSheet();
             if (e.target.closest('#shark-ask-btn')) this.openChat();
@@ -354,6 +356,8 @@ export class SharkUI {
         const card = document.getElementById('akulka-card');
         if (!card) return;
         const c = this.context();
+        syncNoSpend(c.transactions); // трата в отмеченный день снимает отметку
+        const nsOffer = canMarkNoSpend({ transactions: c.transactions, today: c.today, now: new Date() });
         const tctx = this.talkContext(c);
         const mood = computeCard({
             spent: c.spent, limit: c.limit, character: c.settings.character,
@@ -374,7 +378,7 @@ export class SharkUI {
         const extra = c.settings.dailyTip ? buildExtra(tctx) : null;
         if (extra?.kind === 'backup' && tctx.backupNudgeLast !== c.today) { try { localStorage.setItem('budgetit:shark:backupNudge', c.today); } catch (e) { /* ignore */ } }
         // антиповтор текста: не перерисовываем карточку, если настроение и числа не менялись
-        const sig = `${sharkScope()?.id || ''}:${mood.key}:${mood.emotion}:${reacting ? 'r' : ''}:${c.settings.shark}:${c.spent}:${c.limit}:${c.source}:${c.planStatus?.state}:${c.settings.character}:${Math.floor(Date.now() / 1800000)}:${extra?.kind || ''}:${extra?.text || ''}`;
+        const sig = `${sharkScope()?.id || ''}:${mood.key}:${mood.emotion}:${reacting ? 'r' : ''}:${c.settings.shark}:${c.spent}:${c.limit}:${c.source}:${c.planStatus?.state}:${c.settings.character}:${Math.floor(Date.now() / 1800000)}:${extra?.kind || ''}:${extra?.text || ''}:${nsOffer ? 'ns' : ''}:${getNoSpendDays().length}`;
         if (card.dataset.sig === sig) return;
         card.dataset.sig = sig;
         this.mood = mood;
@@ -388,6 +392,8 @@ export class SharkUI {
         if (x) x.textContent = forShark(mood.text);
         if (bar) bar.style.width = Math.min(100, Math.round(mood.ratio * 100)) + '%';
         if (ex) { ex.textContent = extra ? forShark(extra.text) : ''; ex.hidden = !extra; }
+        const nsBtn = document.getElementById('shark-nospend-btn');
+        if (nsBtn) nsBtn.hidden = !nsOffer;
         card.dataset.shark = c.settings.shark;
         card.dataset.emotion = mood.emotion;
         card.dataset.base = baseEmotion;
@@ -419,6 +425,19 @@ export class SharkUI {
         if (ex) { ex.textContent = extra ? forShark(extra.text) : ''; ex.hidden = !extra; }
         live.dataset.shark = card?.dataset.shark || 'hoodie';
         setSharkImg(live.querySelector('img'), mood.emotion || mood.key);
+    }
+
+    // ───── «Сегодня без трат» ─────
+    markNoSpendToday(fromChat = false) {
+        const c = this.context();
+        if (!canMarkNoSpend({ transactions: c.transactions, today: c.today, now: new Date() })) return false;
+        markNoSpend(c.today);
+        const text = noSpendText(c.settings.character);
+        if (fromChat) this.reply(esc(text), 380, 'proud');
+        else this.showToast({ text, mood: 'proud', emotion: 'proud', color: 'var(--save)' }, c.settings);
+        this.forceRefresh();
+        if (fromChat) this.renderChips();
+        return true;
     }
 
     // ───── реакции ─────
@@ -742,6 +761,7 @@ export class SharkUI {
     }
 
     ask(id, label, extra = {}) {
+        if (id === 'nospend') { this.bubble('user', esc(label)); this.markNoSpendToday(true); return; }
         if (id === 'recap') { this.askRecap(label, 'month'); return; }
         if (id.startsWith('recap:')) { this.askRecap(label, id.slice(6)); return; }
         this.bubble('user', esc(label));
@@ -789,7 +809,8 @@ export class SharkUI {
             const rc = this.context();
             const rav = recapAvailability(rc.transactions, rc.today);
             const recapChip = !recapChatVisible(rc.today) ? '' : `<button type="button" class="sc-recap" data-q="recap">🎞️ Каким был мой ${esc(rav.name)}?</button>`;
-            box.innerHTML = recapChip + QUESTIONS.map(q => `<button type="button" data-q="${q.id}">${esc(q.label)}</button>`).join('') +
+            const nsChip = canMarkNoSpend({ transactions: rc.transactions, today: rc.today, now: new Date() }) ? '<button type="button" data-q="nospend">🧘 Сегодня без трат</button>' : '';
+            box.innerHTML = recapChip + nsChip + QUESTIONS.map(q => `<button type="button" data-q="${q.id}">${esc(q.label)}</button>`).join('') +
                 Object.entries(MENUS).map(([k, m]) => `<button type="button" class="sc-menu" data-menu="${k}">${esc(m.label)}</button>`).join('');
             return;
         }

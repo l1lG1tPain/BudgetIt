@@ -2,7 +2,7 @@
 //   SharkPlus.js — расчёты для «болтливой» Акулки (чистая логика без DOM):
 //   челленджи, звания, статистика для ответов в чате и инициативные реплики в карточке.
 // ===============================
-import { isoDay, shiftDay, getSpentOnDay, isDailySpend } from './SharkMood.js';
+import { isoDay, shiftDay, getSpentOnDay, isDailySpend, getNoSpendDays } from './SharkMood.js';
 import { netSavings } from '../utils/savingsFlow.js';
 
 const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
@@ -83,13 +83,16 @@ export const RANKS = [
     { min: 52, name: 'Легенда океана', emoji: '👑' }
 ];
 
-// Сколько из последних 60 дней (кроме сегодняшнего) уложились в лимит и записывали траты
-export function countDaysInLimit({ transactions = [], planner = null, limit = 0, today = isoDay(), normalize } = {}) {
+// Сколько из последних 60 дней (кроме сегодняшнего) уложились в лимит или были отмечены «без трат»
+export function countDaysInLimit({ transactions = [], planner = null, limit = 0, today = isoDay(), normalize, noSpend = getNoSpendDays() } = {}) {
     if (!limit) return 0;
     let n = 0;
     for (let i = 1; i <= 60; i++) {
         const day = shiftDay(today, -i);
-        if (!transactions.some(t => t.type === 'expense' && t.date === day)) continue;
+        if (!transactions.some(t => t.type === 'expense' && t.date === day)) {
+            if (noSpend.includes(day)) n++; // отмеченный день без трат — тоже «в лимите»
+            continue;
+        }
         const s = getSpentOnDay({ transactions, planner, day, normalize });
         if (s > 0 && s <= limit) n++;
     }

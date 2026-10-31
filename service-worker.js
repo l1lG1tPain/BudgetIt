@@ -62,6 +62,7 @@ const STATIC_ASSETS = [
     '/src/shark/texts/live.js',
     '/src/shark/texts/live2.js',
     '/src/shark/texts/live3.js',
+    '/src/shark/texts/nospend.js',
     '/src/shark/texts/emotionInfo.js',
     '/src/shark/texts/rude.js',
     '/src/shark/texts/stats-more.js',

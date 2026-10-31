@@ -6,6 +6,7 @@
 
 import { MOOD_TEXTS, TOAST_TEXTS, FLAVOR } from './texts/index.js';
 import { isConsumption } from '../utils/insightsMath.js';
+import { NOSPEND_TEXTS } from './texts/nospend.js';
 import { EMOTION_TEXTS, EMOTION_TITLES } from './texts/emotion.js';
 import { RUDE_TEXTS, RUDE_TITLES } from './texts/rude.js';
 import { LIVE_TEXTS, EMOTION_MORE } from './texts/live.js';
@@ -414,15 +415,62 @@ export const TITLES_BY_CHARACTER = {
 };
 const titleFor = (key, character) => (TITLES_BY_CHARACTER[character] || MOOD_TITLES)[key] || MOOD_TITLES[key];
 
-// Дней подряд в лимите (по вчерашним и более ранним дням, до 30)
-export function countStreakInLimit({ transactions = [], planner = null, limit, today = isoDay(), normalize } = {}) {
+// ───────── «Сегодня без трат» ─────────
+// Отметки хранятся по бюджету (как цель и лимит): массив дат YYYY-MM-DD, последние 120 дней.
+export const NOSPEND_KEY = 'budgetit:shark:nospend';
+const NOSPEND_KEEP = 120;
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+const hasExpenseOn = (transactions, day) => transactions.some(t => t.type === 'expense' && t.date === day);
+
+export function getNoSpendDays(storage = globalThis.localStorage) {
+    try {
+        const v = JSON.parse(readScoped(NOSPEND_KEY, storage) || '[]');
+        return Array.isArray(v) ? v.filter(d => typeof d === 'string' && YMD_RE.test(d)) : [];
+    } catch (e) { return []; }
+}
+function saveNoSpendDays(days, storage) {
+    const keep = [...new Set(days)].sort().slice(-NOSPEND_KEEP);
+    writeScoped(NOSPEND_KEY, keep, storage);
+    return keep;
+}
+export function markNoSpend(day = isoDay(), storage = globalThis.localStorage) {
+    if (!YMD_RE.test(String(day))) return getNoSpendDays(storage);
+    return saveNoSpendDays([...getNoSpendDays(storage), day], storage);
+}
+export function unmarkNoSpend(day, storage = globalThis.localStorage) {
+    return saveNoSpendDays(getNoSpendDays(storage).filter(d => d !== day), storage);
+}
+// Если в отмеченный день появилась трата, отметка снимается сама
+export function syncNoSpend(transactions = [], storage = globalThis.localStorage) {
+    const days = getNoSpendDays(storage);
+    const keep = days.filter(d => !hasExpenseOn(transactions, d));
+    if (keep.length !== days.length) saveNoSpendDays(keep, storage);
+    return keep;
+}
+// Кнопка «Сегодня без трат»: после 18:00, пока за сегодня нет расходов и день не отмечен
+export function canMarkNoSpend({ transactions = [], today = isoDay(), now = new Date(), noSpend = getNoSpendDays() } = {}) {
+    return now.getHours() >= 18 && !hasExpenseOn(transactions, today) && !noSpend.includes(today);
+}
+export function noSpendText(character = 'normal', rnd = Math.random) {
+    const list = NOSPEND_TEXTS[character] || NOSPEND_TEXTS.normal;
+    return list[Math.min(list.length - 1, Math.floor(rnd() * list.length))];
+}
+
+// Дней подряд в лимите (по вчерашним и более ранним дням, до 30).
+// День считается, если в нём есть траты не выше лимита или он отмечен «без трат».
+// Один неотмеченный пустой день серию не обрывает (и не добавляет), два подряд — обрывают.
+export function countStreakInLimit({ transactions = [], planner = null, limit, today = isoDay(), normalize, noSpend = getNoSpendDays() } = {}) {
     if (!limit) return 0;
-    let streak = 0;
+    let streak = 0, emptyRun = 0;
     for (let i = 1; i <= 30; i++) {
         const day = shiftDay(today, -i);
         // как и в «днях в лимите» (звание): день считается только по записям о тратах, одни доходы серию не продолжают
-        const any = transactions.some(t => t.type === 'expense' && t.date === day);
-        if (!any) break; // день без трат серию не продолжает
+        if (!hasExpenseOn(transactions, day)) {
+            if (noSpend.includes(day)) { streak++; emptyRun = 0; continue; }
+            if (++emptyRun >= 2) break;
+            continue;
+        }
+        emptyRun = 0;
         const spent = getSpentOnDay({ transactions, planner, day, normalize });
         if (spent > limit) break;
         streak++;

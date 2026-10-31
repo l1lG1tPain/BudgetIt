@@ -50,7 +50,15 @@ test('серия в лимите не продолжается днём с од�
         { type: 'income', date: '2026-10-19', amount: 5000 },
         { type: 'expense', date: '2026-10-18', amount: 10 }
     ];
-    assert.equal(countStreakInLimit({ transactions: tx, limit: 100, today: '2026-10-21' }), 1);
+    // один пустой день (одни доходы) серию не обрывает и не добавляет: считаются 20-е и 18-е
+    assert.equal(countStreakInLimit({ transactions: tx, limit: 100, today: '2026-10-21', noSpend: [] }), 2);
+    // два пустых дня подряд обрывают
+    const tx2 = [
+        { type: 'expense', date: '2026-10-20', amount: 10 },
+        { type: 'income', date: '2026-10-19', amount: 5000 },
+        { type: 'expense', date: '2026-10-17', amount: 10 }
+    ];
+    assert.equal(countStreakInLimit({ transactions: tx2, limit: 100, today: '2026-10-21', noSpend: [] }), 1);
 });
 
 test('план с поступлением «по факту» без денег: «ждём поступление»', () => {
