@@ -15,20 +15,20 @@ test('carryNext: carry сохраняет знак, reset обнуляет ми�
     assert.equal(carryNext(250, 'reset'), 250);
     assert.equal(carryNext(250, 'carry'), 250);
 });
-test('режим: по умолчанию и для неизвестных значений — carry', () => {
+test('режим: по умолчанию и для неизвестных значений — reset (с нуля)', () => {
     store.clear();
-    assert.equal(getCarryMode(), 'carry');
-    store.set('budgetit:carryMode', 'что-то');
-    assert.equal(getCarryMode(), 'carry');
-    assert.equal(normalizeCarryMode(undefined), 'carry');
-    assert.equal(setCarryMode('reset'), 'reset');
     assert.equal(getCarryMode(), 'reset');
-    assert.equal(setCarryMode('мусор'), 'carry');
+    store.set('budgetit:carryMode', 'что-то');
+    assert.equal(getCarryMode(), 'reset');
+    assert.equal(normalizeCarryMode(undefined), 'reset');
+    assert.equal(setCarryMode('carry'), 'carry');
+    assert.equal(getCarryMode(), 'carry');
+    assert.equal(setCarryMode('мусор'), 'reset');
 });
-test('без localStorage — carry', () => {
+test('без localStorage — reset', () => {
     const keep = globalThis.localStorage;
     globalThis.localStorage = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } };
-    assert.equal(getCarryMode(), 'carry');
-    assert.doesNotThrow(() => setCarryMode('reset'));
+    assert.equal(getCarryMode(), 'reset');
+    assert.doesNotThrow(() => setCarryMode('carry'));
     globalThis.localStorage = keep;
 });

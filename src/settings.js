@@ -1984,7 +1984,7 @@ function renderRegionCards() {
             <button type="button" data-carry="carry" class="${cm === 'carry' ? 'active' : ''}">Переносить</button>
             <button type="button" data-carry="reset" class="${cm === 'reset' ? 'active' : ''}">С нуля</button>
         </div>
-        <div class="rg-note">Переносить — честнее: если в прошлом месяце потратил больше, чем получил, эти деньги уже ушли.</div>`;
+        <div class="rg-note">«С нуля» — месяц, закрытый в минус, не тянется дальше. «Переносить» — перерасход вычитается из следующего месяца.</div>`;
 
     grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml + carryHtml;
 

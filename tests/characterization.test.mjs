@@ -45,7 +45,7 @@ const withCarryMode = (mode, fn) => {
     try { return fn(); } finally { if (prev === undefined) store.delete('budgetit:carryMode'); else store.set('budgetit:carryMode', prev); }
 };
 
-test('перенос по умолчанию — со знаком: перерасход уменьшает следующий месяц (−100, затем +50 → −50)', () => {
+test('режим carry — со знаком: перерасход уменьшает следующий месяц (−100, затем +50 → −50)', () => withCarryMode('carry', () => {
     const bm = makeBM([inc(1, '2026-01-10', 100), exp(2, '2026-01-20', 200), inc(3, '2026-02-05', 50)]);
     const jan = bm.calculateTotals('01', 2026);
     assert.equal(jan.overallBudget, -100);
@@ -57,6 +57,14 @@ test('перенос по умолчанию — со знаком: перера
     assert.equal(feb.closingBalance, -50);
     assert.equal(bm.calculateTotals('all').overallBudget, -50);
     assert.equal(bm.calculateTotals('all', 2026).overallBudget, -50);
+}));
+
+test('по умолчанию месяц в минус не переносится', () => {
+    const bm = makeBM([inc(1, '2026-01-10', 100), exp(2, '2026-01-20', 200), inc(3, '2026-02-05', 50)]);
+    const feb = bm.calculateTotals('02', 2026);
+    assert.equal(feb.carryOver, 0);
+    assert.equal(feb.rawCarryOver, -100);
+    assert.equal(bm.calculateTotals('all').overallBudget, 50);
 });
 
 test('режим reset: перерасход не переносится, rawCarryOver хранит сумму', () => {

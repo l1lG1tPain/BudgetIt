@@ -1,18 +1,18 @@
 // carryOver.js — единое правило переноса остатка из месяца в месяц.
-// 'carry' — остаток переносится со знаком (перерасход уменьшает следующий месяц);
-// 'reset' — месяц, закрытый в минус, не переносится: следующий начинается с нуля.
+// 'reset' (по умолчанию) — месяц, закрытый в минус, не переносится: следующий начинается с нуля;
+// 'carry' — остаток переносится со знаком (перерасход уменьшает следующий месяц).
 const KEY = 'budgetit:carryMode';
 export const CARRY_EVENT = 'budgetit:carry-changed';
 
 export function normalizeCarryMode(v) {
-    return v === 'reset' ? 'reset' : 'carry';
+    return v === 'carry' ? 'carry' : 'reset';
 }
 
 export function getCarryMode() {
     try {
-        if (typeof localStorage === 'undefined') return 'carry';
+        if (typeof localStorage === 'undefined') return 'reset';
         return normalizeCarryMode(localStorage.getItem(KEY));
-    } catch (_) { return 'carry'; }
+    } catch (_) { return 'reset'; }
 }
 
 export function setCarryMode(mode) {
