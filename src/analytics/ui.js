@@ -240,7 +240,7 @@ export function renderSources(el, breakdown, onPick) {
 // ======================================================
 //   Сводка по месяцам (таблица)
 // ======================================================
-export function renderSummary(el, data, { period, title = '', onToggle }) {
+export function renderSummary(el, data, { period, title = '', onPick, activeKeys = null }) {
     if (!el) return;
     const { rows, totals } = data;
     const used = rows.filter(r => r.income || r.expense);
@@ -253,8 +253,9 @@ export function renderSummary(el, data, { period, title = '', onToggle }) {
       ${rows.map(r => {
           const sel = period.all || period.set.has(r.key);
           const empty = !r.income && !r.expense;
+          const dead = empty && !(activeKeys && activeKeys.has(r.key)); // нет вообще никаких движений денег
           const m = MONTHS_SHORT[keyMonth(r.key) - 1];
-          return `<button type="button" class="sm-row ${sel && !period.all ? 'sel' : ''} ${empty ? 'empty' : ''}" data-key="${r.key}" title="${esc(MONTHS_FULL[keyMonth(r.key) - 1])} ${keyYear(r.key)}">
+          return `<button type="button" class="sm-row ${sel && !period.all ? 'sel' : ''} ${empty ? 'empty' : ''} ${dead ? 'dead' : ''}" data-key="${r.key}" title="${esc(MONTHS_FULL[keyMonth(r.key) - 1])} ${keyYear(r.key)}">
             <span class="sm-m">${m}${multiYear ? `<small>${String(keyYear(r.key)).slice(2)}</small>` : ''}</span>
             <span class="sm-in">${empty ? '—' : D.compact(r.income)}</span>
             <span class="sm-out">${empty ? '—' : D.compact(r.expense)}</span>
@@ -264,6 +265,62 @@ export function renderSummary(el, data, { period, title = '', onToggle }) {
       }).join('')}
       <div class="sm-row sm-total"><span class="sm-m">${esc(title || 'Итого')}</span><span class="sm-in">${D.compact(totals.income)}</span><span class="sm-out">${D.compact(totals.expense)}</span>
         <span class="sm-net ${totals.net >= 0 ? 'pos' : 'neg'}">${sign(totals.net)}</span></div>
+      <div class="sm-foot">Итог — без переводов, вкладов, долгов и трат «без учёта». Нажми на месяц — увидишь, чем он отличается от «Доступно».</div>
       ${totals.rate != null ? `<div class="sm-foot">${totals.rate >= 0 ? `Откладывается ${Math.round(totals.rate * 100)}% от поступлений` : `Траты выше поступлений на ${Math.round(-totals.rate * 100)}%`}</div>` : ''}`;
-    el.querySelectorAll('button.sm-row:not(.empty)').forEach(b => b.addEventListener('click', () => onToggle?.(b.dataset.key)));
+    el.querySelectorAll('button.sm-row:not(.dead)').forEach(b => b.addEventListener('click', () => onPick?.(b.dataset.key)));
+}
+
+// ======================================================
+//   Шторка месяца: откуда берётся «Итог» и чем он отличается от «Доступно»
+// ======================================================
+/**
+ * d: { key, row:{income,expense,net}, recon:{out,in}, balanceEnd }
+ * recon — результат reconcile() за этот месяц (деньги по правилам «Доступно»).
+ */
+export function openMonthSheet(d, { onShow } = {}) {
+    const el = ensureSheet('an-month-sheet');
+    const f = n => D.fmt(Math.round(n));
+    const sg = n => (n > 0 ? '+' : n < 0 ? '−' : '') + f(Math.abs(n));
+    const cur = esc(D.cur());
+    const { row, recon } = d;
+    const cashIn = recon.in.total, cashOut = recon.out.total;
+    const cashNet = cashIn - cashOut;
+    const otherNet = (recon.in.fin + recon.in.excluded) - (recon.out.fin + recon.out.excluded); // переводы, вклады, долги, «без учёта»
+    const list = side => side.cats.slice(0, 5).map(c =>
+        `<div class="ms-sub"><span>${esc(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${f(c.sum)}</b></div>`).join('');
+    const title = `${MONTHS_FULL[keyMonth(d.key) - 1]} ${keyYear(d.key)}`;
+    el.innerHTML = `
+      <div class="cs-head">
+        <div class="cs-emoji" style="--cat:var(--accent)">📅</div>
+        <div class="cs-title"><b>${esc(title)}</b><small>Откуда берётся итог</small></div>
+        <button type="button" class="sheet-x" data-act="close" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="cs-sec"><h5>Обычные поступления и траты</h5>
+        <div class="ms-row"><span>Поступления</span><b>${f(row.income)} ${cur}</b></div>
+        <div class="ms-row"><span>Траты</span><b>${f(row.expense)} ${cur}</b></div>
+        <div class="ms-row ms-res ${row.net >= 0 ? 'pos' : 'neg'}"><span>Итог в таблице</span><b>${sg(row.net)} ${cur}</b></div>
+      </div>
+
+      <div class="cs-sec"><h5>Не вошло в этот итог</h5>
+        <div class="ms-row"><span>Ушло: переводы, вклады, долги, «без учёта»</span><b>−${f(recon.out.fin + recon.out.excluded)}</b></div>
+        ${list(recon.out)}
+        <div class="ms-row"><span>Пришло: переводы, со вкладов, проценты, долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
+        ${list(recon.in)}
+        <div class="ms-row ms-res ${otherNet >= 0 ? 'pos' : 'neg'}"><span>Вместе</span><b>${sg(otherNet)} ${cur}</b></div>
+      </div>
+
+      <div class="cs-sec"><h5>Все деньги — как на главной</h5>
+        <div class="ms-row"><span>Пришло</span><b>${f(cashIn)} ${cur}</b></div>
+        <div class="ms-row"><span>Ушло</span><b>${f(cashOut)} ${cur}</b></div>
+        <div class="ms-row ms-res ${cashNet >= 0 ? 'pos' : 'neg'}"><span>Разница за месяц</span><b>${sg(cashNet)} ${cur}</b></div>
+        ${d.balanceEnd != null ? `<div class="ms-row"><span>«Доступно» на конец месяца</span><b>${f(d.balanceEnd)} ${cur}</b></div>` : ''}
+      </div>
+      <div class="cs-note">${sg(row.net)} (итог в таблице) ${otherNet < 0 ? '−' : '+'} ${f(Math.abs(otherNet))} (переводы, вклады и прочее) = ${sg(cashNet)} (разница по деньгам). Поэтому плюс в таблице может быть, а на «Доступно» его нет: деньги ушли в переводы и вклады.</div>
+      <button type="button" class="ps-apply ms-show" data-act="show">Показать только этот месяц</button>`;
+    el.onclick = e => {
+        if (e.target.closest('[data-act="close"]')) closeSheet(el);
+        else if (e.target.closest('[data-act="show"]')) { closeSheet(el); onShow?.(d.key); }
+    };
+    openSheet(el);
 }

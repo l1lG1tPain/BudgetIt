@@ -7095,6 +7095,17 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
 .akulka-card .ak-nospend { margin-top: 8px; padding: 7px 12px; border: none; border-radius: 12px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink, #fff) !important; background: var(--accent) !important; cursor: pointer; }
 .akulka-card .ak-nospend[hidden] { display: none; }
 .akulka-card[data-shark="hoodie"] .ak-nospend { margin-left: -96px; }
+.sm-row.dead{opacity:.4;cursor:default}
+.ms-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13.5px;font-weight:600;color:var(--text)}
+.ms-row span{min-width:0}
+.ms-row b{font-family:var(--font-num);font-weight:800;white-space:nowrap}
+.ms-row.ms-res{margin-top:4px;padding:10px 12px;border-radius:12px;background:var(--faint)}
+.ms-row.ms-res.pos b{color:var(--in,#2fbf71)}
+.ms-row.ms-res.neg b{color:var(--out,#e0435f)}
+.ms-sub{display:flex;justify-content:space-between;gap:12px;padding:2px 0 2px 12px;font-size:12px;font-weight:600;color:var(--muted)}
+.ms-sub em{font-style:normal;font-size:10.5px;opacity:.7}
+.ms-show{display:block;width:100%;margin-top:16px}
+.an-ratio small { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted); }
 /* ── 30-statement-import.css ── */
 .ei-detected-source {
     font-size: 12px;

@@ -12,7 +12,7 @@ import {
     categoryDetail, balanceSeries, balanceDaily, summaryKeys, summaryRows, heroSeries, weekdayMon
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
-import { setUiDeps, openPeriodSheet, openCategorySheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
+import { setUiDeps, openPeriodSheet, openCategorySheet, openMonthSheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
 // --- tiny-guard: если Chart.js не загрузился (офлайн / проблемы с CDN),
 // просто отключаем аналитику, но приложение не ломаем
 let chartsAvailable = true;
@@ -1132,9 +1132,10 @@ function renderIncomeVsExpensesChart() {
         canvas.insertAdjacentElement('beforebegin', ratioEl);
     }
     ratioEl.classList.toggle('over', pct != null && pct > 100);
-    ratioEl.textContent = pct == null
+    ratioEl.innerHTML = (pct == null
         ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
-        : `Траты от поступлений, ${pct}%`;
+        : `Траты от поступлений, ${pct}%`) +
+        '<small>Обычные траты к обычным поступлениям — без переводов, вкладов и долгов</small>';
 
     const labels = ['']; // один ряд, как прогресс-бар
 
@@ -1646,6 +1647,18 @@ function renderIncomeBySourceChart() {
 // -----------------------------------------------------------------
 // 10. Годовая сводка
 // -----------------------------------------------------------------
+// Тап по месяцу в «Сводке»: шторка со сверкой «Итог ↔ Доступно» (выбор периода — в шторке «Период» и на столбиках)
+function openMonthDetails(key) {
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const mp = monthPeriod(key);
+    const row = summaryRows(allAnalyticsTx(), [key]).rows[0];
+    const recon = reconcile(raw, mp);
+    const bal = balanceSeries(raw, mp);
+    openMonthSheet({ key, row, recon, balanceEnd: bal.points.length ? bal.end : null }, {
+        onShow: k => setPeriod(monthPeriod(k), { keepHero: true })
+    });
+}
+
 function renderAnnualSummaryChart() {
     const el = document.getElementById('anSummary');
     if (!el) return;
@@ -1655,7 +1668,8 @@ function renderAnnualSummaryChart() {
     renderSummary(el, summaryRows(all, keys), {
         period,
         title: period.all ? 'Всё время' : String(viewYear),
-        onToggle: key => setPeriod(toggleMonth(period, key, viewYear), { keepHero: true })
+        activeKeys: new Set(rangeTx().map(t => keyOf(t.date))),
+        onPick: key => openMonthDetails(key)
     });
 }
 
