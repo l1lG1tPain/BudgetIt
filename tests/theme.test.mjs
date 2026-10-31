@@ -32,7 +32,7 @@ test('ink: тёмный на светлых акцентах, белый на т
 
 test('«Тиффани»: бирюзовый акцент, тёмное стекло, читаемый ink', () => {
     const t = getThemeTokens('tiffany');
-    assert.equal(t.accent, '#81d8d0'); assert.equal(t.bg, '#031416'); assert.equal(t.glass, 'rgba(200,255,250,.055)');
+    assert.equal(t.accent, '#0abab5'); assert.equal(t.bg, '#010b0c'); assert.equal(t.glass, 'rgba(195,255,255,.045)');
     assert.notEqual(t.in, t.accent); assert.notEqual(t.ink, '#ffffff');
 });
 
