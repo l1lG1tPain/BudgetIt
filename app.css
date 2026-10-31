@@ -6854,6 +6854,7 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
 .sc-form-goal input[type="date"] { flex: 1 1 140px; }
 :root[data-theme="tiffany"] {
   --tf-blue: #81d8d0; --tf-deep: #0abab5; --tf-ink: #0b1d1c;
+  --on-accent: #81d8d0;
   --tf-sheen: linear-gradient(150deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 45%, rgba(255,255,255,.08) 100%);
 }
 @media (max-width:1099px){

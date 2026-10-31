@@ -1986,6 +1986,8 @@ body:has(#lnav-planner.active) #planner-page .subpage-header .subpage-back-btn{d
    Без backdrop-blur на карточках и списках: всё градиентами и тенями. */
 :root[data-theme="tiffany"] {
   --tf-blue: #81d8d0; --tf-deep: #0abab5; --tf-ink: #0b1d1c;
+  /* текст на кнопках с фоном --accent (чёрным): во всех других темах акцент яркий и текст тёмный по умолчанию */
+  --on-accent: #81d8d0;
   --tf-sheen: linear-gradient(150deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.18) 45%, rgba(255,255,255,.08) 100%);
 }
 /* фон: фирменная бирюза с мягкими белыми бликами */
