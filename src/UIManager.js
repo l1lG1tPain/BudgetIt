@@ -1875,7 +1875,8 @@ export class UIManager {
         // Проценты капают в конце месяца: «сейчас» = старт текущего месяца + его пополнения/снятия
         const curIdx = rows.findIndex(r => r.monthKey === nowKey);
         let balanceNow;
-        if (curIdx >= 0) balanceNow = rows[curIdx].startBalance + rows[curIdx].topups - rows[curIdx].withdrawals;
+        // вклад закрыт в этом месяце (снято всё вместе с процентами) — на нём 0, а не минус
+        if (curIdx >= 0) balanceNow = rows[curIdx].withdrawals > 0 && rows[curIdx].endBalance === 0 ? 0 : Math.max(0, rows[curIdx].startBalance + rows[curIdx].topups - rows[curIdx].withdrawals);
         else if (rows.length && nowKey > rows[rows.length - 1].monthKey) balanceNow = rows[rows.length - 1].endBalance;
         else balanceNow = meta.initialAmount;
         const accruedNow = rows.filter(r => r.monthKey < nowKey).reduce((sum, r) => sum + r.interest, 0);
@@ -1953,7 +1954,8 @@ export class UIManager {
         return { summaryHtml, listsHtml };
     }
 
-    buildDepositSchedule(tx) {
+    // until (YYYY-MM-DD) — посчитать только до этой даты и вернуть balanceUntil (остаток + набежавшие проценты)
+    buildDepositSchedule(tx, until = '') {
         const group = this.getDepositGroup(tx);
         if (!group.length) {
             const rate = tx.annualRate || 0;
@@ -1989,6 +1991,7 @@ export class UIManager {
 
         const rows = [];
         let totalInterest = 0;
+        let stopped = false;
 
         for (let i = 0; i < maxMonths; i++) {
             const year       = startYear + Math.floor((startMonthIndex + i) / 12);
@@ -2003,18 +2006,34 @@ export class UIManager {
             let topups = 0;
             let withdrawals = 0;
             let accrued = 0;
+            let paidOnClose = 0; // проценты, выплаченные при закрытии (снятии всего остатка)
 
             // в первый месяц вклад существует только с даты открытия
             for (let day = (i === 0 ? rootDay : 1); day <= daysInMonth; day++) {
                 const dayStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+                if (until && dayStr > until) { stopped = true; break; }
                 for (const op of ops) {
                     if (op.date !== dayStr) continue;
                     const status = (op.status || '').trim();
                     const amount = op.amount || 0;
-                    if (status === '➖ Снятие') { withdrawals += amount; balance -= amount; }
+                    if (status === '➖ Снятие') {
+                        if (amount > 0 && amount >= balance) {
+                            // закрытие: сначала выплачиваем набежавшие проценты, потом снимаем всё;
+                            // остаток не уходит в минус (старые закрытия считались по прежней формуле)
+                            const due = Math.round(accrued);
+                            paidOnClose += due; accrued = 0; balance += due;
+                            withdrawals += amount; balance -= amount;
+                            if (balance < 0) balance = 0;
+                        } else { withdrawals += amount; balance -= amount; }
+                    }
                     else { topups += amount; balance += amount; }
                 }
+                if (until && dayStr === until) { stopped = true; break; } // в день закрытия проценты уже не идут
                 accrued += Math.max(0, balance) * dailyRate;
+            }
+            if (stopped) {
+                // остаток на дату `until` вместе с процентами, набежавшими к этому дню (для суммы закрытия)
+                return { rows, balanceUntil: balance + Math.round(accrued) };
             }
             // операции первого месяца, датированные раньше даты открытия, применяем без процентов
             if (i === 0) {
@@ -2027,8 +2046,12 @@ export class UIManager {
                 }
             }
 
-            const interest = dailyRate > 0 ? Math.round(accrued) : 0;
-            balance += interest;
+            const interest = (dailyRate > 0 ? Math.round(accrued) : 0) + paidOnClose;
+            balance += interest - paidOnClose;
+            // последний месяц срока: старое закрытие (снятие 1-го числа на сумму по прежней формуле) оставило
+            // копейки (<1% снятого) — вклад закрыт, остаток 0
+            const legacyClose = ops.some(o => (o.status || '').trim() === '➖ Снятие' && String(o.date).slice(8, 10) === '01');
+            if (i === maxMonths - 1 && legacyClose && balance > 0 && balance < withdrawals * 0.01) balance = 0;
             totalInterest += interest;
 
             rows.push({
@@ -2105,13 +2128,24 @@ export class UIManager {
         const safeIndex = Math.min(index, rows.length - 1);
         const row = rows[safeIndex];
 
-        const withdrawAmount = row.endBalance || 0;
+        // Дата закрытия: текущий месяц — сегодня, прошлый или будущий — последний день месяца.
+        // Сумма — остаток на эту дату плюс проценты, набежавшие к ней (раньше снятие ставилось на 1-е число
+        // с процентами за весь месяц, и последний месяц уходил в минус).
+        const monthKey = row.monthKey || (rootDepositTx.date || '').slice(0, 7) || '';
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        let date = rootDepositTx.date;
+        if (monthKey) {
+            const [y, m] = monthKey.split('-').map(Number);
+            const lastDay = `${monthKey}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
+            date = monthKey === todayStr.slice(0, 7) ? todayStr : lastDay;
+            if (rootDepositTx.date && date < rootDepositTx.date) date = rootDepositTx.date;
+        }
+        const upTo = this.buildDepositSchedule(rootDepositTx, date);
+        const withdrawAmount = Math.round(upTo.balanceUntil ?? row.endBalance ?? 0);
         if (withdrawAmount <= 0) {
             return;
         }
-
-        const monthKey = row.monthKey || (rootDepositTx.date || '').slice(0, 7) || '';
-        const date = monthKey ? `${monthKey}-01` : rootDepositTx.date;
 
         const tx = {
             id        : Date.now(),

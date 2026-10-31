@@ -240,7 +240,7 @@ export function renderSources(el, breakdown, onPick) {
 // ======================================================
 //   Сводка по месяцам (таблица)
 // ======================================================
-export function renderSummary(el, data, { period, title = '', onPick, activeKeys = null }) {
+export function renderSummary(el, data, { period, title = '', onPick, activeKeys = null, saved = 0 }) {
     if (!el) return;
     const { rows, totals } = data;
     const used = rows.filter(r => r.income || r.expense);
@@ -265,8 +265,10 @@ export function renderSummary(el, data, { period, title = '', onPick, activeKeys
       }).join('')}
       <div class="sm-row sm-total"><span class="sm-m">${esc(title || 'Итого')}</span><span class="sm-in">${D.compact(totals.income)}</span><span class="sm-out">${D.compact(totals.expense)}</span>
         <span class="sm-net ${totals.net >= 0 ? 'pos' : 'neg'}">${sign(totals.net)}</span></div>
-      <div class="sm-foot">Итог — без переводов, вкладов, долгов и трат «без учёта». Нажми на месяц — увидишь, чем он отличается от «Доступно».</div>
-      ${totals.rate != null ? `<div class="sm-foot">${totals.rate >= 0 ? `Откладывается ${Math.round(totals.rate * 100)}% от поступлений` : `Траты выше поступлений на ${Math.round(-totals.rate * 100)}%`}</div>` : ''}`;
+      <div class="sm-foot">Итог — без переводов между своими счетами, вкладов, долгов и трат «без учёта». Нажми на месяц — увидишь, чем он отличается от «Доступно».</div>
+      ${totals.rate != null ? `<div class="sm-foot">${totals.rate >= 0 ? `После обычных трат остаётся ${Math.round(totals.rate * 100)}% поступлений` : `Обычные траты выше поступлений на ${Math.round(-totals.rate * 100)}%`}</div>` : ''}
+      ${saved > 0 ? `<div class="sm-foot">Отложено во вклады: ${esc(D.fmt(Math.round(saved)))} ${esc(D.cur())}${totals.income > 0 ? ` (${Math.round(saved / totals.income * 100)}% поступлений)` : ''}</div>`
+        : saved < 0 ? `<div class="sm-foot">Со вкладов снято больше, чем внесено: ${esc(D.fmt(Math.round(-saved)))} ${esc(D.cur())}</div>` : ''}`;
     el.querySelectorAll('button.sm-row:not(.dead)').forEach(b => b.addEventListener('click', () => onPick?.(b.dataset.key)));
 }
 
@@ -303,9 +305,9 @@ export function openMonthSheet(d, { onShow } = {}) {
       </div>
 
       <div class="cs-sec"><h5>Не вошло в этот итог</h5>
-        <div class="ms-row"><span>Ушло: переводы, вклады, долги, «без учёта»</span><b>−${f(recon.out.fin + recon.out.excluded)}</b></div>
+        <div class="ms-row"><span>Ушло: свои переводы, вклады, долги, «без учёта»</span><b>−${f(recon.out.fin + recon.out.excluded)}</b></div>
         ${list(recon.out)}
-        <div class="ms-row"><span>Пришло: переводы, со вкладов, проценты, долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
+        <div class="ms-row"><span>Пришло: свои переводы, со вкладов, проценты, долги</span><b>+${f(recon.in.fin + recon.in.excluded)}</b></div>
         ${list(recon.in)}
         <div class="ms-row ms-res ${otherNet >= 0 ? 'pos' : 'neg'}"><span>Вместе</span><b>${sg(otherNet)} ${cur}</b></div>
       </div>
@@ -316,7 +318,7 @@ export function openMonthSheet(d, { onShow } = {}) {
         <div class="ms-row ms-res ${cashNet >= 0 ? 'pos' : 'neg'}"><span>Разница за месяц</span><b>${sg(cashNet)} ${cur}</b></div>
         ${d.balanceEnd != null ? `<div class="ms-row"><span>«Доступно» на конец месяца</span><b>${f(d.balanceEnd)} ${cur}</b></div>` : ''}
       </div>
-      <div class="cs-note">${sg(row.net)} (итог в таблице) ${otherNet < 0 ? '−' : '+'} ${f(Math.abs(otherNet))} (переводы, вклады и прочее) = ${sg(cashNet)} (разница по деньгам). Поэтому плюс в таблице может быть, а на «Доступно» его нет: деньги ушли в переводы и вклады.</div>
+      <div class="cs-note">${sg(row.net)} (итог в таблице) ${otherNet < 0 ? '−' : '+'} ${f(Math.abs(otherNet))} (свои переводы, вклады и прочее) = ${sg(cashNet)} (разница по деньгам). Поэтому плюс в таблице может быть, а на «Доступно» его нет: деньги ушли во вклады, долги или на свои счета.</div>
       <button type="button" class="ps-apply ms-show" data-act="show">Показать только этот месяц</button>`;
     el.onclick = e => {
         if (e.target.closest('[data-act="close"]')) closeSheet(el);

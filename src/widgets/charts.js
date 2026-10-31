@@ -12,6 +12,7 @@ import {
     categoryDetail, balanceSeries, balanceDaily, summaryKeys, summaryRows, heroSeries, weekdayMon
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
+import { netSavings } from '../utils/savingsFlow.js';
 import { setUiDeps, openPeriodSheet, openCategorySheet, openMonthSheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
 // --- tiny-guard: если Chart.js не загрузился (офлайн / проблемы с CDN),
 // просто отключаем аналитику, но приложение не ломаем
@@ -475,7 +476,7 @@ function ensureHero() {
         '<div class="an-metrics" role="group">' +
             Object.entries(METRICS).map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join('') +
         '</div>' +
-        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Переводы, вклады, долги и траты «без учёта» не входят — они в строке под суммой.</div>';
+        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Переводы между своими счетами, вклады, долги и траты «без учёта» не входят — они в строке под суммой. P2P и переводы людям входят.</div>';
     const seg = document.getElementById('analytics-period-seg');
     if (seg) seg.insertAdjacentElement('afterend', hero); else scroll.insertAdjacentElement('afterbegin', hero);
     hero.querySelector('.an-metrics').addEventListener('click', e => {
@@ -502,7 +503,7 @@ function renderHeroRecon(hero) {
     const cur = getCurrencyLabel();
     const money = v => `${formatNumber(Math.round(v))} ${cur}`;
     const parts = [];
-    if (side.fin > 0) parts.push(`${isOut ? 'переводы и вклады' : 'переводы, со вкладов, долги'} ${money(side.fin)}`);
+    if (side.fin > 0) parts.push(`${isOut ? 'свои переводы, вклады, долги' : 'свои переводы, со вкладов, долги'} ${money(side.fin)}`);
     if (side.excluded > 0) parts.push(`без учёта ${money(side.excluded)}`);
     const rows = side.cats.map(c => `<li><span>${escHtml(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${escHtml(money(c.sum))}</b></li>`).join('');
     el.hidden = false;
@@ -1135,7 +1136,7 @@ function renderIncomeVsExpensesChart() {
     ratioEl.innerHTML = (pct == null
         ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
         : `Траты от поступлений, ${pct}%`) +
-        '<small>Обычные траты к обычным поступлениям — без переводов, вкладов и долгов</small>';
+        '<small>Обычные траты к обычным поступлениям — без переводов между своими счетами, вкладов и долгов</small>';
 
     const labels = ['']; // один ряд, как прогресс-бар
 
@@ -1665,8 +1666,13 @@ function renderAnnualSummaryChart() {
     const all = allAnalyticsTx();
     const { first, last } = dataRange(rangeTx());
     const keys = summaryKeys(period, viewYear, first, last);
+    // реально отложено за те же месяцы: пополнения вкладов минус снятия («Уже лежало» не считается)
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const ks = [...keys].sort();
+    const saved = ks.length ? netSavings(raw, `${ks[0]}-01`, `${ks[ks.length - 1]}-31`).net : 0;
     renderSummary(el, summaryRows(all, keys), {
         period,
+        saved,
         title: period.all ? 'Всё время' : String(viewYear),
         activeKeys: new Set(rangeTx().map(t => keyOf(t.date))),
         onPick: key => openMonthDetails(key)

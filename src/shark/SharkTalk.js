@@ -305,7 +305,7 @@ function limitBasis(planner, normalize = c => c) {
     if (planner) [...(planner.mainExpenses || []), ...(planner.regularExpenses || [])].forEach(i => planned.add(normalize(i.category || i.name || '')));
     return t => isDailySpend(t) && !planned.has(normalize(t.category || ''));
 }
-const BASIS_NOTE = basis => ` В лимит идёт ${fmt(basis)}: переводы, вклады и плановые траты не считаются.`;
+const BASIS_NOTE = basis => ` В лимит идёт ${fmt(basis)}: свои переводы, вклады и плановые траты не считаются.`;
 
 function expensesByCat(tx, days, counts = isDailySpend) {
     const set = new Set(days);
@@ -356,7 +356,7 @@ export function lastWeekAnswer({ tx = [], today, limit = 0, character = 'normal'
     lines.push(`• 🔝 Дороже всего: ${ruWd(worst.d)} — ${fmt(worst.v)}${withRec.length > 1 ? `; спокойнее всего: ${ruWd(best.d)} — ${fmt(best.v)}` : ''}`);
     if (limit) {
         const over = withRec.filter(x => x.b > limit).length;
-        lines.push(`• 🎯 В лимите ${withRec.length - over} из ${withRec.length} дн. (лимит сейчас ${fmt(limit)}; переводы, вклады и плановые траты не считаются)`);
+        lines.push(`• 🎯 В лимите ${withRec.length - over} из ${withRec.length} дн. (лимит сейчас ${fmt(limit)}; свои переводы, вклады и плановые траты не считаются)`);
     }
     lines.push(`• 🧺 Больше всего: ${cats.slice(0, 3).map(([c, v]) => `${c} ${Math.round(v / total * 100)}%`).join(' · ')}`);
     return { text: lines.join('\n') };
