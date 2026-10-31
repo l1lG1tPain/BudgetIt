@@ -246,7 +246,7 @@ export class SharkUI {
         const transactions = budget?.transactions || [];
         const planners = this.pm?.getAllPlanners?.() || [];
         const today = isoDay();
-        const bid = budget?.id || this.pm?.getCurrentBudgetId?.();
+        const bid = this.pm?.getCurrentBudgetId?.() || budget?.id;
         const status = planStatus(planners, bid, today);
         const planner = status.state === 'active' ? status.planner : null;
         const normalize = c => this.pm?.normalizeCategory?.(c) ?? String(c || '').trim();

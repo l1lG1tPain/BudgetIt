@@ -1,6 +1,7 @@
 import { sharkImage } from '../shark/SharkMood.js';
 const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 import { formatNumber } from '../utils/utils.js';
+import { planStatusOf, choosePlanner } from './plannerUtils.js';
 
 export class PlannerPage {
     constructor({ budgetManager, plannerManager, plannerSheet, uiManager }) {
@@ -10,6 +11,7 @@ export class PlannerPage {
         this.uiManager = uiManager;
 
         this.activePlannerId = null;
+        this.userPicked = false; // план выбран вручную (в этом заходе на страницу)
         this.dropdownOpen = false;
 
         this.page = document.getElementById('planner-page');
@@ -98,7 +100,8 @@ export class PlannerPage {
             const ok = this.plannerManager.deletePlanner(this.activePlannerId);
             if (!ok) return;
             const planners = this.plannerManager.getPlannersForCurrentBudget();
-            this.activePlannerId = planners[planners.length - 1]?.id || null;
+            this.activePlannerId = null;
+            this.userPicked = false;
             this.render();
         });
 
@@ -139,6 +142,7 @@ export class PlannerPage {
         document.getElementById('bottom-sheet-backdrop')?.classList.add('hidden');
 
         this.page.classList.remove('hidden');
+        this.userPicked = false; // при каждом заходе снова показываем действующий план
 
         if (window._navOpenPage) window._navOpenPage('planner-page');
         window._navSetActiveTab?.('planner');
@@ -173,12 +177,21 @@ export class PlannerPage {
 
 
 
+    // Показываем действующий по дате план. Ручной выбор держится, пока страница открыта;
+    // выбранный id чужого бюджета или удалённого плана сбрасывается.
+    ensureActivePlanner(planners) {
+        if (!planners.length) { this.activePlannerId = null; return; }
+        const valid = planners.some(p => p.id === this.activePlannerId);
+        if (!valid || !this.userPicked) {
+            this.activePlannerId = (choosePlanner(planners) || planners[planners.length - 1]).id;
+        }
+    }
+
     renderDropdown(planners) {
         if (!this.dropdownMenu || !this.dropdownLabel) return;
 
-        if (!this.activePlannerId && planners.length) {
-            this.activePlannerId = planners[planners.length - 1].id; // по умолчанию — последний созданный план
-        }
+        this.ensureActivePlanner(planners);
+        const nowId = planStatusOf(planners, '').state === 'active' ? choosePlanner(planners)?.id : null;
 
         const activePlanner = planners.find(p => p.id === this.activePlannerId) || null;
         this.dropdownLabel.textContent = this.formatPlannerLabel(activePlanner);
@@ -192,7 +205,7 @@ export class PlannerPage {
                         data-planner-id="${item.id}"
                     >
                         <span class="planner-dropdown-item-title">${escHtml(item.name)} · ${item.periodDays} дн.</span>
-                        <span class="planner-dropdown-item-meta">${item.startDate} → ${item.endDate}</span>
+                        <span class="planner-dropdown-item-meta">${item.startDate} → ${item.endDate}${item.id === nowId ? ' · идёт сейчас' : ''}</span>
                     </button>
                 `).join('')}
             </div>
@@ -207,6 +220,7 @@ export class PlannerPage {
         this.dropdownMenu.querySelectorAll('[data-planner-id]').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.activePlannerId = btn.dataset.plannerId;
+                this.userPicked = true;
                 this.closeDropdown();
                 this.render();
             });

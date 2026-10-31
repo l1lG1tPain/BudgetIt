@@ -566,6 +566,7 @@ export class PlannerSheet {
         }
 
         this.plannerPage.activePlannerId = result.planner.id;
+        this.plannerPage.userPicked = true; // только что созданный или изменённый план остаётся открытым
         this.plannerPage.render();
         this.close();
     }

@@ -7,6 +7,7 @@
 import { MOOD_TEXTS, TOAST_TEXTS, FLAVOR } from './texts/index.js';
 import { isConsumption } from '../utils/insightsMath.js';
 import { NOSPEND_TEXTS } from './texts/nospend.js';
+import { planStatusOf } from '../planner/plannerUtils.js';
 import { EMOTION_TEXTS, EMOTION_TITLES } from './texts/emotion.js';
 import { RUDE_TEXTS, RUDE_TITLES } from './texts/rude.js';
 import { LIVE_TEXTS, EMOTION_MORE } from './texts/live.js';
@@ -213,15 +214,7 @@ const planEnd = p => p.endDate || p.startDate;
 // Статус планов текущего бюджета относительно сегодняшнего дня:
 // active — идёт сейчас; upcoming — ещё не начался; ended — уже завершён; none — планов нет.
 export function planStatus(planners = [], budgetId, today = isoDay()) {
-    const mine = planners.filter(p => p && !p.archived && p.startDate && (!budgetId || p.budgetId === budgetId));
-    const active = mine.filter(p => p.startDate <= today && today <= planEnd(p))
-        .sort((a, b) => (b.startDate > a.startDate ? 1 : -1))[0];
-    if (active) return { state: 'active', planner: active };
-    const upcoming = mine.filter(p => p.startDate > today).sort((a, b) => (a.startDate > b.startDate ? 1 : -1))[0];
-    if (upcoming) return { state: 'upcoming', planner: upcoming };
-    const ended = mine.filter(p => planEnd(p) < today).sort((a, b) => (planEnd(b) > planEnd(a) ? 1 : -1))[0];
-    if (ended) return { state: 'ended', planner: ended };
-    return { state: 'none', planner: null };
+    return planStatusOf(planners, budgetId, today);
 }
 
 // Активный план: план текущего бюджета, в период которого попадает сегодня.

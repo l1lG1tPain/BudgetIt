@@ -231,3 +231,27 @@ export function validatePlannerPayload(payload = {}) {
         errors
     };
 }
+
+/**
+ * Какой план «текущий» для даты today (YYYY-MM-DD).
+ * active — идёт сейчас (если таких несколько — тот, что начался позже); upcoming — ближайший будущий;
+ * ended — последний из завершённых; none — подходящих планов нет. Архивные и без даты старта не участвуют.
+ * budgetId задан — берутся только планы этого бюджета.
+ */
+export function planStatusOf(planners = [], budgetId = '', today = formatLocalISODate(new Date())) {
+    const end = p => p.endDate || p.startDate;
+    const mine = (planners || []).filter(p => p && !p.archived && p.startDate && (!budgetId || p.budgetId === budgetId));
+    const active = mine.filter(p => p.startDate <= today && today <= end(p))
+        .sort((a, b) => (b.startDate > a.startDate ? 1 : b.startDate < a.startDate ? -1 : 0))[0];
+    if (active) return { state: 'active', planner: active };
+    const upcoming = mine.filter(p => p.startDate > today).sort((a, b) => (a.startDate > b.startDate ? 1 : -1))[0];
+    if (upcoming) return { state: 'upcoming', planner: upcoming };
+    const ended = mine.filter(p => end(p) < today).sort((a, b) => (end(b) > end(a) ? 1 : -1))[0];
+    if (ended) return { state: 'ended', planner: ended };
+    return { state: 'none', planner: null };
+}
+
+/** План, который нужно показать по умолчанию: действующий, иначе ближайший будущий, иначе последний завершённый. */
+export function choosePlanner(planners = [], today = formatLocalISODate(new Date())) {
+    return planStatusOf(planners, '', today).planner;
+}
