@@ -133,6 +133,19 @@ test('долг «я должен» (owe): получение — доход, п�
     assert.equal(t.totalDebt, 400);
 });
 
+test('долги раздельно: «я должен» и «мне должны», totalDebt — сумма обоих', () => {
+    const owe  = { id: 31, type: 'debt', date: '2026-01-10', name: 'Банк', direction: 'owe', initialAmount: 500, remainingAmount: 400, paid: false,
+        payments: [{ date: '2026-01-20T10:00:00.000Z', amount: 100 }] };
+    const owed = { id: 32, type: 'debt', date: '2026-01-12', name: 'Тимур', direction: 'owed', initialAmount: 300, remainingAmount: 300, paid: false, payments: [] };
+    const t = makeBM([owe, owed]).calculateTotals('01', 2026);
+    assert.equal(t.debtIOwe, 400);
+    assert.equal(t.debtOwedToMe, 300);
+    assert.equal(t.totalDebt, 700);
+    const only = makeBM([owed]).calculateTotals('all');
+    assert.equal(only.debtIOwe, 0);
+    assert.equal(only.debtOwedToMe, 300);
+});
+
 test('markDebtPayment: уменьшает остаток, при 0 ставит paid', () => {
     const debt = { id: 22, type: 'debt', date: '2026-01-15', name: 'X', direction: 'owed', initialAmount: 300, remainingAmount: 300, paid: false, payments: [] };
     const bm = makeBM([debt]);

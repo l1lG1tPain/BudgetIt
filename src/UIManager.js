@@ -212,6 +212,8 @@ export class UIManager {
                 value += carryOver;
             }
 
+            if (type === 'debt') value = this.updateDebtBlock(totals);
+
             const el = document.querySelector(`#block-${type} .block-value`);
             if (type === 'budget') document.getElementById('block-budget')?.classList.toggle('is-negative', value < 0);
             this.animateValue(el, value, 800);
@@ -625,6 +627,24 @@ export class UIManager {
             const li = e.target.closest?.('li.tx-item');
             if (li && li._tx) this.openTransactionDetail(li._tx);
         });
+    }
+
+    // Карточка долгов: основное число — «я должен», под ним «мне должны». Возвращает показанное число.
+    updateDebtBlock(totals) {
+        const owe = Number(totals.debtIOwe) || 0;
+        const owed = Number(totals.debtOwedToMe) || 0;
+        const block = document.getElementById('block-debt');
+        const note = document.getElementById('debt-note');
+        let value = 0, kind = '', text = '';
+        if (owe > 0) {
+            value = owe; kind = 'owe';
+            text = owed > 0 ? `мне должны ${formatNumber(owed)}` : 'я должен';
+        } else if (owed > 0) {
+            value = owed; kind = 'owed'; text = 'мне должны';
+        }
+        if (block) { block.classList.toggle('debt-owe', kind === 'owe'); block.classList.toggle('debt-owed', kind === 'owed'); }
+        if (note) { note.textContent = text; note.classList.toggle('hidden', !text); }
+        return value;
     }
 
     // Подпись под «Доступно»: откуда взялся минус / что не перенесено (зависит от режима переноса)

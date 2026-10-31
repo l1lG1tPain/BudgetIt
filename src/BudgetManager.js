@@ -629,6 +629,8 @@ export class BudgetManager {
 
         // 6. Остаток долгов на конец выбранного периода.
         let totalDebt = 0;
+        let debtIOwe = 0;      // «Я должен»
+        let debtOwedToMe = 0;  // «Мне должны»
 
         txs.forEach(tx => {
             if (tx.type !== 'debt') return;
@@ -649,6 +651,7 @@ export class BudgetManager {
 
             const remaining = Math.max(0, init - paidUntilPeriodEnd);
             totalDebt += remaining;
+            if (tx.direction === 'owe') debtIOwe += remaining; else debtOwedToMe += remaining;
         });
 
         // 7. Бюджет Акулки.
@@ -690,6 +693,8 @@ export class BudgetManager {
             monthlyExpense: visibleExpense,
             depositBalance,
             totalDebt,
+            debtIOwe,
+            debtOwedToMe,
             carryOver,
             rawCarryOver: target.isSingleMonth ? rawCarryOver : 0,
 
