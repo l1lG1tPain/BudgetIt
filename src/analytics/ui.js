@@ -160,7 +160,7 @@ export function openCategorySheet(d, { type = 'expense', color, periodText = '',
         <div><small>Операций</small><b>${d.count}</b></div>
         <div><small>Средняя</small><b>${D.compact(Math.round(d.avg))}</b></div>
         <div><small>Типичная</small><b>${D.compact(Math.round(d.median))}</b></div>
-        <div><small>В месяц</small><b>${D.compact(Math.round(d.perMonth))}</b></div>
+        <div><small>В среднем за месяц</small><b>${D.compact(Math.round(d.perMonth))}</b></div>
       </div>
       ${d.biggest ? `<div class="cs-big"><span>Самая крупная</span><b>${f(d.biggest.amount)} ${esc(D.cur())}</b><em>${esc(d.biggest.name)} · ${dmy(d.biggest.date)}</em></div>` : ''}
 

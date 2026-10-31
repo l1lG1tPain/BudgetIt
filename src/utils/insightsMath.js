@@ -23,6 +23,13 @@ export const isFinancialCategory = cat => !!cat && FINANCIAL_RE.test(String(cat)
 export const isFinancialIncomeCategory = cat => !!cat && FINANCIAL_INCOME_RE.test(String(cat));
 export const isSystemExcludedCategory = cat => !!cat && SYSTEM_EXCLUDED_CATEGORIES.includes(String(cat).trim());
 
+// Единые предикаты «потребления»: обычные траты и обычные поступления без переводов, вкладов, долгов
+// и категорий «без учёта». Их используют аналитика, тренды и Акулка — чтобы цифры везде совпадали.
+export const isConsumption = t => !!t && t.type === 'expense'
+    && !isFinancialCategory(t.category) && !isSystemExcludedCategory(t.category);
+export const isPlainIncome = t => !!t && t.type === 'income'
+    && !isFinancialIncomeCategory(t.category) && !isSystemExcludedCategory(t.category);
+
 // ── числа ────────────────────────────────────────────────────
 export const num = v => {
     const n = Number(v);

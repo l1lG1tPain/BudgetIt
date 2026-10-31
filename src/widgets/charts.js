@@ -8,7 +8,7 @@ import {
     toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth
 } from '../analytics/period.js';
 import {
-    baseTx, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
+    baseTx, consumptionTx, reconcile, activeMonths, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
     categoryDetail, balanceSeries, balanceDaily, summaryKeys, summaryRows, heroSeries, weekdayMon
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
@@ -462,19 +462,20 @@ function ensureHero() {
     const scroll = document.querySelector('#analytics-page .analytics-scroll');
     if (!scroll) return null;
     let hero = document.getElementById('an-hero');
-    if (hero && hero.dataset.v === '2') return hero;
+    if (hero && hero.dataset.v === '3') return hero;
     hero?.remove();
     hero = document.createElement('section');
-    hero.id = 'an-hero'; hero.className = 'an-hero an-card'; hero.dataset.v = '2'; hero.dataset.chart = 'an-hero';
+    hero.id = 'an-hero'; hero.className = 'an-hero an-card'; hero.dataset.v = '3'; hero.dataset.chart = 'an-hero';
     hero.innerHTML =
         '<div class="an-hero-top"><div class="an-hero-title"></div><div class="an-year"></div></div>' +
         '<div class="an-hero-sum"></div>' +
         '<div class="an-hero-deltarow"></div>' +
+        '<div class="an-hero-recon" hidden></div>' +
         '<div class="an-hero-chart"><canvas id="anHeroCanvas"></canvas></div>' +
         '<div class="an-metrics" role="group">' +
             Object.entries(METRICS).map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join('') +
         '</div>' +
-        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Вклады и долги в расчёт не входят.</div>';
+        '<div class="an-hero-note">Нажимайте на столбики — можно выбрать несколько месяцев. Переводы, вклады, долги и траты «без учёта» не входят — они в строке под суммой.</div>';
     const seg = document.getElementById('analytics-period-seg');
     if (seg) seg.insertAdjacentElement('afterend', hero); else scroll.insertAdjacentElement('afterbegin', hero);
     hero.querySelector('.an-metrics').addEventListener('click', e => {
@@ -487,11 +488,36 @@ function ensureHero() {
     return hero;
 }
 
+// Строка сверки: что ещё входит в «Ушло»/«Пришло» на главной. Тап раскрывает список.
+let reconOpen = false;
+function renderHeroRecon(hero) {
+    const el = hero.querySelector('.an-hero-recon');
+    if (!el) return;
+    if (heroMetric === 'net') { el.hidden = true; el.innerHTML = ''; return; }
+    const raw = budgetManagerInstance?.getCurrentBudget()?.transactions || [];
+    const r = reconcile(raw, period);
+    const isOut = heroMetric === 'expense';
+    const side = isOut ? r.out : r.in;
+    if (side.fin <= 0 && side.excluded <= 0) { el.hidden = true; el.innerHTML = ''; return; }
+    const cur = getCurrencyLabel();
+    const money = v => `${formatNumber(Math.round(v))} ${cur}`;
+    const parts = [];
+    if (side.fin > 0) parts.push(`${isOut ? 'переводы и вклады' : 'переводы, со вкладов, долги'} ${money(side.fin)}`);
+    if (side.excluded > 0) parts.push(`без учёта ${money(side.excluded)}`);
+    const rows = side.cats.map(c => `<li><span>${escHtml(c.name)}${c.group === 'excluded' ? ' <em>без учёта</em>' : ''}</span><b>${escHtml(money(c.sum))}</b></li>`).join('');
+    el.hidden = false;
+    el.classList.toggle('open', reconOpen);
+    el.innerHTML =
+        `<button type="button" class="an-recon-line" aria-expanded="${reconOpen}">Ещё ${isOut ? 'ушло' : 'пришло'}: ${parts.join(' · ')} <i>${reconOpen ? '▴' : '▾'}</i></button>` +
+        `<div class="an-recon-body"><ul>${rows}</ul><p>Всего на главной: ${escHtml(money(side.total))}. С ними сумма совпадает с главной.</p></div>`;
+    el.querySelector('.an-recon-line').addEventListener('click', () => { reconOpen = !reconOpen; renderHeroRecon(hero); });
+}
+
 function renderAnalyticsHero() {
     const hero = ensureHero();
     if (!hero || !period) return;
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const today = todayISO();
     const inc = sumTx(all, period, 'income');
     const exp = sumTx(all, period, 'expense');
@@ -527,6 +553,7 @@ function renderAnalyticsHero() {
         }
     }
     hero.querySelector('.an-hero-deltarow').innerHTML = deltaHtml;
+    renderHeroRecon(hero);
     fillYearSteppers();
 
     // график по месяцам
@@ -697,10 +724,15 @@ function destroyAllCharts(keep = []) {
 // ------------------------------------------------------------------
 const todayISO = () => isoOf(new Date());
 const todayKeyNow = () => todayISO().slice(0, 7);
-function allAnalyticsTx() { return baseTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+// «Траты» и «Поступления» в аналитике — потребление (без переводов, вкладов, долгов и «без учёта»);
+// разницу с главным экраном показывает строка сверки под hero.
+function allAnalyticsTx() { return consumptionTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+// Для навигации по периодам нужны все месяцы с движением денег, а не только с обычными тратами.
+function rangeTx() { return baseTx(budgetManagerInstance?.getCurrentBudget()?.transactions || []); }
+const allMonthsCount = () => activeMonths(rangeTx());
 
 function defaultPeriod() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const tk = todayKeyNow();
     if (all.some(t => keyOf(t.date) === tk)) return monthPeriod(tk);
     const { last } = dataRange(all);
@@ -708,7 +740,7 @@ function defaultPeriod() {
 }
 
 function yearBounds() {
-    const ys = availableYears(allAnalyticsTx(), new Date().getFullYear());
+    const ys = availableYears(rangeTx(), new Date().getFullYear());
     return { min: ys[0], max: ys[ys.length - 1] };
 }
 
@@ -752,7 +784,7 @@ function syncPeriodUi() {
 
 /** Опорный месяц при смене пресета: последний выбранный (не позже текущего); если на графике другой год — последний месяц этого года с данными */
 function presetAnchor() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const { last } = dataRange(all);
     const tk = todayKeyNow();
     if (period.all) return anchorOf(period, tk, last);
@@ -788,7 +820,7 @@ function ensureSegment() {
 }
 
 function openPeriodPicker() {
-    const all = allAnalyticsTx();
+    const all = rangeTx();
     const { last } = dataRange(all);
     openPeriodSheet({
         period,
@@ -813,7 +845,7 @@ function initAnalyticsUi() {
     try { const m = localStorage.getItem(HERO_METRIC_KEY); if (m && METRICS[m]) heroMetric = m; } catch (e) {}
     if (!period) {
         period = loadPeriod() || defaultPeriod();
-        const { last } = dataRange(allAnalyticsTx());
+        const { last } = dataRange(rangeTx());
         viewYear = keyYear(anchorOf(period, todayKeyNow(), last));
     }
     ensureSegment();
@@ -940,7 +972,7 @@ function renderExpensesByCategoryChart() {
         if (empty || idx == null || idx < 0 || idx >= labels.length) return;
         const isOther = hasOthers && idx === labels.length - 1;
         const d = categoryDetail(allAnalyticsTx(), period, labels[idx], {
-            type: 'expense', todayISO: todayISO(), othersNames: isOther ? restNames : null
+            type: 'expense', todayISO: todayISO(), othersNames: isOther ? restNames : null, allMonths: allMonthsCount()
         });
         openCategorySheet(d, { type: 'expense', color: colors[idx], periodText: periodLabel(period), selected: period });
         if (!isOther) {
@@ -1015,7 +1047,7 @@ function renderMonthlyExpensesChart() {
 
     const ctx = canvas.getContext('2d');
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const keys = summaryKeys(period, viewYear, first, last);
     const rows = monthlyTotals(all, keys);
     const multiYear = new Set(keys.map(keyYear)).size > 1;
@@ -1086,16 +1118,26 @@ function renderIncomeVsExpensesChart() {
 
     const income  = tx.filter(t => t.type === 'income').reduce((s, t) => s + amtOf(t), 0);
     const expense = tx.filter(t => t.type === 'expense').reduce((s, t) => s + amtOf(t), 0);
-    const total   = income + expense;
 
-    // чтобы бар всегда был >0 пикселей
-    const safeIncome  = total > 0 ? income  : 0.5;
-    const safeExpense = total > 0 ? expense : 0.5;
-    const safeTotal   = total > 0 ? total   : 1;
+    // Доля трат от поступлений: бар = поступления, закрашенная часть = траты (не больше 100% шкалы)
+    const spentPart = income > 0 ? Math.min(expense, income) : 0;
+    const leftPart  = income > 0 ? income - spentPart : 0;
+    const pct       = income > 0 ? Math.round(expense / income * 100) : null;
+
+    // подпись «Траты от поступлений, N%» над баром
+    let ratioEl = canvas.parentElement.querySelector('.an-ratio');
+    if (!ratioEl) {
+        ratioEl = document.createElement('p');
+        ratioEl.className = 'an-ratio';
+        canvas.insertAdjacentElement('beforebegin', ratioEl);
+    }
+    ratioEl.classList.toggle('over', pct != null && pct > 100);
+    ratioEl.textContent = pct == null
+        ? (expense > 0 ? 'Поступлений за период нет' : 'За период нет данных')
+        : `Траты от поступлений, ${pct}%`;
 
     const labels = ['']; // один ряд, как прогресс-бар
 
-    // плагин, который рисует подписи под баром
     // подписи под баром
     const summaryPlugin = {
         id: 'incomeExpenseSummary',
@@ -1107,24 +1149,15 @@ function renderIncomeVsExpensesChart() {
             ctx.fillStyle = getCssVar('--muted', '#999');
             ctx.textBaseline = 'top';
 
-            // округляем до целых
-            const roundedIncome  = Math.round(income);
-            const roundedExpense = Math.round(expense);
-
-            const textIncome  = `Поступления ${compactNumber(roundedIncome)}`;
-            const textExpense = `Траты ${compactNumber(roundedExpense)}`;
-
             ctx.textAlign = 'left';
-            ctx.fillText(textIncome, left, bottom + 8);
+            ctx.fillText(`Поступления ${compactNumber(Math.round(income))}`, left, bottom + 8);
 
             ctx.textAlign = 'right';
-            ctx.fillText(textExpense, right, bottom + 8);
+            ctx.fillText(`Траты ${compactNumber(Math.round(expense))}`, right, bottom + 8);
 
             ctx.restore();
         }
     };
-
-
 
     charts.incomeVsExpenses = new Chart(ctx, {
         type: 'bar',
@@ -1132,16 +1165,16 @@ function renderIncomeVsExpensesChart() {
             labels,
             datasets: [
                 {
-                    label: 'Поступления',
-                    data : [safeIncome],
-                    backgroundColor: PALETTE.income(),
+                    label: 'Траты',
+                    data : [spentPart],
+                    backgroundColor: PALETTE.expense(),
                     borderRadius   : 999,
                     borderSkipped  : false
                 },
                 {
-                    label: 'Траты',
-                    data : [safeExpense],
-                    backgroundColor: PALETTE.expense(),
+                    label: 'Осталось от поступлений',
+                    data : [income > 0 ? leftPart : 1],
+                    backgroundColor: getCssVar('--faint', 'rgba(128,128,128,.18)'),
                     borderRadius   : 999,
                     borderSkipped  : false
                 }
@@ -1151,28 +1184,16 @@ function renderIncomeVsExpensesChart() {
             indexAxis: 'y',
             layout   : { padding: { top: 10, left: 16, right: 16, bottom: 32 } },
             scales   : {
-                x: {
-                    stacked : true,
-                    display : false,
-                    min     : 0,
-                    max     : safeTotal
-                },
-                y: {
-                    stacked : true,
-                    display : false
-                }
+                x: { stacked: true, display: false, min: 0, max: income > 0 ? income : 1 },
+                y: { stacked: true, display: false }
             },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: c => {
-                            const v   = c.raw;
-                            const pct = total ? Math.round(v / total * 100) : 0;
-                            const label = c.dataset.label;
-                            const value = label === 'Поступления' ? income : expense;
-                            return `${label}: ${withCurrency(value)} (${pct}%)`;
-                        }
+                        label: c => c.dataset.label === 'Траты'
+                            ? `Траты: ${withCurrency(expense)}${pct != null ? ` (${pct}% от поступлений)` : ''}`
+                            : `Осталось от поступлений: ${withCurrency(Math.max(income - expense, 0))}`
                     }
                 }
             }
@@ -1305,7 +1326,7 @@ function renderCategoryHistoryChart() {
     let cat = selectedAnalyticsCategory;
     if (!ranked.includes(cat)) cat = ranked[0] || '';
     selectedAnalyticsCategory = cat;
-    const d = cat ? categoryDetail(all, period, cat, { type: 'expense', todayISO: todayISO() }) : null;
+    const d = cat ? categoryDetail(all, period, cat, { type: 'expense', todayISO: todayISO(), allMonths: allMonthsCount() }) : null;
     const trend = d ? d.trend : [];
     if (!cat) {
         const hd = canvas.closest('section')?.querySelector('.ch-head'); if (hd) hd.innerHTML = '';
@@ -1618,7 +1639,7 @@ function renderIncomeBySourceChart() {
     if (!el) return;
     const bd = categoryBreakdown(getCurrentBudgetTransactions(), period, 'income');
     renderSources(el, bd, pick => {
-        const d = categoryDetail(allAnalyticsTx(), period, pick.name, { type: 'income', todayISO: todayISO() });
+        const d = categoryDetail(allAnalyticsTx(), period, pick.name, { type: 'income', todayISO: todayISO(), allMonths: allMonthsCount() });
         openCategorySheet(d, { type: 'income', color: pick.color, periodText: periodLabel(period), selected: period });
     });
 }
@@ -1629,7 +1650,7 @@ function renderAnnualSummaryChart() {
     const el = document.getElementById('anSummary');
     if (!el) return;
     const all = allAnalyticsTx();
-    const { first, last } = dataRange(all);
+    const { first, last } = dataRange(rangeTx());
     const keys = summaryKeys(period, viewYear, first, last);
     renderSummary(el, summaryRows(all, keys), {
         period,

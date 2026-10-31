@@ -4,10 +4,8 @@
 // ===============================
 import { isoDay, shiftDay, readScoped, writeScoped, isDailySpend } from './SharkMood.js';
 import { netSavings } from '../utils/savingsFlow.js';
-import { isFinancialIncomeCategory, isSystemExcludedCategory } from '../utils/insightsMath.js';
+import { isPlainIncome } from '../utils/insightsMath.js';
 
-// Поступления без переводов/вкладов/долгов и «без учёта» — пара к isDailySpend
-const isPlainIncome = t => t.type === 'income' && !isFinancialIncomeCategory(t.category) && !isSystemExcludedCategory(t.category);
 
 const num = v => Number(v) || 0;
 const dayDiff = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);

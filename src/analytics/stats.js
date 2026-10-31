@@ -3,7 +3,7 @@
 //   Все суммы — только операции типа income/expense (вклады и долги считаются отдельно в приложении).
 //   Даты — строки 'YYYY-MM-DD' (никогда не парсим через new Date(str)).
 // ===============================
-import { num, median, isSystemExcludedCategory, isFinancialCategory } from '../utils/insightsMath.js';
+import { num, median, isSystemExcludedCategory, isFinancialCategory, isFinancialIncomeCategory, isConsumption, isPlainIncome } from '../utils/insightsMath.js';
 import { carryNext, getCarryMode } from '../utils/carryOver.js';
 import { inPeriod, keyOf, monthRange, addMonths, previousPeriod, periodSpan, keyYear, keyMonth, ymKey, makePeriod } from './period.js';
 
@@ -21,6 +21,17 @@ export const catName = t => String(t.category || '').trim() || 'Без кате�
 /** Только доходы/расходы с датой; системные «без учёта» категории отброшены */
 export const baseTx = all => (all || []).filter(t =>
     (t.type === 'income' || t.type === 'expense') && t.date && !isSystemExcludedCategory(t.category));
+
+/**
+ * Потребление: обычные траты и обычные поступления (без переводов, вкладов, долгов и «без учёта»).
+ * На этой базе считаются графики аналитики; разницу с «Доступно» показывает reconcile().
+ */
+export const consumptionTx = all => (all || []).filter(t => t.date && (isConsumption(t) || isPlainIncome(t)));
+
+/** Число месяцев, в которых у бюджета есть хоть какие-то записи (для «в среднем за месяц» по всему времени) */
+export function activeMonths(tx) {
+    return new Set((tx || []).map(t => keyOf(t.date))).size;
+}
 
 export function dataRange(tx) {
     let a = null, b = null;
@@ -107,7 +118,7 @@ export function topTransactions(tx, p, n = 7, type = 'expense') {
  * Подробности по одной категории (для нижней шторки).
  * othersNames — если нажали «Прочее»: набор имён категорий, которые в него входят.
  */
-export function categoryDetail(tx, p, name, { type = 'expense', todayISO, othersNames = null, trendMonths = 6 } = {}) {
+export function categoryDetail(tx, p, name, { type = 'expense', todayISO, othersNames = null, trendMonths = 6, allMonths = 0 } = {}) {
     const match = othersNames ? (t => othersNames.has(catName(t))) : (t => catName(t) === name);
     const inType = tx.filter(t => t.type === type && num(t.amount) > 0);
     const mine = inType.filter(t => inPeriod(p, t.date) && match(t));
@@ -119,7 +130,8 @@ export function categoryDetail(tx, p, name, { type = 'expense', todayISO, others
 
     // месяцы с тратами — для среднего «в месяц»
     const monthsWith = new Set(mine.map(t => keyOf(t.date)));
-    const spanMonths = p.all ? Math.max(1, monthsWith.size) : p.keys.length;
+    // «всё время»: делим на месяцы с любыми записями бюджета (если передано), иначе на месяцы этой категории
+    const spanMonths = p.all ? Math.max(1, allMonths || monthsWith.size) : p.keys.length;
 
     // дни недели
     const weekday = Array(7).fill(0);
@@ -190,26 +202,54 @@ function localYmd(s) {
 
 export function cashEvents(raw) {
     const ev = [];
-    const push = (date, v) => { if (date && v) ev.push({ date: String(date).slice(0, 10), v }); };
+    const push = (date, v, kind, cat) => { if (date && v) ev.push({ date: String(date).slice(0, 10), v, kind, cat }); };
     for (const t of raw || []) {
         const a = num(t.amount);
-        if (t.type === 'income') push(t.date, a);
-        else if (t.type === 'expense') push(t.date, -a);
+        if (t.type === 'income') push(t.date, a, 'income', catName(t));
+        else if (t.type === 'expense') push(t.date, -a, 'expense', catName(t));
         else if (t.type === 'deposit') {
             const st = String(t.status || '');
-            if (!st.includes('Уже лежало')) push(t.date, st.trim() === '➖ Снятие' ? a : -a); // «Уже лежало» кошелёк не трогает
+            if (!st.includes('Уже лежало')) push(t.date, st.trim() === '➖ Снятие' ? a : -a, 'deposit'); // «Уже лежало» кошелёк не трогает
         }
         else if (t.type === 'debt') {
             const init = num(t.initialAmount ?? t.amount);
-            if (init > 0) push(t.date, t.direction === 'owe' ? init : -init);
+            if (init > 0) push(t.date, t.direction === 'owe' ? init : -init, 'debt');
             let paid = 0; // платёж сверх остатка долга не считаем (как в «Доступно»)
             for (const pm of Array.isArray(t.payments) ? t.payments : []) {
                 const pa = Math.min(num(pm.amount), Math.max(0, init - paid)); paid += pa;
-                if (pa > 0) push(localYmd(pm.date), t.direction === 'owe' ? -pa : pa);
+                if (pa > 0) push(localYmd(pm.date), t.direction === 'owe' ? -pa : pa, 'debt');
             }
         }
     }
     return ev;
+}
+
+/**
+ * Сверка с главным экраном: что ещё входит в «Ушло»/«Пришло» кроме потребления.
+ * consumed + fin + excluded = total — это ровно monthlyExpense/monthlyIncome из calculateTotals за те же месяцы.
+ *  fin — переводы, вклады, долги и прочие «финансовые» категории; excluded — «без учёта».
+ */
+export function reconcile(raw, p) {
+    const mk = () => ({ total: 0, consumed: 0, fin: 0, excluded: 0, cats: new Map() });
+    const out = mk(), inn = mk();
+    const bump = (side, group, label, a) => {
+        side.total += a; side[group] += a;
+        if (group === 'consumed') return;
+        const key = `${group}|${label}`;
+        const r = side.cats.get(key) || { name: label, group, sum: 0 };
+        r.sum += a; side.cats.set(key, r);
+    };
+    for (const e of cashEvents(raw)) {
+        if (!inPeriod(p, e.date)) continue;
+        const side = e.v < 0 ? out : inn, a = Math.abs(e.v);
+        if (e.kind === 'deposit') bump(side, 'fin', 'Накопления', a);
+        else if (e.kind === 'debt') bump(side, 'fin', 'Долги', a);
+        else if (isSystemExcludedCategory(e.cat)) bump(side, 'excluded', e.cat, a);
+        else if (e.v < 0 ? isFinancialCategory(e.cat) : isFinancialIncomeCategory(e.cat)) bump(side, 'fin', e.cat, a);
+        else bump(side, 'consumed', e.cat, a);
+    }
+    const fin = side => { const rows = [...side.cats.values()].sort((x, y) => y.sum - x.sum); return { ...side, cats: rows }; };
+    return { out: fin(out), in: fin(inn) };
 }
 
 /** Остаток на начало месяца `key`: перенос из месяца в месяц, ушедший в минус месяц дальше начинается с 0 (как «Доступно»). */
