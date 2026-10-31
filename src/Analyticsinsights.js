@@ -464,14 +464,9 @@ function _render() {
             t: 'Нетипичная трата',
             b: `<b>${_escA(anomaly.category)}</b> — ${_f(anomaly.amount)}<br>
 <span style="opacity:.72;font-size:11px">${_fd(anomaly.date)} · выше среднего в ${anomaly.timesAvg}x и выше медианы в ${anomaly.timesMedian}x</span><br>
-<div class="bi-anomaly-actions" data-id="${_escA(anomaly.id)}" data-cat="${_escA(anomaly.category)}" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-  <button class="bi-action-btn bi-action-ok" data-action="ok" data-id="${_escA(anomaly.id)}">✓ Разовая, не показывать</button>
-  <button class="bi-action-btn bi-action-fin" data-action="exclude" data-id="${_escA(anomaly.id)}" data-cat="${_escA(anomaly.category)}">🚫 Не считать категорию</button>
-</div>
-<div style="opacity:.62;font-size:11px;line-height:1.35;margin-top:8px"><b>Разовая</b> — эта карточка про операцию пропадёт, цифры не изменятся.<br><b>Не считать</b> — все операции «${_escA(anomaly.category)}» уйдут из трендов (траты, здоровье, прогноз). Графики и главная не меняются. Вернуть можно в подсказке ниже.</div>`,
+<span style="opacity:.62;font-size:11px">Просто для сведения: в тратах и трендах она учтена, как все операции.</span>`,
             badge: 'аномалия',
             col: '#f59e0b',
-            interactive: true,
             priority: 96
         });
     }
@@ -824,7 +819,7 @@ function _render() {
     if (depositTx.length > 0 || debtTx.length > 0) {
         al.push({
             ico: '🧩',
-            txt: 'Вклады, переводы и долги считаются, как на главной. Вклад или перевод себе можно убрать кнопкой «Не считать категорию» на карточке нетипичной траты',
+            txt: 'Вклады, переводы и долги считаются, как на главной',
             t: 'info'
         });
     }
