@@ -80,6 +80,8 @@ export class PlannerManager {
                 ...(payload.incomePlan || {})
             }
         };
+        // новая длительность или старт → новая дата окончания
+        merged.endDate = addDays(merged.startDate, (Number(merged.periodDays) || 15) - 1);
 
         const validation = validatePlannerPayload(merged);
         if (!validation.isValid) {

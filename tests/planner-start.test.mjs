@@ -115,3 +115,12 @@ test('overdue нет: дата сегодня, дата впереди, или �
     const got = proj([inc(1, '2026-10-02', 1000)], mk({ mainExpenses: [], dailyExpenses: [] }), 3);
     assert.equal(got.summary.incomeOverdue, false);
 });
+
+test('правка плана: смена числа дней сдвигает дату окончания; старый план с устаревшим endDate чинится при загрузке', async () => {
+    const { normalizePlanner } = await import('../src/planner/plannerUtils.js');
+    const stale = normalizePlanner({ id: 'p', budgetId: 'b', name: 'x', startDate: '2026-10-20', periodDays: 17, endDate: '2026-11-03',
+        incomePlan: { category: '💼 Аванс', amount: 0, incomeDate: '2026-10-20' } }, 'b');
+    assert.equal(stale.endDate, '2026-11-05');
+    const short = normalizePlanner({ ...stale, periodDays: 15 }, 'b');
+    assert.equal(short.endDate, '2026-11-03');
+});

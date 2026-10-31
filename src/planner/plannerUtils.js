@@ -88,7 +88,9 @@ export function ensureBudgetId(budget) {
 export function normalizePlanner(raw = {}, budgetId = '') {
     const startDate = normalizeISODate(raw.startDate) || formatLocalISODate(new Date());
     const periodDays = Math.max(1, Number(raw.periodDays) || 15);
-    const endDate = normalizeISODate(raw.endDate) || addDays(startDate, periodDays - 1);
+    // дата окончания всегда выводится из старта и числа дней: раньше при правке плана менялось
+    // periodDays, а endDate оставался старым, и расчёт обрывался на прежней дате
+    const endDate = addDays(startDate, periodDays - 1);
     const nowIso = new Date().toISOString();
 
     return {
