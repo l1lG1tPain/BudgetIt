@@ -756,7 +756,7 @@ html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-sh
 #transaction-sheet #expense-form[data-split="true"] #split-start { display: none !important; }
 #transaction-sheet .split-toggle { order: 6; width: 100%; margin-top: 10px; padding: 14px; border-radius: 16px; background: transparent;
     border: 1.5px dashed var(--accent, #7aa); color: var(--accent, inherit); font-weight: 700; font-size: 14px; cursor: pointer; }
-#transaction-sheet .dir-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); margin: 12px 0 0; order: 2; }
+#transaction-sheet .dir-seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--faint, rgba(255,255,255,.07)); margin: 0; order: 2; }
 #transaction-sheet .dir-seg button { flex: 1; min-height: 40px; border: none; border-radius: 12px; background: transparent; color: var(--muted, inherit); font-weight: 700; }
 #transaction-sheet .dir-seg button.active { background: var(--glass2, rgba(255,255,255,.14)); color: var(--text, inherit); }
 #transaction-sheet #debt-direction, #transaction-sheet label[for="debt-direction"] { display: none; }
