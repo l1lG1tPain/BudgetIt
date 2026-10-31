@@ -2291,3 +2291,19 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
 .allcat-track i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--out),color-mix(in srgb,var(--out) 45%,transparent))}
 .allcat-sub small{flex:0 0 auto;min-width:52px;text-align:right;color:var(--muted);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
 .allcat-more{margin-top:6px;padding:10px;border:0;border-radius:12px;background:var(--chip);color:var(--text);font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+
+/* прогноз остатка на «Динамике баланса» */
+.bal-fc{margin-top:8px;padding:9px 12px;border-radius:12px;background:var(--chip);font-size:13px;font-weight:700;color:var(--text);display:flex;flex-direction:column;gap:3px}
+.bal-fc b{font-variant-numeric:tabular-nums}
+.bal-fc small{font-size:11px;font-weight:600;color:var(--muted);line-height:1.35}
+.bal-fc.low{box-shadow:inset 3px 0 0 var(--out)}
+
+/* «Категории по месяцам» */
+.cbm-wrap{position:relative;width:100%;height:220px;margin-top:10px}
+.cbm-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:12px;font-weight:700;color:var(--text)}
+.cbm-legend span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.cbm-legend i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.cbm-legend em{font-style:normal;color:var(--muted);font-weight:800}
+.cbm-legend em.up{color:var(--out)}
+.cbm-legend em.down{color:var(--in)}
+.cbm-legend small{flex-basis:100%;color:var(--muted);font-size:11px;font-weight:600}

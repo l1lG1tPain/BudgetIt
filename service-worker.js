@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.4-r12';
+const CACHE_VERSION = 'v5.0.4-r13';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -118,6 +118,7 @@ const STATIC_ASSETS = [
     '/src/utils/insightsMath.js',
     '/src/utils/savingsFlow.js',
     '/src/utils/insightsNew.js',
+    '/src/analytics/forecast.js',
     '/src/utils/carryOver.js',
     '/src/utils/insightsExtra.js',
     '/src/utils/emojiMap.js',

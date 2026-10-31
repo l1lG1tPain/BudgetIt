@@ -5,7 +5,7 @@ import { sharkImage } from '../shark/SharkMood.js';
 import { refreshAnalyticsInsights } from '../Analyticsinsights.js';
 import {
     MONTHS_FULL, MONTHS_SHORT, makePeriod, allTime, monthPeriod, inPeriod, presetOf, fromPreset, anchorOf,
-    toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth
+    toggleMonth, periodLabel, periodButtonLabel, periodSpan, savePeriod, loadPeriod, keyOf, keyYear, keyMonth, addMonths
 } from '../analytics/period.js';
 import {
     baseTx, moneyTx, reconcile, activeMonths, dataRange, availableYears, sumTx, monthlyTotals, comparison, categoryBreakdown, topTransactions,
@@ -13,6 +13,7 @@ import {
 } from '../analytics/stats.js';
 import { isFinancialCategory } from '../utils/insightsMath.js';
 import { netSavings } from '../utils/savingsFlow.js';
+import { forecastBalance } from '../analytics/forecast.js';
 import { setUiDeps, openPeriodSheet, openCategorySheet, openMonthSheet, renderTopList, renderSources, renderSummary } from '../analytics/ui.js';
 // --- tiny-guard: если Chart.js не загрузился (офлайн / проблемы с CDN),
 // просто отключаем аналитику, но приложение не ломаем
@@ -418,7 +419,8 @@ function renderCharts(opts = {}) {
         renderCategoryHistoryChart,
         renderSpendingByWeekdayChart,
         renderIncomeBySourceChart,
-        renderAnnualSummaryChart
+        renderAnnualSummaryChart,
+        renderCategoriesByMonthChart
     ].forEach(fn => { try { fn(); } catch (e) { console.warn('[Charts]', fn.name, e); } });
     fillYearSteppers();
 }
@@ -1273,6 +1275,18 @@ function renderBalanceDynamicsChart() {
     const col = PALETTE.primary(); // линия нейтральная: снижение остатка — норма, красным её не пугаем
     const ranOut = res.min.balance <= 0;
 
+    // прогноз до конца месяца: только по дням, если в периоде текущий месяц и он ещё не кончился
+    let fc = null;
+    const tISO = todayISO();
+    if (daily && pts.length && pts[pts.length - 1].date === tISO) {
+        const ym = tISO.slice(0, 7);
+        const [yy, mm] = ym.split('-').map(Number);
+        const monthEnd = `${ym}-${String(new Date(Date.UTC(yy, mm, 0)).getUTCDate()).padStart(2, '0')}`;
+        if (tISO < monthEnd) { try { fc = forecastBalance(raw, tISO, monthEnd, pts[pts.length - 1].balance); } catch (e) { fc = null; } }
+    }
+    const fcPts = fc ? fc.points : [];
+    const allPts = pts.concat(fcPts);
+
     if (head) {
         head.innerHTML =
             `<div class="bal-top"><div class="bal-big"><b>${formatNumber(Math.round(res.end))}</b><small>${getCurrencyLabel()}</small></div>` +
@@ -1280,6 +1294,13 @@ function renderBalanceDynamicsChart() {
             `<div class="bal-mm"><span>Пик <b>${formatNumber(Math.round(res.max.balance))}</b><em>${lbl(res.max)}</em></span>` +
             `<span>Минимум <b>${formatNumber(Math.round(res.min.balance))}</b><em>${lbl(res.min)}</em></span></div>` +
             (ranOut ? `<div class="bal-warn">${res.min.balance < 0 ? `⚠ ${lbl(res.min)} по записям потрачено больше, чем было: −${formatNumber(Math.abs(Math.round(res.min.balance)))}. Значит, часть трат оплачена деньгами, которых нет в приложении (наличные, другая карта, кредитка), или поступление записано позже, чем пришло` : `⚠ Деньги закончились: ${lbl(res.min)} остаток был 0`}</div>` : '') +
+            (fc ? (() => {
+                const ev = fc.events.filter(e => !e.recorded).slice(0, 3)
+                    .map(e => `${e.type === 'income' ? '+' : '−'}${compactNumber(Math.round(e.amount))} ${escHtml(String(e.category || '').replace(/^\S+\s/, ''))} ~${Number(e.date.slice(8, 10))}-го`).join(', ');
+                const low = fc.min && fc.min.balance < 0;
+                return `<div class="bal-fc${low ? ' low' : ''}">Прогноз на ${dm(fc.points[fc.points.length - 1].date)}: <b>${sgn(fc.end)}${formatNumber(Math.abs(Math.round(fc.end)))}</b>` +
+                    `<small>Темп ~${compactNumber(Math.round(fc.pace))} в день${ev ? ` · ожидается: ${ev}` : ''}${low ? ` · ⚠ около ${dm(fc.min.date)} может уйти в минус` : ''}</small></div>`;
+            })() : '') +
             `<div class="bal-note">Остаток как в «Доступно»: с переносом с прошлых месяцев, с учётом вкладов и долгов${res.later ? `. Записи на будущие даты (${sgn(res.later)}${formatNumber(Math.abs(Math.round(res.later)))}) в итоге учтены, на линии — нет` : ''}</div>`;
     }
 
@@ -1292,9 +1313,9 @@ function renderBalanceDynamicsChart() {
     charts.balanceDynamics = new Chart(canvas.getContext('2d'), {
         type: 'line',
         data: {
-            labels: pts.map(lbl),
+            labels: allPts.map(lbl),
             datasets: [{
-                data: pts.map(p => p.balance),
+                data: allPts.map((p, i) => (i <= last ? p.balance : null)),
                 borderColor: col, borderWidth: 2.5, tension: 0.3, fill: true,
                 backgroundColor: c => {
                     const a = c.chart.chartArea; if (!a) return 'transparent';
@@ -1305,7 +1326,12 @@ function renderBalanceDynamicsChart() {
                 pointRadius: c => c.dataIndex === last ? 4.5 : 0,
                 pointBackgroundColor: col, pointBorderColor: getCssVar('--bg', '#0b0f1a'), pointBorderWidth: 2,
                 pointHoverRadius: 5
-            }]
+            }, ...(fcPts.length ? [{
+                // пунктир прогноза: начинается в точке «сегодня»
+                data: allPts.map((p, i) => (i >= last ? p.balance : null)),
+                borderColor: cssRgba(col, 0.75), borderWidth: 2, borderDash: [5, 4], tension: 0.25, fill: false,
+                pointRadius: 0, pointHoverRadius: 4, spanGaps: false
+            }] : [])]
         },
         options: {
             maintainAspectRatio: false,
@@ -1319,11 +1345,12 @@ function renderBalanceDynamicsChart() {
                 legend: { display: false },
                 tooltip: {
                     ...buildTooltipDefaults(),
+                    filter: it => !(it.datasetIndex === 1 && it.dataIndex === last),
                     callbacks: {
-                        title: items => { const p = pts[items[0]?.dataIndex]; return p ? fullTitle(p) : ''; },
-                        label: c => `Остаток: ${withCurrencyR(c.raw)}`,
+                        title: items => { const p = allPts[items[0]?.dataIndex]; return p ? fullTitle(p) + (items[0]?.dataIndex > last ? ' · прогноз' : '') : ''; },
+                        label: c => `${c.datasetIndex === 1 ? 'Прогноз' : 'Остаток'}: ${withCurrencyR(c.raw)}`,
                         afterLabel: c => {
-                            const p = pts[c.dataIndex]; if (!p || (!p.plus && !p.minus)) return [];
+                            const p = allPts[c.dataIndex]; if (!p || c.datasetIndex === 1 || (!p.plus && !p.minus)) return [];
                             const per = daily ? 'За день' : 'За месяц';
                             return [`${per} +: ${withCurrencyR(p.plus)}`, `${per} −: ${withCurrencyR(p.minus)}`];
                         }
@@ -1475,6 +1502,75 @@ function wrapLabel(src, maxLen = 15) {
     }
     return lines;
 }
+// === Категории по месяцам: топ-5 категорий трат за 12 месяцев, стопкой ===
+function renderCategoriesByMonthChart() {
+    const canvas = document.getElementById('categoriesByMonthChart');
+    if (!canvas) return;
+    try { charts.categoriesByMonth?.destroy(); } catch (e) {}
+    delete charts.categoriesByMonth;
+    const legend = document.getElementById('anCbmLegend');
+    const all = allAnalyticsTx().filter(t => t.type === 'expense');
+    if (!all.length) { if (legend) legend.innerHTML = '<p class="an-empty">Пока нет трат</p>'; return; }
+    // 12 месяцев, заканчивая последним месяцем периода (или последним месяцем с данными)
+    const { last: lastData } = dataRange(rangeTx());
+    const endKey = period.all ? lastData : [...period.keys].sort().pop();
+    const keys = []; let k = endKey;
+    for (let i = 0; i < 12 && k; i++) { keys.unshift(k); k = addMonths(k, -1); }
+    const inWin = new Set(keys);
+    const byCat = new Map(), cell = new Map();
+    for (const t of all) {
+        const mk = keyOf(t.date); if (!inWin.has(mk)) continue;
+        const c = t.category || 'Без категории', a = amtOf(t);
+        byCat.set(c, (byCat.get(c) || 0) + a);
+        cell.set(`${c}|${mk}`, (cell.get(`${c}|${mk}`) || 0) + a);
+    }
+    const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([c]) => c);
+    const topSet = new Set(top);
+    const restByMonth = keys.map(mk => [...byCat.keys()].filter(c => !topSet.has(c)).reduce((s, c) => s + (cell.get(`${c}|${mk}`) || 0), 0));
+    const set = PALETTE.catSet();
+    const datasets = top.map((c, i) => ({
+        label: c, data: keys.map(mk => cell.get(`${c}|${mk}`) || 0),
+        backgroundColor: set[i % set.length], borderRadius: 4, borderSkipped: false, stack: 's', maxBarThickness: 22
+    }));
+    if (restByMonth.some(v => v > 0)) datasets.push({ label: 'Прочее', data: restByMonth, backgroundColor: PALETTE.other(), borderRadius: 4, borderSkipped: false, stack: 's', maxBarThickness: 22 });
+    const muted = getCssVar('--muted', '#8a93a6');
+    const multiYear = new Set(keys.map(keyYear)).size > 1;
+    const labels = keys.map(mk => MONTHS_SHORT[keyMonth(mk) - 1] + (multiYear && keyMonth(mk) === 1 ? ` ${String(keyYear(mk)).slice(2)}` : ''));
+    charts.categoriesByMonth = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: muted, font: { size: 10, weight: '700' }, maxRotation: 0, autoSkip: false } },
+                y: { stacked: true, keepTicks: true, border: { display: false }, ticks: { color: muted, maxTicksLimit: 4, callback: v => compactNumber(v) }, grid: { color: getCssVar('--faint', 'rgba(255,255,255,.08)') } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...buildTooltipDefaults(),
+                    filter: it => it.raw > 0,
+                    itemSort: (a, b) => b.raw - a.raw,
+                    callbacks: {
+                        title: items => { const mk = keys[items[0]?.dataIndex]; return mk ? `${MONTHS_FULL[keyMonth(mk) - 1]} ${keyYear(mk)}` : ''; },
+                        label: c => `${c.dataset.label}: ${withCurrencyR(c.raw)}`
+                    }
+                }
+            }
+        }
+    });
+    if (legend) {
+        const items = datasets.map((d, i) => {
+            const first = d.data.slice(0, 6).reduce((s, v) => s + v, 0), second = d.data.slice(6).reduce((s, v) => s + v, 0);
+            const ch = first > 0 ? Math.round((second - first) / first * 100) : null;
+            const arrow = ch == null ? '' : `<em class="${ch > 10 ? 'up' : ch < -10 ? 'down' : ''}">${ch > 0 ? '+' : ''}${ch}%</em>`;
+            return `<span><i style="background:${d.backgroundColor}"></i>${escHtml(d.label)}${arrow}</span>`;
+        }).join('');
+        legend.innerHTML = items + '<small>% — последние 6 месяцев против предыдущих 6</small>';
+    }
+}
+
 // === 7. Все категории трат — компактный список (вместо высокого бар-чарта с пустым местом) ===
 let allCatsExpanded = false;
 function renderCategoriesByDescendingChart() {

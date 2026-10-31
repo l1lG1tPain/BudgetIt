@@ -91,3 +91,45 @@ export function calcTypicalDay(exp, today, days = 30) {
     const heavySum = heavy.reduce((s, v) => s + v, 0);
     return { median: med, avg: total / vals.length, daysWithSpend: vals.length, heavyDays: heavy.length, heavyShare: total > 0 ? heavySum / total : 0 };
 }
+
+/**
+ * Первые дни после поступления: какая доля трат цикла (от поступления до следующего) уходит за `days` дня.
+ * Поступления — крупные (≥ 30% медианного месячного дохода), без процентов и возвратов со вклада.
+ */
+export function calcAfterPayday(inc, exp, today, days = 3) {
+    const NOT_PAY = /процент|вклад|депозит|interest/i;
+    const byMonth = new Map();
+    for (const t of inc) { const m = ymd(t.date).slice(0, 7); byMonth.set(m, (byMonth.get(m) || 0) + num(t.amount)); }
+    const monthly = median([...byMonth.values()]);
+    if (!(monthly > 0)) return null;
+    const pays = [...new Set(inc.filter(t => !NOT_PAY.test(String(t.category || '')) && num(t.amount) >= monthly * 0.3).map(t => ymd(t.date)))]
+        .filter(d => d <= today).sort();
+    if (pays.length < 3) return null;
+    const cycles = [];
+    for (let i = 0; i < pays.length - 1; i++) {
+        const a = pays[i], b = pays[i + 1];
+        const firstEnd = addDays(a, days - 1);
+        if (b <= firstEnd) continue;                       // поступления подряд — один цикл
+        let total = 0, first = 0; const cats = new Map();
+        for (const t of exp) {
+            const d = ymd(t.date); if (d < a || d >= b) continue;
+            const v = num(t.amount); total += v;
+            if (d <= firstEnd) { first += v; const c = t.category || 'Без категории'; cats.set(c, (cats.get(c) || 0) + v); }
+        }
+        if (total > 0) cycles.push({ from: a, to: b, total, first, cats, len: daysBetweenStr(a, b) });
+    }
+    const recent = cycles.slice(-6);
+    if (recent.length < 2) return null;
+    const share = recent.reduce((s, c) => s + c.first / c.total, 0) / recent.length;
+    const avgLen = recent.reduce((s, c) => s + c.len, 0) / recent.length;
+    const catSum = new Map();
+    recent.forEach(c => c.cats.forEach((v, k) => catSum.set(k, (catSum.get(k) || 0) + v)));
+    const top = [...catSum.entries()].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k]) => k);
+    const avgFirst = recent.reduce((s, c) => s + c.first, 0) / recent.length;
+    return { share, uniform: Math.min(1, days / avgLen), avgLen, cycles: recent.length, top, avgFirst, days };
+}
+
+function daysBetweenStr(a, b) {
+    const pa = parseYmd(a), pb = parseYmd(b);
+    return Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86400000);
+}

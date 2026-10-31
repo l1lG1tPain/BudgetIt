@@ -11,7 +11,7 @@ let _bm = null;
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
 import { balanceDaily, cashEvents, moneyTx } from './analytics/stats.js';
-import { calcBigPurchases, calcYearOverYear, calcSavingsPace, calcNoSpendDays, calcTypicalDay } from './utils/insightsNew.js';
+import { calcBigPurchases, calcYearOverYear, calcSavingsPace, calcNoSpendDays, calcTypicalDay, calcAfterPayday } from './utils/insightsNew.js';
 import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
@@ -268,6 +268,7 @@ function _addSubtitles() {
         spendingByWeekdayChart    : 'В какой день недели тратишь больше',
         incomeBySourceChart       : 'Доходы по источникам',
         annualSummaryChart        : 'Полная картина: доходы, расходы, баланс',
+        categoriesByMonthChart    : 'Какая статья растёт: топ-5 категорий за 12 месяцев',
     };
 
     document.querySelectorAll('#analytics-page .analytics-scroll section').forEach(sec => {
@@ -772,6 +773,15 @@ function _render() {
                 e: '🧘', t: 'Дни без трат',
                 b: `В ${_mn(ns.month)} — <b>${ns.days}</b> ${pl(ns.days, 'день', 'дня', 'дней')} без трат${ns.best > 1 ? `, самая длинная пауза — <b>${ns.best}</b> дн.` : ''}${ns.curPassed > 0 ? `<br>В этом месяце пока ${ns.curDays} из ${ns.curPassed}` : ''}`,
                 badge: `${ns.days}`, col: '#22c55e', priority: 87
+            });
+        }
+        const ap = calcAfterPayday(incomeTx, realExp, today);
+        if (ap) {
+            const strip = c => _escA(String(c || '').replace(/^\S+\s/, ''));
+            cards.push({
+                e: '💸', t: 'После поступления',
+                b: `За ${ap.days} дня после зарплаты или аванса уходит <b>${Math.round(ap.share * 100)}%</b> трат до следующего поступления — в среднем <b>${_f(ap.avgFirst)}</b>. При ровном темпе было бы ~${Math.round(ap.uniform * 100)}%.${ap.top.length ? `<br><span style="opacity:.7;font-size:11px">Обычно в эти дни: ${ap.top.map(strip).join(', ')}</span>` : ''}`,
+                badge: `${Math.round(ap.share * 100)}%`, col: ap.share > ap.uniform * 1.5 ? '#f59e0b' : '#10b981', priority: 85
             });
         }
         const td = calcTypicalDay(realExp, today);
