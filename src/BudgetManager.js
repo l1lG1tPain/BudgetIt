@@ -713,7 +713,12 @@ export class BudgetManager {
         const getDateInfo = dateStr => {
             if (!dateStr) return null;
 
-            const raw = String(dateStr);
+            // ISO-метка времени (платежи по долгам) → локальная дата, как в calculateTotals
+            let raw = String(dateStr);
+            if (raw.includes('T')) {
+                const dt = new Date(raw);
+                if (!Number.isNaN(dt.getTime())) raw = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            }
             const match = raw.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
             if (!match) return null;
 
@@ -843,7 +848,8 @@ export class BudgetManager {
                     bucket.income += amount;
                     bucket.depositWithdraw += amount;
                 } else {
-                    bucket.expense += amount;
+                    // «Уже лежало» не уходило из кошелька: на вкладе оно есть, а расходом месяца не является
+                    if (!String(tx.status || '').includes('Уже лежало')) bucket.expense += amount;
                     bucket.depositTopup += amount;
                 }
 
@@ -869,12 +875,14 @@ export class BudgetManager {
             if (tx.type !== 'debt') return;
 
             const payments = Array.isArray(tx.payments) ? tx.payments : [];
+            const init = toNumber(tx.initialAmount ?? tx.amount);
+            let paidSoFar = 0; // платёж сверх суммы долга не засчитывается (как в calculateTotals)
 
             payments.forEach(payment => {
                 const info = getDateInfo(payment.date);
+                const amount = Math.min(toNumber(payment.amount), Math.max(0, init - paidSoFar));
+                paidSoFar += amount;
                 if (!info?.monthKey) return;
-
-                const amount = toNumber(payment.amount);
                 if (amount <= 0) return;
 
                 const bucket = ensureBucket(info.monthKey);

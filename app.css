@@ -6048,7 +6048,7 @@ html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-sh
 .pl-day b{display:block;font-weight:700;color:var(--text)}
 .pl-day small{color:var(--muted);font-size:11px}
 .pl-in{color:var(--in)}.pl-out{color:var(--out)}
-.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}
+.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}.pl-bal.carry{color:var(--muted);font-weight:600}
 .pl-tr.is-today{background:var(--chip);box-shadow:inset 3px 0 0 var(--accent)}
 .pl-more{display:block;width:100%;margin-top:10px;min-height:42px;border:1px solid var(--stroke);border-radius:14px;background:var(--glass2);color:var(--accent);font-weight:700;cursor:pointer}
 .planner-form-row{border-radius:18px;background:var(--glass);border:1px solid var(--stroke);padding:12px}
@@ -9662,6 +9662,12 @@ mark.search-highlight {
         color: #d93040;
     }
 }
+.eip-protect-card { margin-bottom: 12px; }
+.eip-protect-status { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; font-size: 13px; line-height: 1.35; background: rgba(255, 170, 0, 0.12); }
+.eip-protect-status[data-ok="1"] { background: rgba(39, 174, 96, 0.12); }
+.eip-protect-status b { font-size: 14px; }
+.eip-protect-usage { opacity: 0.7; font-size: 12px; }
+.eip-protect-card .eip-tool-btn:disabled { opacity: 0.55; }
 /* ── 34-planner.css ── */
 .planner-page-content {
     padding-top: 68px;

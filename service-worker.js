@@ -80,6 +80,7 @@ const STATIC_ASSETS = [
     '/src/ui/DesktopWidgets.js',
     '/src/utils/customCategories.js',
     '/src/utils/sanitize.js',
+    '/src/utils/persistStorage.js',
     '/src/settings.js',
     '/src/profileAnalytics.js',
     '/src/profilePage.js',

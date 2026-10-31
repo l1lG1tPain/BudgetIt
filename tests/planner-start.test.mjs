@@ -59,10 +59,22 @@ test('старт: факт основной траты заменяет план
     assert.equal(p.summary.openingBalance, 750);               // 1000 − 250
 });
 
-test('старт: чужие поступления в стартовый день не считаются, поступление плановой категории заменяет план', () => {
+test('старт: любые поступления дня считаются, поступление плановой категории заменяет план', () => {
     const p = proj([inc(1, '2026-10-01', 500, '🎁 Подарок'), inc(2, '2026-10-01', 1200)], mk(), 1);
-    assert.equal(p.summary.openingBalance, 1000);              // 1200 (факт вместо плана 1000) − 200
+    assert.equal(p.summary.openingBalance, 1500);              // 1200 (факт вместо плана 1000) + 500 подарок − 200
     assert.equal(p.summary.incomeReceived, 1200);
+    assert.equal(p.rows[0].fact.extraIncome, 500);
+});
+
+test('старт: поступление другой категории при плане «по факту» не теряется (случай «Конец месяца»)', () => {
+    const planner = mk({ incomePlan: { category: '💼 Аванс', amount: 0, incomeDate: '2026-10-01' }, mainExpenses: [], dailyExpenses: [] });
+    const p = proj([inc(1, '2026-10-01', 7000, '💼 Аванс'), inc(2, '2026-10-01', 78, '🏦 Проценты от вклада'), exp(3, '2026-10-01', 100)], planner, 2);
+    assert.equal(p.summary.openingBalance, 6978);
+});
+
+test('будущие дни без операций помечены isFuture, прошедшие и сегодняшний — нет', () => {
+    const p = proj([], mk(), 3);
+    assert.deepEqual(p.rows.map(r => r.isFuture), [false, false, false, true, true]);
 });
 
 test('зарплата пришла позже плановой даты: считается один раз', () => {

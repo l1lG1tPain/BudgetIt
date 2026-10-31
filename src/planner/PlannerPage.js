@@ -657,7 +657,7 @@ export class PlannerPage {
                 <div class="pl-day"><b>${row.date}</b><small>${row.isToday ? 'Сегодня' : 'день ' + row.dayIndex}</small></div>
                 <div class="pl-in">${row.totalIncomeDay > 0 ? '+' + f(row.totalIncomeDay) : '—'}</div>
                 <div class="pl-out">${row.totalExpenseDay > 0 ? '−' + f(row.totalExpenseDay) : '—'}</div>
-                <div class="pl-bal ${row.balanceEndOfDay < 0 ? 'neg' : ''}">${f(row.balanceEndOfDay)}</div>
+                <div class="pl-bal ${row.isFuture && !row.totalIncomeDay && !row.totalExpenseDay ? 'carry' : row.balanceEndOfDay < 0 ? 'neg' : ''}">${f(row.balanceEndOfDay)}</div>
             </div>`;
 
         this.rowsWrap.innerHTML = `

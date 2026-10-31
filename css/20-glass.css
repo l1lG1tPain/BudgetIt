@@ -1025,7 +1025,7 @@ html[data-shark="hoodie"] #clear-data-modal .modal-content::before, html[data-sh
 .pl-day b{display:block;font-weight:700;color:var(--text)}
 .pl-day small{color:var(--muted);font-size:11px}
 .pl-in{color:var(--in)}.pl-out{color:var(--out)}
-.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}
+.pl-bal{font-weight:800;color:var(--text)}.pl-bal.neg{color:var(--out)}.pl-bal.carry{color:var(--muted);font-weight:600}
 .pl-tr.is-today{background:var(--chip);box-shadow:inset 3px 0 0 var(--accent)}
 .pl-more{display:block;width:100%;margin-top:10px;min-height:42px;border:1px solid var(--stroke);border-radius:14px;background:var(--glass2);color:var(--accent);font-weight:700;cursor:pointer}
 
