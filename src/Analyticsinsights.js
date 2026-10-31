@@ -11,6 +11,7 @@ let _bm = null;
 import { computeMetrics, sumAmount, num, weekdayOf, localToday } from './utils/insightsMath.js';
 import { calcRunway, calcSafePerDay, calcPaydayWeek, calcWeekdayWeekend, calcHabits, findSubscriptions } from './utils/insightsExtra.js';
 import { balanceDaily, cashEvents, moneyTx } from './analytics/stats.js';
+import { calcBigPurchases, calcYearOverYear, calcSavingsPace, calcNoSpendDays, calcTypicalDay } from './utils/insightsNew.js';
 import { makePeriod } from './analytics/period.js';
 
 // Регэксп «финансовых» категорий и список системных исключений — единый, в utils/insightsMath.js
@@ -457,19 +458,7 @@ function _render() {
         });
     }
 
-    // 4
-    if (anomaly) {
-        cards.push({
-            e: '🔎',
-            t: 'Нетипичная трата',
-            b: `<b>${_escA(anomaly.category)}</b> — ${_f(anomaly.amount)}<br>
-<span style="opacity:.72;font-size:11px">${_fd(anomaly.date)} · выше среднего в ${anomaly.timesAvg}x и выше медианы в ${anomaly.timesMedian}x</span><br>
-<span style="opacity:.62;font-size:11px">Просто для сведения: в тратах и трендах она учтена, как все операции.</span>`,
-            badge: 'аномалия',
-            col: '#f59e0b',
-            priority: 96
-        });
-    }
+    // 4. «Нетипичная трата» убрана: на деле это просто самая крупная операция, пользы мало
 
     // 5
     if (months.length > 0) {
@@ -741,6 +730,56 @@ function _render() {
                 e: '📅', t: 'Будни и выходные',
                 b: `В выходные ты тратишь в среднем <b>${_f(ww.wePer)}</b> в день, в будни — <b>${_f(ww.wdPer)}</b>: на <b>${Math.abs(Math.round((ww.ratio - 1) * 100))}%</b> ${more ? 'больше' : 'меньше'} по выходным`,
                 badge: `${more ? '+' : '−'}${Math.abs(Math.round((ww.ratio - 1) * 100))}%`, col: '#06b6d4', priority: 79
+            });
+        }
+
+        // ── новые тренды ──
+        const pctS = x => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x * 100))}%`;
+        const pl = (n, one, few, many) => { const a = Math.abs(n) % 100, b = a % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many; };
+        const bp = calcBigPurchases(realExp, today);
+        if (bp) {
+            const rows = bp.top.map(t => `<div class="bi-pd"><span>${_escA(t.category || t.name || '—')} · ${_fd(t.date)}</span><span class="bi-pd-v">${_f(t.amount)}</span></div>`).join('');
+            cards.push({
+                e: '💎', t: 'Крупные траты за 90 дней',
+                b: `${bp.count} ${pl(bp.count, 'операция', 'операции', 'операций')} дороже <b>${_f(bp.threshold)}</b> забрали <b>${Math.round(bp.share * 100)}%</b> всех трат (${_f(bp.sum)}). Без них уходит около <b>${_f(bp.restPerMonth)}</b> в месяц.${rows}`,
+                badge: `${Math.round(bp.share * 100)}%`, wide: true, col: '#f59e0b', priority: 90
+            });
+        }
+        const yoy = calcYearOverYear(realExp, incomeTx, today);
+        if (yoy) {
+            const up = yoy.expGrowth > 0;
+            cards.push({
+                e: '📆', t: 'Год к году',
+                b: `${_mn(yoy.month)}: траты <b>${_f(yoy.exp)}</b> — <b style="color:${up ? '#f43f5e' : '#10b981'}">${pctS(yoy.expGrowth)}</b> к ${_mn(yoy.lastYear)} (${_f(yoy.expPrev)})${yoy.incGrowth != null ? `<br>Поступления <b>${_f(yoy.inc)}</b> — <b>${pctS(yoy.incGrowth)}</b> (было ${_f(yoy.incPrev)})` : ''}`,
+                badge: pctS(yoy.expGrowth), col: up ? '#f43f5e' : '#10b981', priority: 89
+            });
+        }
+        const sp3 = calcSavingsPace(_bm?.getCurrentBudget()?.transactions ?? [], today);
+        if (sp3) {
+            cards.push({
+                e: '🐷', t: 'Откладываешь',
+                b: sp3.net > 0
+                    ? `С ${_mn(sp3.from)} по ${_mn(sp3.to)} во вклады ушло <b>${_f(sp3.net)}</b> сверх снятого — в среднем <b>${_f(sp3.avg)}</b> в месяц. В таком темпе за год ≈ <b>${_f(sp3.yearly)}</b>`
+                    : sp3.net < 0
+                        ? `С ${_mn(sp3.from)} по ${_mn(sp3.to)} со вкладов снято на <b>${_f(-sp3.net)}</b> больше, чем внесено`
+                        : `С ${_mn(sp3.from)} по ${_mn(sp3.to)} сколько внесли во вклады, столько и сняли`,
+                badge: sp3.net > 0 ? `${_f(sp3.avg)}/мес` : '', col: '#8b5cf6', priority: 88
+            });
+        }
+        const ns = calcNoSpendDays(realExp, today);
+        if (ns) {
+            cards.push({
+                e: '🧘', t: 'Дни без трат',
+                b: `В ${_mn(ns.month)} — <b>${ns.days}</b> ${pl(ns.days, 'день', 'дня', 'дней')} без трат${ns.best > 1 ? `, самая длинная пауза — <b>${ns.best}</b> дн.` : ''}${ns.curPassed > 0 ? `<br>В этом месяце пока ${ns.curDays} из ${ns.curPassed}` : ''}`,
+                badge: `${ns.days}`, col: '#22c55e', priority: 87
+            });
+        }
+        const td = calcTypicalDay(realExp, today);
+        if (td) {
+            cards.push({
+                e: '🌤', t: 'Обычный день',
+                b: `Обычный день стоит <b>${_f(td.median)}</b> (медиана за 30 дней).${td.heavyDays ? ` <b>${td.heavyDays}</b> ${pl(td.heavyDays, 'день был', 'дня были', 'дней были')} дороже ${_f(td.median * 3)} и забрали <b>${Math.round(td.heavyShare * 100)}%</b> всех трат` : ' Дорогих дней не было'}`,
+                badge: _f(td.median), col: '#06b6d4', priority: 86
             });
         }
 
