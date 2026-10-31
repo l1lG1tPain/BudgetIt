@@ -10632,7 +10632,7 @@ mark.search-highlight {
     .planner-ob-features {
         grid-template-columns: 1fr;
     }
-}
+}.planner-stat-note.is-overdue { opacity: .6; }
 /* ── 35-achievements.css ── */
 .ach-summary-card {
     background: var(--card-bg, #1e1e1e);

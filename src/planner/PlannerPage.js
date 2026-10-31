@@ -333,7 +333,9 @@ export class PlannerPage {
 
         const incomeNote = s.incomeReceived > 0
             ? (s.incomeExpected > 0 ? `Получено ${formatNumber(Math.floor(s.incomeReceived))}, ждём ещё ${formatNumber(Math.floor(s.incomeExpected))}` : 'Получено, по факту')
-            : s.incomeByFact ? 'Ждём поступление' : 'Ожидается по плану';
+            : s.incomeByFact ? 'Ждём поступление'
+            : s.incomeOverdue ? `ожидается, дата прошла (${String(s.incomePlanDate).slice(8, 10)}.${String(s.incomePlanDate).slice(5, 7)})`
+            : 'Ожидается по плану';
         const remDays = s.remainingDays || 0;
         const left = Math.floor(s.remainingBudget || 0);
         const tip = remDays > 0
@@ -352,7 +354,7 @@ export class PlannerPage {
                 <div class="planner-stat-card planner-stat-card-budget">
                     <div class="planner-stat-label">Поступление</div>
                     <div class="planner-stat-value">${formatNumber(Math.floor((s.incomeReceived || 0) + (s.incomeExpected || 0)))}</div>
-                    <div class="planner-stat-note">${incomeNote}</div>
+                    <div class="planner-stat-note${s.incomeOverdue && !(s.incomeReceived > 0) ? ' is-overdue' : ''}">${incomeNote}</div>
                 </div>
 
                 <div class="planner-stat-card planner-stat-card-start">

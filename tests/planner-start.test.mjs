@@ -99,3 +99,19 @@ test('поступление «по факту» (сумма не задана):
     assert.equal(p.summary.incomeByFact, true);
     assert.equal(incomeSum(proj([inc(1, '2026-10-03', 900)], planner, 4)), 900);
 });
+
+test('дата поступления прошла, факта нет: считаем как раньше, но помечаем overdue', () => {
+    const p = proj([], mk({ mainExpenses: [], dailyExpenses: [] }), 3);
+    assert.equal(p.summary.incomeExpected, 1000);
+    assert.equal(p.summary.incomeOverdue, true);
+    assert.equal(p.summary.incomePlanDate, '2026-10-01');
+});
+
+test('overdue нет: дата сегодня, дата впереди, или поступление пришло', () => {
+    const today = proj([], mk({ mainExpenses: [], dailyExpenses: [] }), 1);
+    assert.equal(today.summary.incomeOverdue, false);
+    const future = proj([], mk({ incomePlan: { category: '💰 Зарплата', amount: 1000, incomeDate: '2026-10-04' }, mainExpenses: [], dailyExpenses: [] }), 2);
+    assert.equal(future.summary.incomeOverdue, false);
+    const got = proj([inc(1, '2026-10-02', 1000)], mk({ mainExpenses: [], dailyExpenses: [] }), 3);
+    assert.equal(got.summary.incomeOverdue, false);
+});

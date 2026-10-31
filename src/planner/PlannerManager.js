@@ -419,7 +419,9 @@ export class PlannerManager {
         const expected = !planDate ? 0
             : planDate > todayIso ? Math.max(0, planned - received)
             : (received > 0 ? 0 : planned);
-        return { category, received, planned, planDate, expected };
+        // дата прошла, а поступления нет: считаем, что придёт по плану, но помечаем «просрочку» для интерфейса
+        const overdue = !!planDate && planned > 0 && planDate < todayIso && received <= 0;
+        return { category, received, planned, planDate, expected, overdue };
     }
 
     buildDayFacts({
@@ -812,6 +814,8 @@ export class PlannerManager {
                 incomeAmount: Number(planner.incomePlan.amount) || 0,
                 incomeReceived: incomeState.received,
                 incomeExpected: incomeState.expected,
+                incomeOverdue: !!incomeState.overdue,
+                incomePlanDate: incomeState.planDate || null,
                 incomeByFact: !(Number(planner.incomePlan.amount) > 0),
                 periodDays: planner.periodDays,
                 startDate: planner.startDate,
