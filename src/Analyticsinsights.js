@@ -222,6 +222,7 @@ function _injectHTML() {
     const block = document.createElement('div');
     block.id = 'bi-insights';
     block.innerHTML = `
+      <p class="bi-scope-note">Тренды · за всё время</p>
       <div class="bi-kpi-row" id="bi-kpi-row"></div>
 
       <div class="bi-health" id="bi-health" style="display:none">
@@ -345,14 +346,15 @@ function _render() {
         },
         {
             ico: '🏦',
-            lbl: 'Остаток',
+            lbl: 'Разница за всё время',
             val: _fk(bal),
-            sub: bal >= 0 ? 'В плюсе' : 'Дефицит',
+            sub: bal >= 0 ? 'В плюсе, не «Доступно»' : 'В минусе, не «Доступно»',
+            hint: 'Поступления минус обычные траты, без переводов и вкладов. Это не «Доступно»',
             neg: bal < 0
         },
         {
             ico: '📊',
-            lbl: 'Сбережения',
+            lbl: 'Остаётся от поступлений, %',
             val: `${sav.toFixed(1)}%`,
             sub: sav >= 20 ? 'Хороший темп' : sav >= 10 ? 'Нормально' : 'Нужно подтянуть'
         },
@@ -425,7 +427,7 @@ function _render() {
             e: '💡',
             t: 'Совет по экономии',
             tip: true,
-            b: `Сбережения ${sav.toFixed(1)}%. Если сократить <b>${baseCat}</b> на 20%, можно высвободить ~<b>${_f(save20pct)}</b>/мес`,
+            b: `Остаётся от поступлений ${sav.toFixed(1)}%. Если сократить <b>${baseCat}</b> на 20%, можно высвободить ~<b>${_f(save20pct)}</b>/мес`,
             col: '#f59e0b',
             priority: 98
         });
@@ -434,7 +436,7 @@ function _render() {
             e: '🚀',
             t: 'Финансовый гений',
             tip: true,
-            b: `Сбережения <b>${sav.toFixed(1)}%</b> — очень сильный результат`,
+            b: `От поступлений остаётся <b>${sav.toFixed(1)}%</b> — очень сильный результат`,
             col: '#10b981',
             priority: 98
         });
@@ -444,8 +446,8 @@ function _render() {
             t: 'На правильном пути',
             tip: true,
             b: sav >= 20
-                ? `Сбережений ${sav.toFixed(1)}% — выше комфортных 20%. Так держать`
-                : `Сбережений ${sav.toFixed(1)}%. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
+                ? `Остаётся ${sav.toFixed(1)}% от поступлений — выше комфортных 20%. Так держать`
+                : `Остаётся ${sav.toFixed(1)}% от поступлений. До комфортных 20% не хватает <b>${_f(Math.max(0, totI * 0.2 - bal))}</b>`,
             col: '#22d3ee',
             priority: 97
         });
@@ -838,7 +840,7 @@ function _kpi(items) {
     if (!row) return;
 
     row.innerHTML = items.map(it => `
-      <div class="bi-kpi ${it.neg ? 'bi-kpi--neg' : ''}">
+      <div class="bi-kpi ${it.neg ? 'bi-kpi--neg' : ''}"${it.hint ? ` title="${String(it.hint).replace(/"/g, '&quot;')}"` : ''}>
         <div class="bi-kpi-icon-wrap">
           <span class="bi-kpi-i">${it.ico}</span>
         </div>

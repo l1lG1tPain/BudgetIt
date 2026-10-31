@@ -7091,6 +7091,7 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
 #summary-blocks #block-debt.debt-owed .block-value { color: var(--in, var(--income-color)); }
 #summary-blocks #block-debt .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
 #summary-blocks #block-debt .block-note.hidden { display: none; }
+#summary-blocks #block-deposit .block-note { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--muted, inherit); }
 /* ── 30-statement-import.css ── */
 .ei-detected-source {
     font-size: 12px;
@@ -8695,7 +8696,7 @@ html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
     #bi-insights       { padding: 18px 0 10px; max-width: 900px; margin: 0 auto; }
     .bi-cards          { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .bi-kpi            { min-width: 120px; }
-}
+}.bi-scope-note { margin: 0 0 8px; font-size: 12px; font-weight: 700; color: var(--muted, inherit); }
 /* ── 32-search.css ── */
 .search-open-btn {
     display: flex;
