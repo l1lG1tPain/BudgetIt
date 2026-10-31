@@ -1666,6 +1666,14 @@ window.addEventListener('budgetit:analytics-open', () => {
     destroyAllCharts();
     renderCharts();
 });
+// перенос остатка изменился: линии баланса считаются иначе
+window.addEventListener('budgetit:carry-changed', () => {
+    transactionsCache.clear();
+    if (!analyticsIsOpen()) { chartsStale = true; return; }
+    chartsStale = false;
+    destroyAllCharts();
+    renderCharts();
+});
 window.addEventListener('budgetit:region-changed', () => {
     transactionsCache.clear();
     destroyAllCharts();

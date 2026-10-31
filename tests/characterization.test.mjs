@@ -26,7 +26,9 @@ const { PlannerManager } = await import('../src/planner/PlannerManager.js');
 const { normalizePlanner } = await import('../src/planner/plannerUtils.js');
 
 function makeBM(transactions = [], planners = []) {
+    const keepMode = store.get('budgetit:carryMode');
     store.clear();
+    if (keepMode !== undefined) store.set('budgetit:carryMode', keepMode);
     const bm = new BudgetManager(null);
     bm.budgets = [{ id: 'b1', name: '🦈 Тест', transactions }];
     bm.currentBudgetIndex = 0;
@@ -37,7 +39,38 @@ const inc = (id, date, amount, category = '💰 Зарплата') => ({ id, typ
 const exp = (id, date, amount, category = '🥦 Продукты') => ({ id, type: 'expense', date, category, amount, products: [{ name: 'x', quantity: 1, price: amount }] });
 
 // ── 1. calculateTotals: месяцы и перенос остатка ───────────────────────────
-test('месяц в минус: следующий месяц начинается с 0', () => {
+const withCarryMode = (mode, fn) => {
+    const prev = store.get('budgetit:carryMode');
+    store.set('budgetit:carryMode', mode);
+    try { return fn(); } finally { if (prev === undefined) store.delete('budgetit:carryMode'); else store.set('budgetit:carryMode', prev); }
+};
+
+test('перенос по умолчанию — со знаком: перерасход уменьшает следующий месяц (−100, затем +50 → −50)', () => {
+    const bm = makeBM([inc(1, '2026-01-10', 100), exp(2, '2026-01-20', 200), inc(3, '2026-02-05', 50)]);
+    const jan = bm.calculateTotals('01', 2026);
+    assert.equal(jan.overallBudget, -100);
+    assert.equal(jan.carryOver, 0);
+    const feb = bm.calculateTotals('02', 2026);
+    assert.equal(feb.carryOver, -100);
+    assert.equal(feb.rawCarryOver, -100);
+    assert.equal(feb.overallBudget, 50);                 // UIManager сам прибавляет carryOver → −50
+    assert.equal(feb.closingBalance, -50);
+    assert.equal(bm.calculateTotals('all').overallBudget, -50);
+    assert.equal(bm.calculateTotals('all', 2026).overallBudget, -50);
+});
+
+test('режим reset: перерасход не переносится, rawCarryOver хранит сумму', () => {
+    withCarryMode('reset', () => {
+        const bm = makeBM([inc(1, '2026-01-10', 100), exp(2, '2026-01-20', 200), inc(3, '2026-02-05', 50)]);
+        const feb = bm.calculateTotals('02', 2026);
+        assert.equal(feb.carryOver, 0);
+        assert.equal(feb.rawCarryOver, -100);
+        assert.equal(feb.closingBalance, 50);
+        assert.equal(bm.calculateTotals('all').overallBudget, 50);
+    });
+});
+
+test('месяц в минус (режим reset): следующий месяц начинается с 0', () => withCarryMode('reset', () => {
     const bm = makeBM([inc(1, '2026-01-10', 1000), exp(2, '2026-01-20', 1500), inc(3, '2026-02-05', 500)]);
     const jan = bm.calculateTotals('01', 2026);
     assert.equal(jan.monthlyIncome, 1000);
@@ -48,7 +81,7 @@ test('месяц в минус: следующий месяц начинаетс
     assert.equal(feb.carryOver, 0);
     assert.equal(feb.overallBudget, 500);
     assert.equal(bm.calculateTotals('all').overallBudget, 500);
-});
+}));
 
 test('положительный остаток переносится (carryOver)', () => {
     const bm = makeBM([inc(1, '2026-01-10', 1000), exp(2, '2026-01-20', 400), inc(3, '2026-02-05', 100)]);

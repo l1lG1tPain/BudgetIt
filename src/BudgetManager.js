@@ -1,7 +1,7 @@
 // BudgetManager.js — финальная версия с planner support
 import { cleanText, cleanTransaction } from './utils/sanitize.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
-import { carryNext } from './utils/carryOver.js';
+import { carryNext, getCarryMode } from './utils/carryOver.js';
 
 export class BudgetManager {
     constructor(storageManager = null) {
@@ -573,8 +573,9 @@ export class BudgetManager {
 
         // 3. Перенос остатка из месяца в месяц.
         // Если месяц закрылся в минус — следующий месяц начинается с 0.
-        const carryMode = 'reset'; // TODO 2.2: getCarryMode()
+        const carryMode = getCarryMode();
         let rollingBalance = 0;
+        let rawCarryOver = 0; // закрытие предыдущего месяца до возможного обнуления
         let openingBalance = 0;
         let selectedMonthNet = 0;
         let selectedClosingBalance = 0;
@@ -585,6 +586,7 @@ export class BudgetManager {
                 .forEach(monthKey => {
                     const rawClosing = rollingBalance + getMonthNet(monthKey);
                     rollingBalance = carryNext(rawClosing, carryMode);
+                    rawCarryOver = rawClosing;
                 });
 
             openingBalance = rollingBalance;
@@ -689,6 +691,7 @@ export class BudgetManager {
             depositBalance,
             totalDebt,
             carryOver,
+            rawCarryOver: target.isSingleMonth ? rawCarryOver : 0,
 
             openingBalance,
             closingBalance,
@@ -904,7 +907,7 @@ export class BudgetManager {
 
         // Накопительный баланс бюджета:
         // если месяц ушёл в минус, следующий месяц начинается с 0.
-        const carryMode = 'reset'; // TODO 2.2: getCarryMode()
+        const carryMode = getCarryMode();
         let rollingBudget = 0;
         allKnownMonths.forEach(monthKey => {
             const bucket = buckets.get(monthKey);

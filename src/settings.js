@@ -15,6 +15,7 @@ import { canOfferInstall, openInstall } from './ui/PwaInstall.js';
 import { sanitizeDeep } from './utils/sanitize.js';
 import { getStorageStatus, requestPersistentStorage, describeStatus, formatBytes, shareBackupFile, shouldOfferProtection, getDismissedAt, markDismissed } from './utils/persistStorage.js';
 import { getNumberFormat, NUMBER_FORMAT_KEY } from './utils/utils.js';
+import { getCarryMode, setCarryMode } from './utils/carryOver.js';
 
 let localBudgetManager = null;
 let localUI = null;
@@ -1976,9 +1977,27 @@ function renderRegionCards() {
         </div>
         <div class="rg-note">Меняется сразу во всём приложении — проверь баланс на главной.</div>`;
 
-    grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml;
+    const cm = getCarryMode();
+    const carryHtml = `
+        <div class="rg-label">Перерасход прошлого месяца</div>
+        <div class="numfmt-seg" role="group">
+            <button type="button" data-carry="carry" class="${cm === 'carry' ? 'active' : ''}">Переносить</button>
+            <button type="button" data-carry="reset" class="${cm === 'reset' ? 'active' : ''}">С нуля</button>
+        </div>
+        <div class="rg-note">Переносить — честнее: если в прошлом месяце потратил больше, чем получил, эти деньги уже ушли.</div>`;
 
-    grid.querySelectorAll('.numfmt-seg button').forEach(b => {
+    grid.innerHTML = regionsHtml + toggleHtml + numFmtHtml + carryHtml;
+
+    grid.querySelectorAll('[data-carry]').forEach(b => {
+        b.addEventListener('click', e => {
+            e.stopPropagation();
+            setCarryMode(b.dataset.carry);
+            renderRegionCards();
+            try { localUI?.updateUI?.(); } catch {}
+        });
+    });
+
+    grid.querySelectorAll('.numfmt-seg button[data-nf]').forEach(b => {
         b.addEventListener('click', e => {
             e.stopPropagation();
             try { localStorage.setItem(NUMBER_FORMAT_KEY, b.dataset.nf); } catch {}

@@ -4,7 +4,7 @@
 //   Даты — строки 'YYYY-MM-DD' (никогда не парсим через new Date(str)).
 // ===============================
 import { num, median, isSystemExcludedCategory, isFinancialCategory } from '../utils/insightsMath.js';
-import { carryNext } from '../utils/carryOver.js';
+import { carryNext, getCarryMode } from '../utils/carryOver.js';
 import { inPeriod, keyOf, monthRange, addMonths, previousPeriod, periodSpan, keyYear, keyMonth, ymKey, makePeriod } from './period.js';
 
 export const WEEKDAYS_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
@@ -213,7 +213,7 @@ export function cashEvents(raw) {
 }
 
 /** Остаток на начало месяца `key`: перенос из месяца в месяц, ушедший в минус месяц дальше начинается с 0 (как «Доступно»). */
-function openingFor(ev, key, mode = 'reset') {
+function openingFor(ev, key, mode = getCarryMode()) {
     const net = new Map();
     for (const e of ev) { const k = keyOf(e.date); if (k < key) net.set(k, (net.get(k) || 0) + e.v); }
     let run = 0;
@@ -222,7 +222,7 @@ function openingFor(ev, key, mode = 'reset') {
 }
 
 /** Остаток на конец каждого месяца окна. Стартует с переноса (как «Доступно» на главной), конец последнего месяца = «Доступно». */
-export function balanceSeries(raw, p, mode = 'reset') {
+export function balanceSeries(raw, p, mode = getCarryMode()) {
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const { first, last } = dataRange(ev);
@@ -244,7 +244,7 @@ export function balanceSeries(raw, p, mode = 'reset') {
 }
 
 /** Дневной остаток для коротких периодов: от 1-го числа первого месяца (с переносом) до последнего дня периода. Последняя точка = «Доступно». */
-export function balanceDaily(raw, p, todayISO, mode = 'reset') {
+export function balanceDaily(raw, p, todayISO, mode = getCarryMode()) {
     if (p.all || !p.keys.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };
     const ev = cashEvents(raw);
     if (!ev.length) return { points: [], start: 0, end: 0, change: 0, min: null, max: null };

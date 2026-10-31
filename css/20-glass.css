@@ -2236,3 +2236,7 @@ img, picture, svg image {
 #shark-page .sk-gal-item b { font-size: 12px; color: var(--text); }
 #shark-page .sk-gal-item small { font-size: 10.5px; line-height: 1.25; color: var(--muted); }
 html[data-shark="classic"] #shark-page .sk-gallery { display: none; }
+/* «Доступно» в минусе и пояснение про перенос остатка */
+#summary-blocks #block-budget.is-negative .block-value { color: var(--out, var(--expense-color)); }
+#summary-blocks #block-budget .block-note { margin-top: 2px; font-size: 12px; font-weight: 600; color: var(--muted, inherit); text-align: center; }
+#summary-blocks #block-budget .block-note.hidden { display: none; }

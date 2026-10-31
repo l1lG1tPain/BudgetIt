@@ -18,6 +18,7 @@ import {
 
 import { monthNames } from '../constants/constants.js';
 import { markFlag } from './shark/SharkExtra.js';
+import { getCarryMode } from './utils/carryOver.js';
 import { addCustomCategory, removeCustomCategory } from './utils/customCategories.js';
 import { openDateSheet, formatDateLabel } from './ui/DateSheet.js';
 import { refreshExportAnalytics, createAutoBackup } from './settings.js';
@@ -212,6 +213,7 @@ export class UIManager {
             }
 
             const el = document.querySelector(`#block-${type} .block-value`);
+            if (type === 'budget') document.getElementById('block-budget')?.classList.toggle('is-negative', value < 0);
             this.animateValue(el, value, 800);
 
             const emojiFnByType = {
@@ -228,6 +230,7 @@ export class UIManager {
             }
         });
 
+        this.updateBudgetNote(totals, carryOver, isSingleMonth);
         this.updateAkulkaCard(totals, carryOver, isSingleMonth);
         this.desktopWidgets?.refresh();
 
@@ -624,6 +627,23 @@ export class UIManager {
         });
     }
 
+    // Подпись под «Доступно»: откуда взялся минус / что не перенесено (зависит от режима переноса)
+    updateBudgetNote(totals, carryOver, isSingleMonth) {
+        const note = document.getElementById('budget-carry-note');
+        if (!note) return;
+        let text = '';
+        if (isSingleMonth) {
+            const raw = Number(totals.rawCarryOver) || 0;
+            if (getCarryMode() === 'reset') {
+                if (raw < 0) text = `перерасход прошлого месяца ${formatNumber(raw)} не перенесён`;
+            } else if (carryOver < 0) {
+                text = `из прошлого месяца ${formatNumber(carryOver)}`;
+            }
+        }
+        note.textContent = text;
+        note.classList.toggle('hidden', !text);
+    }
+
     // Карточка Акулки на главной. Этап 3 — простой статический вариант по доле трат;
     // полноценные настроения/лимит дня приедут в SharkMood (этап 6).
     updateAkulkaCard(totals, carryOver, isSingleMonth) {
@@ -777,12 +797,13 @@ export class UIManager {
 
     animateValue(el, end, duration) {
         if (!el) return;
-        const start = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+        const prevText = el.textContent || '';
+        const start = (parseInt(prevText.replace(/\D/g, '')) || 0) * (/^\s*[−-]/.test(prevText) ? -1 : 1);
         let timestampStart = null;
         const step = now => {
             if (!timestampStart) timestampStart = now;
             const progress = Math.min((now - timestampStart) / duration, 1);
-            el.textContent = formatNumber(Math.floor(progress * (end - start) + start));
+            el.textContent = formatNumber(Math.trunc(progress * (end - start) + start));
             if (progress < 1) window.requestAnimationFrame(step);
         };
         window.requestAnimationFrame(step);
