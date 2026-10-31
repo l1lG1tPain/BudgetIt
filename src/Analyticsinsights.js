@@ -136,6 +136,7 @@ function _hideOnboarding() {
 // ──────────────────────────────────────────────────────────────
 // Работа с пользовательскими исключениями
 // ──────────────────────────────────────────────────────────────
+const prevMonthKeyLocal = ym => { const [y, m] = ym.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`; };
 const _escA = x => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
 function _getUserExcludedCats() {
@@ -409,14 +410,15 @@ function _render() {
     // 2
     if (regularCats.length > 0) {
         const total = regularCats.reduce((s, r) => s + r.avg, 0);
-        const rows = regularCats.slice(0, 4).map(r =>
-            `<div class="bi-pd"><span>${r.cat}</span><span class="bi-pd-v">~${_f(r.avg)}/мес</span></div>`
+        const rows = regularCats.slice(0, 6).map(r =>
+            `<div class="bi-pd"><span>${_escA(r.cat)} <em style="opacity:.55;font-style:normal">${r.months} из ${M.regMonths.length} мес</em></span><span class="bi-pd-v">~${_f(r.avg)}/мес</span></div>`
         ).join('');
 
         cards.push({
             e: '🔄',
             t: 'Регулярные расходы',
-            b: `Повторяются почти каждый месяц:<br>${rows}<br><span style="opacity:.6;font-size:11px">Итого ~${_f(total)}/мес обязательных трат</span>`,
+            b: `Повторяются почти каждый месяц (за последние ${M.regMonths.length} мес):<br>${rows}<br><span style="opacity:.6;font-size:11px">Итого ~${_f(total)} в месяц — <b>${mandatoryShare.toFixed(0)}%</b> средних расходов (${_f(M.regLifeAvg)})</span>`,
+            badge: `${mandatoryShare.toFixed(0)}%`,
             wide: true,
             col: '#06b6d4',
             priority: 99
@@ -469,9 +471,21 @@ function _render() {
         cards.push({
             e: plus ? '✅' : '⚠️',
             t: `Итог ${_mn(months.at(-1))}`,
-            b: plus
-                ? `Доходов было больше, чем расходов. Осталось <b>${_f(mb)}</b>`
-                : `Траты превысили доходы на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`,
+            b: (() => {
+                const ym = months.at(-1);
+                const inM = t => String(t.date || '').startsWith(ym);
+                const byCat = {};
+                realExp.filter(inM).forEach(t => { const c = t.category || '🗿 Прочее'; byCat[c] = (byCat[c] || 0) + num(t.amount); });
+                const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 3)
+                    .map(([c, v]) => `<div class="bi-pd"><span>${_escA(c)}</span><span class="bi-pd-v">${_f(v)}</span></div>`).join('');
+                const prev = M.mMap[prevMonthKeyLocal(ym)];
+                const prevLine = prev && (prev.i || prev.e) ? `<br><span style="opacity:.6;font-size:11px">${_mn(prevMonthKeyLocal(ym))}: ${prev.i - prev.e >= 0 ? '+' : '−'}${_f(Math.abs(prev.i - prev.e))}</span>` : '';
+                return (plus
+                    ? `Поступлений больше, чем трат. Осталось <b>${_f(mb)}</b>`
+                    : `Траты превысили поступления на <b style="color:#f43f5e">${_f(Math.abs(mb))}</b>`) +
+                    `<br><span style="opacity:.72;font-size:12px">Пришло ${_f(lastM.i)} · ушло ${_f(lastM.e)}</span>` +
+                    (top ? `<br><span style="opacity:.6;font-size:11px">Больше всего ушло:</span>${top}` : '') + prevLine;
+            })(),
             badge: `${plus ? '+' : ''}${_f(mb)}`,
             col: plus ? '#10b981' : '#f43f5e',
             priority: 95
@@ -527,16 +541,7 @@ function _render() {
     }
 
     // 9
-    if (mandatoryShare > 0) {
-        cards.push({
-            e: '🧱',
-            t: 'Обязательная нагрузка',
-            b: `Регулярные траты занимают около <b>${mandatoryShare.toFixed(0)}%</b> среднемесячных расходов`,
-            badge: `${mandatoryShare.toFixed(0)}%`,
-            col: '#06b6d4',
-            priority: 90
-        });
-    }
+    // «Обязательная нагрузка» объединена с «Регулярными расходами» (там же доля от средних расходов)
 
     // 10
     const maxTx = realExp.length

@@ -84,7 +84,7 @@ export const localToday = () => new Date().toLocaleDateString('en-CA');
 
 // ── регулярные расходы ───────────────────────────────────────
 // Категория регулярна, если есть минимум в 75% месяцев (и не меньше 2).
-export function findRegularExpenses(exp, months) {
+export function findRegularExpenses(exp, months, ratio = 0.75) {
     if (months.length < 2 || !exp.length) return [];
     const allowed = new Set(months);
     const catMonths = {};
@@ -94,7 +94,7 @@ export function findRegularExpenses(exp, months) {
         const c = t.category || '🗿 Прочее';
         (catMonths[c] ||= {})[m] = (catMonths[c][m] || 0) + num(t.amount);
     });
-    const threshold = Math.max(2, Math.ceil(months.length * 0.75));
+    const threshold = Math.max(2, Math.ceil(months.length * ratio));
     const result = [];
     Object.entries(catMonths).forEach(([cat, mths]) => {
         const values = Object.values(mths);
@@ -284,9 +284,15 @@ export function computeMetrics(allTx, opts = {}) {
     const lifeMonths = withExp(closedMonths).length ? withExp(closedMonths) : withExp(months);
     const lifeCostAvg = lifeMonths.length ? lifeMonths.reduce((s, m) => s + mMap[m].e, 0) / lifeMonths.length : 0;
 
-    const regularCats = findRegularExpenses(realExp, closedMonths.length >= 2 ? closedMonths : months);
+    // регулярные траты — по последним 6 завершённым месяцам (категория хотя бы в 4 из 6): привычки и
+    // названия категорий со временем меняются, за всю историю аренда могла «выпасть» из-за пары месяцев
+    const recentClosed = closedMonths.slice(-6);
+    const regMonths = recentClosed.length >= 3 ? recentClosed : (closedMonths.length >= 2 ? closedMonths : months);
+    const regularCats = findRegularExpenses(realExp, regMonths, recentClosed.length >= 3 ? 0.66 : 0.75);
     const regularSum = regularCats.reduce((s, r) => s + r.avg, 0);
-    const mandatoryShare = lifeCostAvg > 0 ? Math.min(100, regularSum / lifeCostAvg * 100) : 0;
+    const regLife = withExp(regMonths);
+    const regLifeAvg = regLife.length ? regLife.reduce((s, m) => s + mMap[m].e, 0) / regLife.length : lifeCostAvg;
+    const mandatoryShare = regLifeAvg > 0 ? Math.min(100, regularSum / regLifeAvg * 100) : 0;
 
     // лучший/худший месяц — только завершённые (иначе недожитый месяц всегда «лучший»)
     const cmp = closedMonths.length ? closedMonths : months;
@@ -305,7 +311,7 @@ export function computeMetrics(allTx, opts = {}) {
         months, closedMonths, partialMonth, lastMonth, prevKey, mMap, lastM: mMap[lastMonth] || { i: 0, e: 0, txCount: 0 },
         trend, freqTrend, lastCount, prevCount, growth,
         dW, dWCount, hotD, busyD, pricey, avg, med, p90, tpd,
-        lifeCostAvg, regularCats, regularSum, mandatoryShare, worst, best,
+        lifeCostAvg, regularCats, regularSum, mandatoryShare, regLifeAvg, regMonths, worst, best,
         cats, incCats,
         anomaly: findAnomaly(realExp, { avg, med, p90 }, confirmed),
         leaking: findLeakingCategory(realExp),
