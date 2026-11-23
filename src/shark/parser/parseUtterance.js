@@ -6,7 +6,7 @@ import { prepare, tokenize, maskRanges, detectLang, MAX_INPUT } from './normaliz
 import { scanAmounts } from './numbers.js';
 import { scanDates, todayStr, DEFAULT_TZ } from './dates.js';
 import { indexCategories, buildLearned, resolveCategory, contentWords, catKey } from './categories.js';
-import { looksLikeQuery, parseQuery } from './queries.js';
+import { looksLikeQuery, parseQuery, SPAN_RE } from './queries.js';
 import { TYPE_WORDS, TYPE_PHRASES, STOPWORDS } from './lexicon.js';
 import { fold } from './normalize.js';
 import { cleanText } from '../../utils/sanitize.js';
@@ -34,7 +34,18 @@ const COUNT_WORDS = { два: 2, две: 2, три: 3, четыре: 4, пять
 const PERCENT_RE = /(\d+(?:[.,]\d+)?)\s*(?:%|процент\p{L}*|foiz\p{L}*|percent|годовых)/gu;
 const SEP_RE = /\s+(?:и|va|and|а|потом|затем|then)\s+|[;\n+]|(?<!\d),|,(?!\d)/g;
 const ALL_TYPE_WORD = w => IS.income(w) || IS.expenseVerb(w) || IS.deposit(w) || IS.depositWithdraw(w) || IS.debt(w) || IS.repay(w);
-const VERB_ONLY = /^(?:получил\p{L}*|пришл\p{L}*|пришел|заработал\p{L}*|поступил\p{L}*|зачислен\p{L}*|received|earned|got|paid)$/u;
+// слова только о типе («поступление 20к», «трата 50к»): категорию по ним не ищем и в заметку не пишем
+const TYPE_NOUN = /^(?:поступлени\p{L}*|поступлен\p{L}*|приход|прихода|доход|доходы|дохода|зачислени\p{L}*|трата|траты|трату|расход|расходы|расхода|покупка|покупки)$/u;
+const VERB_ONLY = /^(?:получил\p{L}*|пришл\p{L}*|пришел|заработал\p{L}*|поступил\p{L}*|зачислен\p{L}*|received|earned|got|paid|дал|дала|дали|взял|взяла|перевел|перевела|перевели|скинул\p{L}*|подкинул\p{L}*|прислал\p{L}*|отправил\p{L}*|закинул\p{L}*)$/u;
+// «мама дала 300к», «Али перевёл мне 100к»: деньги пришли ко мне. «я дал маме», «перевёл маме» — нет.
+const GIVE_VERB = /^(?:дал|дала|дали|перевел|перевела|перевели|скинул|скинула|скинули|подкинул|подкинула|подкинули|прислал|прислала|прислали|отправил|отправила|отправили|закинул|закинула|закинули)$/u;
+const givenToMe = words => {
+    const i = words.findIndex(w => GIVE_VERB.test(w));
+    if (i < 0) return false;
+    if (words.includes('мне') || words.includes('менга')) return true;
+    const subj = words[i - 1];
+    return i >= 1 && !!subj && subj !== 'я' && !/(?:е|у|ю|ам|ям)$/u.test(subj);
+};
 const round2 = n => Math.round(n * 100) / 100;
 
 /* ───────── разбиение на фрагменты ───────── */
@@ -74,7 +85,7 @@ function splitSegments(norm, sepText, amounts) {
 }
 
 /* ───────── имя человека для долга ───────── */
-const NAME_SKIP = new Set(['у', 'кому', 'для', 'мне', 'мне', 'to', 'from', 'до', 'на', 'в', 'и', 'я', 'за', 'по', 'bilan', 'ga']);
+const NAME_SKIP = new Set(['у', 'кому', 'для', 'мне', 'мне', 'to', 'from', 'до', 'на', 'в', 'и', 'я', 'за', 'по', 'bilan', 'ga', 'меня', 'мной', 'мною', 'денег', 'деньги', 'деньгами', 'money', 'cash']);
 function extractName(origSeg, normSeg, dueRanges) {
     const masked = maskRanges(origSeg, dueRanges);
     const re = /[\p{L}][\p{L}'’-]*/gu;
@@ -142,16 +153,22 @@ export function parseUtterance(text, ctx = {}) {
     const percentRanges = [...percents.map(p => [p.start, p.end]), ...counts.map(c => [c.start, c.end])];
     const noPercent = maskRanges(norm, percentRanges);
 
-    const dates = scanDates(noPercent, today);
+    // «за 2 месяца», «октябрь 2025»: числа периода — не суммы
+    const spanRanges = [];
+    for (const sm of noPercent.matchAll(SPAN_RE)) spanRanges.push([sm.index + sm[0].length - sm[1].length, sm.index + sm[0].length]);
+    for (const ym of noPercent.matchAll(/(?:январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр)\p{L}*\s+(20\d\d)(?=\s|$|[.,!?])/giu)) spanRanges.push([ym.index + ym[0].length - 4, ym.index + ym[0].length]);
+    const noSpan = maskRanges(noPercent, spanRanges);
+
+    const dates = scanDates(noSpan, today);
     const dateRanges = dates.map(d => [d.start, d.end]);
-    const noDates = maskRanges(noPercent, dateRanges);
+    const noDates = maskRanges(noSpan, dateRanges);
     const amounts = scanAmounts(noDates);
     const amountRanges = amounts.map(a => [a.start, a.end]);
     const maskedAll = maskRanges(noDates, amountRanges);
     const allWords = tokenize(maskedAll).map(t => t.w);
 
     /* ───── вопрос ───── */
-    if (looksLikeQuery(maskedAll, allWords, amounts.length)) {
+    if (looksLikeQuery(maskedAll, allWords, amounts.length, spanRanges.length > 0, dates.some(d => !d.due && d.date))) {
         const q = parseQuery(noPercent, orig, { today, cIdx, dates });
         result.intents.push(q);
         if (q.clarification) result.needsClarification = clarificationFor('category_query', lang, { word: q.clarification.word });
@@ -211,12 +228,12 @@ export function parseUtterance(text, ctx = {}) {
         const isIncome = anyTok(words, IS.income);
         if (isDebt && !isDeposit) { type = 'debt'; explicitType = true; }
         else if (isDeposit) { type = 'deposit'; explicitType = true; }
-        else if (isIncome) { type = 'income'; explicitType = true; }
+        else if (isIncome || givenToMe(words)) { type = 'income'; explicitType = true; }
         else if (anyTok(words, IS.expenseVerb)) explicitType = true;
 
         const flags = [], missing = [];
         const tx = { type, date: null, amount: null };
-        let catStrength = 0, suggestions = [];
+        let catStrength = 0, suggestions = [], memory = null;
 
         /* дата */
         let explicitDate = false;
@@ -257,10 +274,15 @@ export function parseUtterance(text, ctx = {}) {
         }
 
         /* заметка: оригинал без сумм/дат/процентов, срок («до пятницы») остаётся */
-        const noteMask = maskRanges(segOrig, [...own.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [x.start, x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end]), ...counts.filter(c => c.start >= g.start && c.end <= g.end).map(c => [c.start, c.end])].map(rel));
+        // «арбуз за 50к», «на сумму 50к»: предлог цены уходит вместе с суммой и в заметку не попадает
+        const priceStart = x => {
+            const m = /(?:^|\s)(?:за|на\s+сумму|ценой|стоимостью|по\s+цене)\s*$/iu.exec(orig.slice(g.start, x.start));
+            return m ? g.start + m.index + (m[0].length - m[0].trimStart().length) : x.start;
+        };
+        const noteMask = maskRanges(segOrig, [...own.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [priceStart(x), x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end]), ...counts.filter(c => c.start >= g.start && c.end <= g.end).map(c => [c.start, c.end])].map(rel));
         const makeNote = () => {
             const ws = noteMask.replace(EMOJI_RE, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-            const isVerb = w => { const f = fold(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''); return IS.expenseVerb(f) || VERB_ONLY.test(f); };
+            const isVerb = w => { const f = fold(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''); return IS.expenseVerb(f) || VERB_ONLY.test(f) || ((type === 'income' || type === 'expense') && TYPE_NOUN.test(f)); };
             const isEdgeStop = w => { const f = fold(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''); return !f || STOPWORDS.has(f); };
             let out = ws.filter(w => !isVerb(w));
             while (out.length && isEdgeStop(out[0])) out.shift();
@@ -280,6 +302,15 @@ export function parseUtterance(text, ctx = {}) {
             if (phraseHit(maskForWords, 'debtOwed') && !(hasShouldBe && nm && nm.start > hasShouldBe.index && !/мне\s+должн|должн\p{L}*\s+мне/u.test(maskForWords))) direction = 'owed';
             if (anyTok(words, IS.debtOwed)) direction = 'owed';
             if (anyTok(words, IS.debtOwe) || /(?:^|[^\p{L}])я\s+должн/u.test(maskForWords) || phraseHit(maskForWords, 'debtOwe') && !direction) direction = direction || 'owe';
+            {
+                // «у меня занял Саша» — мне должны; «мне занял/одолжил/дал в долг Саша» — я должен; «Саша занял 50к» — мне должны
+                const nz = fold(maskForWords);
+                const bv = /(?:занял\p{L}*|borrowed)/u.exec(nz);
+                if (/(?:^|[^\p{L}])у\s+меня(?![\p{L}])/u.test(nz) && /(?:занял\p{L}*|взял\p{L}*)/u.test(nz)) direction = 'owed';
+                else if (/(?:^|[^\p{L}])мне\s+(?:\p{L}+\s+)?(?:одолжил\p{L}*|ссудил\p{L}*|занял\p{L}*|дал\p{L}*\s+(?:в\s+)?(?:долг|взаймы))/u.test(nz)) direction = 'owe';
+                else if (/(?:одолжил\p{L}*|занял\p{L}*|взял\p{L}*)\s+(?:\p{L}+\s+)?у\s+(?!меня(?![\p{L}]))\p{L}/u.test(nz)) direction = 'owe';
+                else if (bv && nm && nm.start < bv.index && !/(?:^|[^\p{L}])(?:я|мне)(?![\p{L}])/u.test(nz)) direction = 'owed';
+            }
             if (!direction && hasShouldBe) {
                 // «Али должен мне» → мне должны; «должен Али» → я должен
                 direction = nm && nm.start < hasShouldBe.index ? 'owed' : 'owe';
@@ -336,11 +367,13 @@ export function parseUtterance(text, ctx = {}) {
             }
         } else {
             // доход / расход
-            const rest = contentWords(words.filter(w => !(IS.expenseVerb(w) || VERB_ONLY.test(w))));
-            const catWords = rest.length ? rest : contentWords(words);
+            const rest = contentWords(words.filter(w => !(IS.expenseVerb(w) || VERB_ONLY.test(w) || TYPE_NOUN.test(w))));
+            // одни глаголы («купил что-то за 50к») — категорию не угадываем по глаголу («👺 Купил душу»), а спрашиваем
+            const catWords = rest;
             let res = resolveCategory(catWords, ' ' + catWords.join(' ') + ' ', type, cIdx, learned);
             tx.category = res.category;
             catStrength = res.strength; suggestions = res.suggestions || [];
+            if (res.memory) memory = res.memory;
             if (!res.category) {
                 missing.push('category');
                 if (res.noCategories) flags.push('no_categories');
@@ -349,7 +382,7 @@ export function parseUtterance(text, ctx = {}) {
             if (note) tx.note = note;
         }
 
-        items.push({ g, words, tx, flags, missing, suggestions, catStrength, explicitType, explicitDate, ownDate: tx.date, dateRole: g._dateRole, hasDateFlag: !!firstOwn, amountPos: a ? a.start : null });
+        items.push({ g, words, tx, flags, missing, suggestions, memory, catStrength, explicitType, explicitDate, ownDate: tx.date, dateRole: g._dateRole, hasDateFlag: !!firstOwn, amountPos: a ? a.start : null });
     }
 
     /* ───── «ещё 300к» без своего типа и категории наследует от предыдущей операции ───── */
@@ -389,6 +422,7 @@ export function parseUtterance(text, ctx = {}) {
             flags: [...new Set(it.flags)],
             requiresConfirmation: false,
             suggestions: it.suggestions,
+            ...(it.memory ? { memory: it.memory } : {}),
             _catStrength: it.catStrength, _explicitType: it.explicitType, _explicitDate: it.explicitDate
         };
         const a = it.g.amounts[0];

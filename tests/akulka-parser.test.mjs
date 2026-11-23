@@ -353,7 +353,7 @@ test('запросы: сколько потратил на категорию', 
 
 test('запросы: периоды', () => {
     const cases = [
-        ['итог за прошлую неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за эту неделю', 'this_week', TODAY, TODAY],
+        ['итог за прошлую неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за неделю', 'this_week', '2026-11-23', TODAY], ['итог за эту неделю', 'this_week', TODAY, TODAY],
         ['сколько потратил сегодня', 'today', TODAY, TODAY], ['сколько потратил вчера', 'yesterday', '2026-11-22', '2026-11-22'],
         ['сколько потратил в прошлом месяце', 'last_month', '2026-10-01', '2026-10-31'], ['сколько потратил за год', 'this_year', '2026-01-01', TODAY],
         ['сколько потратил в прошлом году', 'last_year', '2025-01-01', '2025-12-31'], ['сколько потратил в октябре', 'month', '2026-10-01', '2026-10-31'],
@@ -376,13 +376,20 @@ test('запросы: метрики', () => {
     assert.equal(first('на что больше всего трачу').groupBy, 'category');
 });
 
-test('запросы: вопрос про неизвестную категорию не превращается в общий итог', () => {
+test('запросы: неизвестная категория ищется по названиям позиций, а не превращается в общий итог', () => {
     const small = { expense: ['🚖 Такси'], income: [] };
     const r = P('сколько я потратил на кальян', { categories: small });
     assert.equal(r.intents[0].kind, 'query_summary');
     assert.equal(r.intents[0].categories, null);
-    assert.ok(r.intents[0].flags.includes('unknown_category'));
-    assert.equal(r.needsClarification.field, 'category');
+    assert.ok(r.intents[0].flags.includes('name_match'));
+    assert.ok(r.intents[0].keywords.length > 0);
+    assert.equal(r.needsClarification, null);
+    const tx = [
+        { id: 1, type: 'expense', date: '2026-11-05', category: '🚖 Такси', amount: 45000 },
+        { id: 2, type: 'expense', date: '2026-11-06', category: '🛍 Прочее', amount: 80000, products: [{ name: 'Кальян', quantity: 1, price: 80000 }] },
+        { id: 3, type: 'expense', date: '2026-11-07', category: '🛍 Прочее', amount: 5000, note: 'жвачка' }
+    ];
+    assert.equal(runSummary(r.intents[0], tx).total, 80000);
 });
 
 test('запросы: подсчёт локальной аналитикой', () => {
@@ -401,7 +408,10 @@ test('запросы: подсчёт локальной аналитикой', (
     const all = runSummary(first('итог за месяц'), tx);
     assert.deepEqual([all.income, all.expense, all.net], [5000000, 555000 - 555 + 0 + 0, 5000000 - 555000 + 555].map((v, i) => [5000000, 555000, 4445000][i]));
     const top = runSummary(first('на что больше всего трачу'), tx);
-    assert.equal(top.byCategory[0].category, '🍽️ Кафе и рестораны');
+    // «на что трачу больше всего» = чаще встречающиеся категории, без периода — с начала года
+    assert.equal(top.byCategory[0].category, '🥦 Продукты');
+    assert.equal(top.byCategory[0].count, 2);
+    assert.equal(runSummary(first('на что я трачу реже всего'), tx).byCategory[0].count, 1);
     assert.equal(runSummary(first('сколько я заработал в этом месяце'), tx).total, 5000000);
     assert.equal(runSummary(first('сколько потратил в октябре'), tx).total, 999);
     assert.equal(runSummary(first('сколько осталось'), tx, { balance: () => 4444 }).remaining, 4444);
@@ -633,15 +643,15 @@ test('производительность: типичная фраза — ми
 });
 
 /* ───────── доработки по итогам этапа 1 ───────── */
-test('неделя: «за неделю» = последняя законченная неделя пн–вс; «эта неделя» = с понедельника по сегодня', () => {
-    for (const t of ['итог за неделю', 'сколько потратил за неделю', 'итог за прошлую неделю', 'сводка за неделю']) {
+test('неделя: «за неделю» и «эта неделя» = с понедельника по сегодня; «прошлая» = пн–вс до неё', () => {
+    for (const t of ['итог за прошлую неделю', 'итог на той неделе']) {
         const q = first(t);
         assert.deepEqual([q.period.kind, q.period.from, q.period.to], ['last_week', '2026-11-16', '2026-11-22'], t);
     }
     assert.deepEqual([first('итог за эту неделю').period.from, first('итог за эту неделю').period.to], ['2026-11-23', TODAY]);
-    // в воскресенье «последняя неделя» — прошедшая пн–вс, а не текущая
+    for (const t of ['итог за неделю', 'сколько потратил за неделю', 'сводка за неделю']) assert.equal(first(t).period.from, '2026-11-23', t);
     const sun = parseUtterance('итог за неделю', ctxOf({ today: '2026-11-29' })).intents[0];
-    assert.deepEqual([sun.period.from, sun.period.to], ['2026-11-16', '2026-11-22']);
+    assert.deepEqual([sun.period.from, sun.period.to], ['2026-11-23', '2026-11-29']);
     assert.equal(first('итог за месяц').period.kind, 'this_month');
 });
 
@@ -699,4 +709,129 @@ test('«по 18к два раза» умножает; без «по» сумма
         assert.equal(r.intents[0].flags.includes('amount_multiplied'), mult, t);
         assert.equal(r.intents[0].requiresConfirmation, mult, t);
     }
+});
+/* ───── аудит чата 5.0.6: периоды, доходы, остаток, ложные категории ───── */
+test('периоды с «с … по …» и «траты/расходы» без вопросительного слова', () => {
+    const q = t => { const i = first(t); assert.equal(i.kind, 'query_summary', t); return i; };
+    assert.deepEqual([q('траты с 1 ноября').period.kind, q('траты с 1 ноября').period.from, q('траты с 1 ноября').period.to], ['since', '2026-11-01', TODAY]);
+    assert.deepEqual([q('расходы с 5 октября').period.from, q('расходы с 5 октября').period.to], ['2026-10-05', TODAY]);
+    for (const t of ['траты с 1 по 15 ноября', 'расходы 1-15 ноября']) assert.deepEqual([q(t).period.kind, q(t).period.from, q(t).period.to], ['range', '2026-11-01', '2026-11-15'], t);
+    assert.deepEqual([q('сколько потратил с 3 до 10 ноября').period.from, q('сколько потратил с 3 до 10 ноября').period.to], ['2026-11-03', '2026-11-10']);
+    const pr = q('траты на продукты');
+    assert.equal(pr.metric, 'expense');
+    assert.ok(pr.categories?.length && pr.byPrep);
+    // «до» у долга — по-прежнему срок, а не период; «200к» не становится датой
+    assert.equal(first('одолжил Али 200к до пятницы').kind, 'add_transaction');
+    assert.equal(first('занял 15 до 20 ноября').kind, 'add_transaction');
+});
+
+test('доходы: зп, аванс, премия; остаток: «на карте», «у меня есть»', () => {
+    for (const t of ['зп за октябрь', 'аванс за ноябрь', 'премия за октябрь']) assert.equal(first(t).metric, 'income', t);
+    assert.equal(first('зп за октябрь').period.from, '2026-10-01');
+    for (const t of ['сколько денег на карте', 'сколько денег у меня есть', 'сколько у меня на счету']) assert.equal(first(t).metric, 'remaining', t);
+    // но запись дохода с суммой — это операция
+    assert.equal(first('зп 5 млн').kind, 'add_transaction');
+});
+
+test('ложные категории: «деньги», «карта» и «день» не становятся категориями вопроса', () => {
+    const a = first('куда ушли деньги за месяц');
+    assert.equal(a.categories, null);
+    const b = first('сколько пришло на карту');
+    assert.equal(b.metric, 'income');
+    assert.equal(b.keywords, null);
+    // настоящая категория после «на» остаётся
+    assert.ok(first('сколько на такси за неделю').categories?.length);
+});
+
+test('«где больше всего трачу» — рейтинг категорий', () => {
+    assert.equal(first('где больше всего трачу').rank, 'most');
+    assert.equal(first('где меньше всего трачу').rank, 'least');
+});
+
+/* ───── 5.0.6: заметка без «за», частые продукты, входящие деньги, n дней, накопления ───── */
+test('заметка: предлог цены уходит вместе с суммой', () => {
+    for (const [t, note] of [['Купил арбуз за 50к', 'арбуз'], ['мандарины за 30к', 'мандарины'], ['заплатил 120к за свет', 'свет'], ['на сумму 50к продукты', 'продукты'], ['взял шаурму за 35к', 'шаурму']]) {
+        assert.equal(first(t).tx.note, note, t);
+    }
+});
+
+test('частые продукты находят категорию сами', () => {
+    // без бренда — унифицированная категория «Продукты», а не «Фрукты» или «Хлеб и лаваш»
+    const cases = [['купил арбуз за 50к', 'Продукты'], ['купила дыню 30к', 'Продукты'], ['виноград 25к', 'Продукты'], ['сыр 45к', 'Продукты'], ['сахар 12к', 'Продукты'], ['макароны 10к', 'Продукты'],
+        ['хлеб 5к', 'Продукты'], ['молоко 10к', 'Продукты'], ['масло 30к', 'Продукты'], ['купил подарок за 200к', 'Подарки'], ['купил подарок маме за 200к', 'Подарок'], ['моторное масло 300к', 'Машина'], ['масло в машину 200к', 'Машина']];
+    for (const [t, cat] of cases) { const i = first(t); assert.equal(i.tx.type, 'expense', t); assert.ok(String(i.tx.category).includes(cat), `${t} → ${i.tx.category}`); }
+});
+
+test('входящие деньги: «мама дала», «перевели», «продал», «выиграл» — поступление; «перевёл маме» — трата', () => {
+    for (const t of ['мама дала 300к', 'Али перевёл мне 100к', 'перевели за заказ 400к', 'продал велосипед 1 млн', 'выиграл 50к', 'заработал 500к', 'заработала 300к на фрилансе']) {
+        assert.equal(first(t).tx.type, 'income', t);
+    }
+    assert.match(first('мама дала 300к').tx.category, /родител/i);
+    for (const t of ['я перевёл маме 100к', 'перевёл маме 100к', 'купил кофе за 25 000', 'отдал за стрижку 50к']) assert.equal(first(t).tx.type, 'expense', t);
+});
+
+test('траты и доходы за n дней', () => {
+    for (const [t, metric] of [['траты за 5 дней', 'expense'], ['доходы за 10 дней', 'income'], ['сколько заработал за 14 дней', 'income'], ['траты за десять дней', 'expense'], ['сколько пришло за последние 7 дней', 'income']]) {
+        const q = first(t);
+        assert.equal(q.kind, 'query_summary', t);
+        assert.equal(q.metric, metric, t);
+        assert.equal(q.period.kind, 'n_days', t);
+    }
+    assert.equal(first('траты за 5 дней').period.from, '2026-11-19');
+});
+
+test('накопления с периодом: дни, месяцы, квартал, полгода, год, даты', () => {
+    const cases = [['накопления за 10 дней', 'n_days'], ['накопления за 3 месяца', 'n_months'], ['накопления за год', 'this_year'], ['накопления за неделю', 'this_week'],
+        ['накопления за прошлый месяц', 'last_month'], ['накопления с 1 ноября', 'since'], ['вклады за год', 'this_year']];
+    for (const [t, kind] of cases) { const q = first(t); assert.equal(q.metric, 'savings', t); assert.equal(q.period.kind, kind, t); }
+    for (const t of ['сколько накопил за полгода', 'накопления за квартал', 'сколько отложил за триместр']) { const q = first(t); assert.equal(q.metric, 'savings', t); assert.ok(q.period.explicit, t); }
+    // вклад с суммой — по-прежнему операция
+    assert.equal(first('вклад 1 млн под 20%').kind, 'add_transaction');
+    // runSummary: пополнения минус снятия за период
+    const tx = [
+        { id: 1, type: 'deposit', date: '2026-10-10', amount: 500000, status: '📥 Вклад' },
+        { id: 2, type: 'deposit', date: '2026-11-10', amount: 300000, status: '➕ Пополнение' },
+        { id: 3, type: 'deposit', date: '2026-11-15', amount: 100000, status: '➖ Снятие' },
+        { id: 4, type: 'expense', date: '2026-11-15', amount: 999, category: 'Еда' }
+    ];
+    const s = runSummary(first('накопления за 3 месяца'), tx);
+    assert.equal(s.metric, 'savings');
+    assert.equal(s.total, 700000);
+    assert.equal(s.count, 2);
+    assert.equal(runSummary(first('накопления за 10 дней'), tx).total, -100000);
+});
+
+test('«Поступление/Поступления 20к», «приход», «зачисление» — доход; слово типа не становится категорией', () => {
+    for (const t of ['Поступление 20к', 'Поступления 20к', 'поступило 20к', 'приход 50к', 'зачисление 300к', 'доход 1 млн', 'входящий перевод 100к']) assert.equal(first(t).tx.type, 'income', t);
+    for (const t of ['Поступление 20к', 'Поступления 20к', 'приход 50к']) { const i = first(t); assert.equal(i.tx.category, null, t); assert.ok(!i.tx.note, t); }
+    assert.equal(first('трата 50к').tx.type, 'expense');
+    assert.equal(first('расходы на такси 30к').tx.category, '🚖 Такси');
+});
+
+test('вопросы: бренды такси и еды, «за 10 дней», «позавчера», «самые частые», «кешбэк за год»', async () => {
+    const { buildParserContext } = await import('../src/shark/parser/chatContext.js');
+    const { expenseCategories, incomeCategories } = await import('../constants/index.js');
+    const { routeUtterance } = await import('../src/shark/chatFlow.js');
+    const { runSummary } = await import('../src/shark/parser/summary.js');
+    const ctx = buildParserContext({ expense: expenseCategories, income: incomeCategories, now: new Date('2026-11-23T10:00:00+05:00') });
+    const tx = [
+        { id: 1, type: 'expense', date: '2026-11-20', amount: 30000, category: '🚖 YandexGO Taxi' },
+        { id: 2, type: 'expense', date: '2026-11-21', amount: 20000, category: '🚖 Такси' },
+        { id: 3, type: 'expense', date: '2026-11-21', amount: 160000, category: '🍏 Olma' },
+        { id: 4, type: 'expense', date: '2026-11-02', amount: 90000, category: '🧁 Safia' },
+        { id: 5, type: 'income', date: '2026-11-05', amount: 9000000, category: '💰 Зарплата' },
+        { id: 6, type: 'income', date: '2026-10-12', amount: 40000, category: '💳 Кэшбек' },
+        { id: 7, type: 'income', date: '2026-11-03', amount: 5000000, category: '🏆 Премия' }
+    ];
+    const ask = t => { const r = routeUtterance(t, ctx); assert.equal(r.branch, 'summary', t); return runSummary(r.intent, tx, {}); };
+    assert.equal(ask('сколько потратил на такси за месяц').total, 50000);
+    assert.equal(ask('сколько потратил на еду в этом месяце').total, 250000);
+    assert.equal(ask('траты за 10 дней').total, 210000);
+    assert.equal(ask('траты позавчера').total, 180000);
+    const top = ask('самые частые траты за месяц');
+    assert.equal(top.byCategory.length, 4);
+    assert.equal(ask('кешбек за год').total, 40000);
+    assert.equal(ask('доходы с зарплаты за год').total, 9000000);       // премия — отдельная категория
+    const oct = ask('траты за ноябрь');
+    assert.equal(oct.count, 4);                                          // поступления не считаются операциями трат
 });

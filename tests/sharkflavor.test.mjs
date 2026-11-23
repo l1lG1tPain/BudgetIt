@@ -140,9 +140,13 @@ test('значки', () => {
 test('шутки, мини-диалог и пункты меню', () => {
     for (const ch of CH) {
         assert.ok(answerQuestion('joke', { character: ch }).text.length > 10);
-        const d = answerQuestion('dialog', { character: ch });
-        assert.equal(d.choices.length, 3);
-        for (const c of d.choices) assert.ok(answerQuestion(c.id, { character: ch }).text.length > 10);
+        // «поболтаем»: вопрос про день (3 ответа), просьба что-нибудь записать или факт — у каждого есть кнопки
+        for (let i = 0; i < 30; i++) {
+            const d = answerQuestion('dialog', { character: ch });
+            assert.ok(d.text.length > 10 && d.choices.length >= 1 && d.choices.length <= 3);
+            for (const c of d.choices) assert.ok(answerQuestion(c.id, { character: ch }).text.length > 10);
+        }
+        assert.match(answerQuestion('dlg:fact', { character: ch }).text, /^А знаешь/);
     }
     const ids = [...STATS_ITEMS, ...FUN_ITEMS].map(i => i.id);
     for (const id of ['waste', 'month', 'rule', 'goal', 'badges', 'joke', 'dialog']) assert.ok(ids.includes(id), id);

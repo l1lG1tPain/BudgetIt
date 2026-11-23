@@ -2,7 +2,7 @@
 // Порядок: 1) выученное по истории пользователя, 2) точное совпадение слова с коротким названием категории,
 // 3) словарь lexicon.js, 4) нечёткое совпадение. Новая категория никогда не создаётся: нет совпадения → null + подсказки.
 import { fold } from './normalize.js';
-import { CATEGORY_RULES, QUERY_GROUPS, STOPWORDS } from './lexicon.js';
+import { CATEGORY_RULES, QUERY_GROUPS, QUERY_BRANDS, STOPWORDS } from './lexicon.js';
 
 const EMOJI_RE = /\p{Extended_Pictographic}|[️‍⃣]|\p{Regional_Indicator}/gu;
 
@@ -53,6 +53,11 @@ export function indexCategories(src) {
     if (src && typeof src === 'object' && INDEX_CACHE.has(src)) return INDEX_CACHE.get(src);
     const f = flattenCategories(src);
     const idx = { expense: buildTypeIndex(f.expense), income: buildTypeIndex(f.income) };
+    // свои категории пользователя (buildParserContext кладёт их в categories.custom): их ищем первыми
+    for (const type of ['expense', 'income']) {
+        const own = new Set(Array.isArray(src?.custom?.[type]) ? src.custom[type].filter(x => typeof x === 'string') : []);
+        idx[type].custom = idx[type].entries.filter(e => own.has(e.name));
+    }
     if (src && typeof src === 'object') INDEX_CACHE.set(src, idx);
     return idx;
 }
@@ -83,9 +88,10 @@ const GROUPS = compileRules(QUERY_GROUPS);
 function matchRuleIdx(compiled, words, norm, type) {
     const hit = [];
     const add = i => { if ((!type || compiled.rules[i].type === type || !compiled.rules[i].type) && !hit.includes(i)) hit.push(i); };
+    // сначала фразы («моторное масло»), они точнее отдельных слов («масло»)
+    for (const [p, i] of compiled.phrase) if (norm.includes(p)) add(i);
     for (const w of words) for (const i of compiled.exact.get(w) || []) add(i);
     for (const w of words) for (const [p, i] of compiled.prefix) if (w.length >= p.length && w.startsWith(p) && p.length >= 3) add(i);
-    for (const [p, i] of compiled.phrase) if (norm.includes(p)) add(i);
     return hit;
 }
 
@@ -94,11 +100,15 @@ function resolveHint(hint, tIdx) {
     const hk = catKey(hint);
     const exact = tIdx.byKey.get(hk);
     if (exact) return exact;
+    // по началу названия: сначала встроенные категории («Кофе» → «Кофе на улице»), свои — только если встроенной нет
+    const own = new Set(tIdx.custom || []);
     let best = null;
-    for (const e of tIdx.entries) {
-        if (e.key.startsWith(hk + ' ')) {
+    for (const pass of [false, true]) {
+        for (const e of tIdx.entries) {
+            if (own.has(e) !== pass || !e.key.startsWith(hk + ' ')) continue;
             if (!best || e.words.length < best.words.length || (e.words.length === best.words.length && e.key.length < best.key.length)) best = e;
         }
+        if (best) return best;
     }
     return best;
 }
@@ -185,29 +195,70 @@ function withStems(words) {
  * Категория для слов фрагмента.
  * @returns {{category:string|null, source:string|null, strength:number, suggestions:string[], matchedRule:boolean}}
  */
+// { word, category, count, same }: same — категория выбрана по памяти; иначе это альтернатива к категории словаря
+const memoryOf = (m, same) => ({ word: m.word, category: m.cat, count: m.n, same });
+
 export function resolveCategory(words0, norm, type, cIdx, learned) {
     const words = withStems(words0);
     const tIdx = cIdx[type];
     const none = { category: null, source: null, strength: 0, suggestions: [], matchedRule: false };
     if (!tIdx || !tIdx.entries.length) return { ...none, noCategories: true };
 
-    // 1) история
-    let best = null;
+    // Память Акулки: куда пользователь чаще всего записывал это слово раньше («масло» → «KorzinkaGO», 6 раз).
+    // Общие слова всё равно идут в общую категорию словаря, а память предлагается в карточке как вариант.
+    let mem = null;
     for (const w of words) {
         const m = learned.get(`${type}|${w}`);
         if (!m) continue;
         let total = 0, top = null;
         for (const [cat, n] of m) { total += n; if (!top || n > top.n) top = { cat, n }; }
         const share = top.n / total;
-        if (share >= 0.5 && (!best || top.n > best.n)) best = { cat: top.cat, n: top.n, share };
+        if (share >= 0.5 && (!mem || top.n > mem.n)) mem = { cat: top.cat, n: top.n, share, word: w };
     }
-    if (best) return { category: best.cat, source: 'history', strength: Math.min(1, 0.7 + 0.1 * Math.min(best.n, 3)) * best.share, suggestions: [], matchedRule: true };
 
+    // 0) своя категория пользователя: «нож» → «🔪 Нож», «ножи» → «🔪 Ножи». Окончания не важны.
+    // Совпало всё название — своя категория важнее словаря и брендов. Совпало только первое слово
+    // («кофе» и своя «Кофе дома») — словарь решает сам, а своя предлагается в карточке; если словарь слова не знает — берём свою.
+    let ownPartial = null;
+    {
+        const sameStem = (a, b) => a === b || (a.length >= 3 && b.length >= 3 && Math.abs(a.length - b.length) <= 2 && a.slice(0, Math.max(3, Math.min(a.length, b.length) - 1)) === b.slice(0, Math.max(3, Math.min(a.length, b.length) - 1)));
+        let own = null, ownScore = 0;
+        for (const e of tIdx.custom || []) {
+            const hit = e.words.filter(cw => cw.length >= 3 && words.some(w => sameStem(w, cw))).length;
+            if (!hit) continue;
+            // все слова названия есть во фразе — лучше; иначе совпало первое (главное) слово названия
+            const score = hit === e.words.filter(cw => cw.length >= 3).length ? 2 + hit : (words.some(w => sameStem(w, e.words[0])) ? 1 : 0);
+            if (score > ownScore) { own = e; ownScore = score; }
+        }
+        if (own && ownScore >= 3) {
+            const out = { category: own.name, source: 'custom', strength: 0.85, suggestions: [], matchedRule: true };
+            if (mem && mem.cat !== own.name && mem.n >= 2) out.memory = memoryOf(mem, false);
+            return out;
+        }
+        if (own) ownPartial = own;
+    }
+    const withOwn = out => {
+        if (ownPartial && ownPartial.name !== out.category) out.memory = { word: ownPartial.words[0], category: ownPartial.name, count: 0, same: false, own: true };
+        return out;
+    };
+    // 1) фраза из словаря («яндекс такси», «моторное масло»): точнее, чем отдельное слово «такси» или «масло»
+    for (const [p, i] of RULES.phrase) {
+        const r = RULES.rules[i];
+        if ((r.type && r.type !== type) || !norm.includes(p)) continue;
+        for (const hint of r.c) { const e = resolveHint(hint, tIdx); if (e) return withOwn({ category: e.name, source: 'dict', strength: 0.7, suggestions: [], matchedRule: true }); }
+    }
     // 2) слово — это всё название категории («Магнит», «Такси», «Korzinka»)
     for (const w of words) {
         if (w.length < 3) continue;
         const e = tIdx.byKey.get(w);
-        if (e) return { category: e.name, source: 'name', strength: 0.78, suggestions: [], matchedRule: true };
+        if (e) return withOwn({ category: e.name, source: 'name', strength: 0.78, suggestions: [], matchedRule: true });
+    }
+    // 2б) назван бренд из двух-трёх слов («Яндекс Еда», «Yandex Go»): берём его категорию, а не общую
+    {
+        const hay = ` ${words0.join(' ')} `;
+        let brand = null;
+        for (const e of tIdx.entries) if (e.words.length >= 2 && e.words.length <= 3 && hay.includes(` ${e.key} `) && (!brand || e.words.length > brand.words.length)) brand = e;
+        if (brand) return { category: brand.name, source: 'name', strength: 0.78, suggestions: [], matchedRule: true };
     }
 
     // 3) словарь
@@ -215,9 +266,23 @@ export function resolveCategory(words0, norm, type, cIdx, learned) {
     for (const i of idxs) {
         for (const hint of RULES.rules[i].c) {
             const e = resolveHint(hint, tIdx);
-            if (e) return { category: e.name, source: 'dict', strength: 0.65, suggestions: [], matchedRule: true };
+            if (e) {
+                const out = { category: e.name, source: 'dict', strength: 0.65, suggestions: [], matchedRule: true };
+                // слово уже записывали в другую категорию не меньше двух раз — предложим её в карточке
+                if (mem && mem.cat !== e.name && mem.n >= 2) out.memory = memoryOf(mem, false);
+                return ownPartial ? withOwn(out) : out;
+            }
         }
     }
+
+    // своя категория по первому слову, раз словарь слово не знает («нож» → «🏷️ Нож кухонный»)
+    if (ownPartial) {
+        const out = { category: ownPartial.name, source: 'custom', strength: 0.75, suggestions: [], matchedRule: true };
+        if (mem && mem.cat !== ownPartial.name && mem.n >= 2) out.memory = memoryOf(mem, false);
+        return out;
+    }
+    // 4) история пользователя: словарь слово не знает — берём то, куда пользователь записывал его раньше
+    if (mem) return { category: mem.cat, source: 'history', strength: Math.min(1, 0.7 + 0.1 * Math.min(mem.n, 3)) * mem.share, suggestions: [], matchedRule: true, memory: memoryOf(mem, true) };
 
     // 3б) слово открывает короткое название категории («Обед с клиентом» по слову «обед»)
     for (const w of words) {
@@ -241,10 +306,50 @@ export function resolveCategoryGroup(words, norm, type, cIdx) {
     if (!tIdx) return [];
     const out = [];
     const push = e => { if (e && !out.includes(e.name)) out.push(e.name); };
-    for (const i of matchRuleIdx(GROUPS, words, norm, null)) for (const hint of GROUPS.rules[i].c) push(resolveHint(hint, tIdx));
-    if (out.length) return out;
-    const one = resolveCategory(words, norm, type, cIdx, new Map());
-    return one.category ? [one.category] : [];
+    for (const i of matchRuleIdx(GROUPS, words, norm, null)) {
+        const r = GROUPS.rules[i];
+        for (const hint of r.c) push(resolveHint(hint, tIdx));
+        const mm = (r.m || []).map(compileKey);
+        if (mm.length) for (const e of tIdx.entries) if (e.words.some(w => mm.some(m => (m.kind === 'prefix' ? w.startsWith(m.v) : w === m.v)))) push(e);
+    }
+    if (!out.length) {
+        const one = resolveCategory(words, norm, type, cIdx, new Map());
+        if (one.category) out.push(one.category);
+    }
+    return withBrands(out, tIdx);
+}
+
+// «такси» → ещё YandexGO Taxi, MyTaxi…: только явный список QUERY_BRANDS (цепочки словаря — это запасные варианты, не бренды)
+const BRANDS_BY_KEY = new Map(Object.entries(QUERY_BRANDS).map(([u, list]) => [catKey(u), list]));
+function withBrands(names, tIdx) {
+    const out = [...names];
+    for (let i = 0; i < out.length; i++) {
+        for (const b of BRANDS_BY_KEY.get(catKey(out[i])) || []) {
+            const e = tIdx.byKey.get(catKey(b));            // только точное название: без догадок по началу
+            if (e && !out.includes(e.name)) out.push(e.name);
+        }
+    }
+    return out;
+}
+
+/** Шаблоны слов для поиска по названиям позиций/заметок: слова группы («еда» → хлеб*, молок*…) и сами слова запроса (основа слова) */
+export function queryKeywords(words, norm) {
+    const out = new Set();
+    for (const i of matchRuleIdx(GROUPS, words, norm, null)) for (const m of GROUPS.rules[i].m || []) out.add(fold(m));
+    for (const w of words) {
+        if (w.length < 3) continue;
+        out.add(w.length >= 4 ? w.slice(0, w.length >= 5 ? Math.max(4, w.length - 2) : w.length - 1) + '*' : w);
+    }
+    return [...out];
+}
+
+/** Есть ли в тексте (название позиции, заметка, имя) слово, подходящее под один из шаблонов queryKeywords */
+export function matchesKeywords(text, patterns) {
+    if (!Array.isArray(patterns) || !patterns.length) return false;
+    const ws = fold(String(text || '')).split(/[^\p{L}\p{N}']+/u).filter(Boolean);
+    if (!ws.length) return false;
+    const cp = patterns.map(compileKey);
+    return ws.some(w => cp.some(p => (p.kind === 'prefix' ? w.startsWith(p.v) : w === p.v)));
 }
 
 /** Слова фрагмента, годные для поиска категории (без шума) */

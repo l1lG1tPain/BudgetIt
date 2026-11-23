@@ -481,6 +481,12 @@
     refresh: () => loadAndRender(true),
     convert: (amount, from, to, mode) => convert(amount, from, to, mode),
     pairsFor: region => ((REGION_CFG[region] || REGION_CFG.UZ).pairs.map(([f]) => f)),
+    // снимок курсов для чата Акулки: база региона, курсы ЦБ к базе, источник, время, 7-дневные ряды
+    snapshot: () => {
+      const cfg = REGION_CFG[getRegion()] || REGION_CFG.UZ;
+      return { base: cfg.base, codes: cfg.pairs.map(([f]) => f), rates: state.fiat?.rates || {}, source: SOURCE_NAMES[state.fiat?.source] || '',
+        updatedAt: state.updatedAt, offline: state.offline, series: state.series, symbols: SYMBOLS };
+    },
     isOn: (region, code) => fxVisible(region).includes(code),
     setOn: setFxVisible,
     flagOf

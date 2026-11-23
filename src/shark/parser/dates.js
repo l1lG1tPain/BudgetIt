@@ -133,6 +133,20 @@ export function scanDates(norm, today) {
         if (!date || date > today) { y -= 1; if (validYmd(y, mm, dd)) { date = fmtYmd(y, mm, dd); inferred = true; } else date = null; }
         push({ start: m.index, end, date, kind: 'numeric', inferred, invalid: !date, ambiguous: m[2] === '/' && dd <= 12 && dd !== mm });
     }
+    // 3а) диапазон с одним месяцем: «с 1 по 15 ноября», «1-15 ноября» — первое число тоже дата, а не сумма
+    const span = /(?:(?<=(?:^|\s)(?:с|со|от)\s+)(\d{1,2})\s+(?:по|до)\s+|(?<![\d.,/])(\d{1,2})\s*[-–—]\s*)(\d{1,2})\s+([a-zа-я']{3,12})/gu;
+    while ((m = span.exec(norm))) {
+        const mm = monthOfWord(m[4]);
+        const first = m[1] ?? m[2];
+        if (!mm || +first > +m[3]) continue;
+        const start = m.index, end = start + first.length;
+        if (!free(start, end)) continue;
+        const dd = +first;
+        let y = T.y, date = validYmd(y, mm, dd) ? fmtYmd(y, mm, dd) : null, inferred = false;
+        if (date && date > today) { y -= 1; date = validYmd(y, mm, dd) ? fmtYmd(y, mm, dd) : null; inferred = true; }
+        push({ start, end, date, kind: 'named', inferred, invalid: !date });
+        span.lastIndex = end;
+    }
     // 3) «20 ноября», «20-noyabr», «20th of may»
     const named = /(?<![\d.,/])(\d{1,2})(?:\s*-?\s*(?:го|е|числа|число|th|st|nd|rd|chi|-?ого))?[\s-]*(?:of\s+)?([a-zа-я']{3,12})/g;
     while ((m = named.exec(norm))) {

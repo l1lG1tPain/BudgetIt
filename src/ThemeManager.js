@@ -147,6 +147,7 @@ export const THEMES = [
         emoji: '🔵',
         name: 'Onyx',
         desc: 'Дискордовый вайб',
+        sharkLikes: true,
         badge: 'ULTIMA',
         preview: {
             bg:     '#050509',
@@ -243,6 +244,7 @@ export const THEMES = [
         emoji: '🍓',
         name: 'Йогурт',
         desc: 'Молочно-ягодные оттенки',
+        sharkLikes: true,
         badge: null,
         preview: {
             bg:     '#fdf4f5',
@@ -562,6 +564,16 @@ export function initThemeSelector() {
                 box-shadow: 0 1px 4px rgba(6,60,38,.35);
             }
 
+            /* Подпись «Акулке нравится» */
+            .tc-like {
+                margin-top: 4px;
+                font-size: 0.68rem;
+                font-weight: 700;
+                line-height: 1.3;
+                color: var(--primary-color, #2ECC71);
+                opacity: .9;
+            }
+
             /* Галочка активной темы */
             .tc-check {
                 width: 20px;
@@ -615,6 +627,7 @@ export function initThemeSelector() {
                 <div class="tc-left">
                     <div class="tc-name">${theme.emoji} ${theme.name}</div>
                     <div class="tc-desc">${theme.desc}</div>
+                    ${theme.sharkLikes ? '<div class="tc-like">🦈 Акулке нравится</div>' : ''}
                 </div>
                 <div class="tc-right">
                     ${badgeHtml}

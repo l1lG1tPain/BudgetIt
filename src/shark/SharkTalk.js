@@ -4,7 +4,7 @@
 //   • ответы на быстрые вопросы («Сколько осталось?», «Куда ушли деньги?» …),
 //   • объяснение, как считается лимит.
 // ===============================
-import { fmt, getSpentOnDay, isDailySpend, getThresholds, isoDay, shiftDay, CHARACTER_LABELS } from './SharkMood.js';
+import { fmt, getSpentOnDay, isDailySpend, getThresholds, isoDay, shiftDay, CHARACTER_LABELS, agreeNumbers } from './SharkMood.js';
 
 import {
     MOTIVATION, CHEER_TASKS, REMINDERS, VERDICT_OK, VERDICT_OVER, GREETINGS, ANSWERS, BACKUP_NUDGES, PROACTIVE, FUN, FLAVOR, ANSWERS_C, GLOSSARY,
@@ -18,13 +18,14 @@ import {
 import { WEEK_VERDICT, WEEK_TREND } from './texts/week.js';
 import { goalCalc, parseGoalDate, formatGoalDate, wasteCategory, monthSummary, ruleCheck, BADGES } from './SharkExtra.js';
 import { HELP_TOPICS, TIPS_TOPICS, HELP_INTRO, TIPS_INTRO, HELP_OUTRO, TIPS_OUTRO, MENU_EXPLAIN } from './texts/help.js';
+import { DIALOG_IDLE, DIALOG_FACTS } from './texts/chat.js';
 
 export { CHALLENGES, RANKS, evaluateChallenge, countDaysInLimit, rankInfo };
 export { HELP_TOPICS, TIPS_TOPICS, HELP_INTRO, TIPS_INTRO, HELP_OUTRO, TIPS_OUTRO, MENU_EXPLAIN };
 export { MOTIVATION, CHEER_TASKS, REMINDERS, VERDICT_OK, VERDICT_OVER, GREETINGS, ANSWERS, BACKUP_NUDGES };
 
 // Шаблон {a} {b} → функция, подставляющая значения по именам
-const fill = tpl => vars => tpl.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m));
+const fill = tpl => vars => agreeNumbers(tpl.replace(/\{(\w+)\}/g, (m, k) => (vars[k] ?? m)));
 const compile = byChar => Object.fromEntries(Object.entries(byChar).map(([ch, list]) => [ch, list.map(fill)]));
 
 export const WELCOME_BACK = compile(WB_TEXTS);
@@ -37,7 +38,7 @@ export const VERDICT = { ok: VERDICT_OK, over: VERDICT_OVER };
 const fillFun = (key, ch, seed, vars) => fillAns(pickBy(FUN[key][ch], `${seed}:${key}`), vars);
 
 // Подстановка в ответы; {lim} (если есть) идёт через пробел
-const fillAns = (tpl, vars) => tpl.replace(/\s?\{lim\}/, vars.lim ? ` ${vars.lim}` : '').replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m);
+const fillAns = (tpl, vars) => agreeNumbers(tpl.replace(/\s?\{lim\}/, vars.lim ? ` ${vars.lim}` : '').replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m));
 
 function hash(str) {
     let h = 2166136261;
@@ -548,11 +549,18 @@ export function answerQuestion(id, ctx = {}) {
         return { text: `${sayC('badgesIntro', ch, seed)}\nОткрыто: ${e.size} из ${BADGES.length}.\n${lines.join('\n')}` };
     }
     if (id === 'joke') return { text: pickBy(FLAVOR.jokes[ch], seed + String(Math.random())) };
-    if (id === 'dialog') {
-        return {
-            text: pickBy(FLAVOR.dialogAsk[ch], seed + String(Math.random())),
-            choices: [{ id: 'dlg:good', label: 'Отлично 😊' }, { id: 'dlg:ok', label: 'Нормально 🙂' }, { id: 'dlg:hard', label: 'Тяжеловато 😕' }]
-        };
+    // «поболтаем»: спросить про день, попросить что-нибудь записать или рассказать случайный факт
+    if (id === 'dialog' || id === 'dlg:fact') {
+        const r = id === 'dlg:fact' ? 1 : Math.random();
+        if (r < 0.4) {
+            return {
+                text: pickBy(FLAVOR.dialogAsk[ch], seed + String(Math.random())),
+                choices: [{ id: 'dlg:good', label: 'Отлично 😊' }, { id: 'dlg:ok', label: 'Нормально 🙂' }, { id: 'dlg:hard', label: 'Тяжеловато 😕' }]
+            };
+        }
+        if (r < 0.65) return { text: pickBy(DIALOG_IDLE[ch] || DIALOG_IDLE.normal, seed + String(Math.random())), choices: [{ id: 'dlg:fact', label: '🎲 Расскажи факт' }] };
+        const pool = Math.random() < 0.5 ? DIALOG_FACTS.features : DIALOG_FACTS.saving;
+        return { text: pickBy(pool, String(Math.random())), choices: [{ id: 'dlg:fact', label: '🎲 Ещё факт' }, { id: 'dialog', label: '💬 Поболтать ещё' }] };
     }
     if (id === 'dlg:good' || id === 'dlg:ok' || id === 'dlg:hard') {
         const key = { 'dlg:good': 'dialogGood', 'dlg:ok': 'dialogOk', 'dlg:hard': 'dialogHard' }[id];
