@@ -2,12 +2,20 @@
 // Запись — только через BudgetManager.addTransaction(tx); эта функция ничего не пишет.
 import { cleanText } from '../../utils/sanitize.js';
 
+/** Погашение существующего долга: { debtId, amount } для BudgetManager.markDebtPayment(id, amt) или null */
+export function buildDebtPayment(intent) {
+    const t = intent?.tx;
+    if (!intent || intent.kind !== 'add_transaction' || intent.missing?.length || t?.type !== 'debt' || !t.repaymentOf) return null;
+    return Number.isInteger(t.amount) && t.amount > 0 ? { debtId: t.repaymentOf, amount: t.amount } : null;
+}
+
 /**
  * @returns {object|null} операция или null, если намерение неполное (есть missing) и записывать нельзя
  */
 export function buildTransaction(intent, { id = Date.now() } = {}) {
     if (!intent || intent.kind !== 'add_transaction' || intent.missing?.length) return null;
     const t = intent.tx;
+    if (t.repaymentOf) return null;                      // погашение идёт через buildDebtPayment, а не новой записью
     if (!Number.isInteger(t.amount) || t.amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(t.date || '')) return null;
     const note = t.note ? cleanText(t.note, 100) : '';
     if (t.type === 'expense' || t.type === 'income') {

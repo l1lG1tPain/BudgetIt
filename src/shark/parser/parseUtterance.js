@@ -29,6 +29,8 @@ const compileWords = list => {
 const IS = Object.fromEntries(Object.entries(TYPE_WORDS).map(([k, v]) => [k, compileWords(v)]));
 const anyTok = (words, fn) => words.some(fn);
 const phraseHit = (norm, key) => TYPE_PHRASES[key].some(re => re.test(norm));
+const COUNT_RE = /(?:^|\s)(?:х|x|×)\s*(\d{1,2})(?![\d\p{L}])|(?<![\d.,])(\d{1,2}|два|две|три|четыре|пять|ikki|uch|to'rt|besh)\s*(?:раза|раз|marta|times)(?![\p{L}])/giu;
+const COUNT_WORDS = { два: 2, две: 2, три: 3, четыре: 4, пять: 5, ikki: 2, uch: 3, "to'rt": 4, besh: 5 };
 const PERCENT_RE = /(\d+(?:[.,]\d+)?)\s*(?:%|процент\p{L}*|foiz\p{L}*|percent|годовых)/gu;
 const SEP_RE = /\s+(?:и|va|and|а|потом|затем|then)\s+|[;\n+]|(?<!\d),|,(?!\d)/g;
 const ALL_TYPE_WORD = w => IS.income(w) || IS.expenseVerb(w) || IS.deposit(w) || IS.depositWithdraw(w) || IS.debt(w) || IS.repay(w);
@@ -127,7 +129,17 @@ export function parseUtterance(text, ctx = {}) {
     PERCENT_RE.lastIndex = 0;
     let pm;
     while ((pm = PERCENT_RE.exec(norm))) percents.push({ start: pm.index, end: pm.index + pm[0].length, rate: parseFloat(pm[1].replace(',', '.')) });
-    const percentRanges = percents.map(p => [p.start, p.end]);
+    // «×2», «2 раза»: множитель количества, вырезаем до поиска сумм
+    const counts = [];
+    COUNT_RE.lastIndex = 0;
+    let cm;
+    while ((cm = COUNT_RE.exec(norm))) {
+        const raw = (cm[1] || cm[2] || '').toLowerCase();
+        const n = /^\d+$/.test(raw) ? +raw : COUNT_WORDS[raw];
+        const off = cm[0].length - cm[0].trimStart().length;
+        if (n >= 2) counts.push({ start: cm.index + off, end: cm.index + cm[0].length, n });
+    }
+    const percentRanges = [...percents.map(p => [p.start, p.end]), ...counts.map(c => [c.start, c.end])];
     const noPercent = maskRanges(norm, percentRanges);
 
     const dates = scanDates(noPercent, today);
@@ -184,13 +196,17 @@ export function parseUtterance(text, ctx = {}) {
         const a = g.amounts[0] || null;
 
         const rel = ([x, y]) => [x - g.start, y - g.start];
-        const maskForWords = maskRanges(segNorm, [...segDates.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [x.start, x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end])].map(rel));
+        const maskForWords = maskRanges(segNorm, [...segDates.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [x.start, x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end]), ...counts.filter(c => c.start >= g.start && c.end <= g.end).map(c => [c.start, c.end])].map(rel));
         const toks = tokenize(maskForWords);
         const words = toks.map(t => t.w);
 
         /* тип */
         let type = 'expense', explicitType = false;
-        const isDebt = anyTok(words, IS.debt) || phraseHit(maskForWords, 'debtOwed') || phraseHit(maskForWords, 'debtOwe');
+        const repayVerb = anyTok(words, w => /^(?:вернул\p{L}*|отдал\p{L}*|погасил\p{L}*|qaytard\p{L}*|returned|repaid)$/u.test(w));
+        const debtNames = (ctx.history || []).filter(t => t && t.type === 'debt' && t.name).map(t => fold(t.name));
+        const caps = (segOrig.match(/\p{Lu}[\p{L}'’-]+/gu) || []).filter(w => !/^(?:вернул|отдал|погасил|qaytard|returned|repaid)/i.test(w));
+        const namedDebtor = repayVerb && (caps.length > 0 || debtNames.some(n => n.length >= 3 && words.some(w => w.length >= 3 && (w.startsWith(n.slice(0, 4)) || n.startsWith(w.slice(0, 4))))));
+        const isDebt = (repayVerb && (/долг|qarz|debt/.test(maskForWords) || namedDebtor)) || anyTok(words, IS.debt) || phraseHit(maskForWords, 'debtOwed') || phraseHit(maskForWords, 'debtOwe');
         const isDeposit = anyTok(words, IS.deposit);
         const isIncome = anyTok(words, IS.income);
         if (isDebt && !isDeposit) { type = 'debt'; explicitType = true; }
@@ -225,19 +241,23 @@ export function parseUtterance(text, ctx = {}) {
             else if (a.value === 0) { flags.push('zero_amount'); missing.push('amount'); }
             else {
                 tx.amount = a.value;
+                const cnt = counts.find(c => c.start >= g.start && c.end <= g.end);
+                if (cnt && /(?:^|\s)(?:по|каждый|каждая|each|har\s+biri)\s*$/.test(norm.slice(Math.max(0, a.start - 12), a.start)) && a.value * cnt.n <= Number.MAX_SAFE_INTEGER) {
+                    tx.amount = a.value * cnt.n; flags.push('amount_multiplied');
+                }
                 if (a.negative) flags.push('negative_amount');
                 if (a.rounded) flags.push('amount_rounded');
-                if (a.value >= HUGE_AMOUNT) flags.push('huge_amount');
+                if (tx.amount >= HUGE_AMOUNT) flags.push('huge_amount');
                 else if (ctx.history?.length >= 5) {
                     const same = ctx.history.filter(t => t && t.type === type && Number.isFinite(+t.amount)).map(t => +t.amount);
                     const mx = same.length >= 5 ? Math.max(...same) : 0;
-                    if (mx > 0 && a.value > mx * 20) flags.push('unusual_amount');
+                    if (mx > 0 && tx.amount > mx * 20) flags.push('unusual_amount');
                 }
             }
         }
 
         /* заметка: оригинал без сумм/дат/процентов, срок («до пятницы») остаётся */
-        const noteMask = maskRanges(segOrig, [...own.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [x.start, x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end])].map(rel));
+        const noteMask = maskRanges(segOrig, [...own.map(d => [d.start, d.end]), ...amounts.filter(x => x.start >= g.start && x.end <= g.end).map(x => [x.start, x.end]), ...percents.filter(p => p.start >= g.start && p.end <= g.end).map(p => [p.start, p.end]), ...counts.filter(c => c.start >= g.start && c.end <= g.end).map(c => [c.start, c.end])].map(rel));
         const makeNote = () => {
             const ws = noteMask.replace(EMOJI_RE, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
             const isVerb = w => { const f = fold(w).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''); return IS.expenseVerb(f) || VERB_ONLY.test(f); };
@@ -253,7 +273,7 @@ export function parseUtterance(text, ctx = {}) {
             const dueRanges = due.map(d => rel([d.start, d.end]));
             const nm = extractName(segOrig, segNorm, dueRanges);
             tx.name = nm ? cleanText(nm.name, 60) : null;
-            const repay = anyTok(words, IS.repay) && /долг|qarz|debt/.test(maskForWords);
+            const repay = repayVerb;
             let direction = null;
             if (repay) { flags.push('debt_repayment'); }
             const hasShouldBe = /(?:^|[^\p{L}])(?:должен|должна|должны)(?![\p{L}])/u.exec(maskForWords);
@@ -265,10 +285,26 @@ export function parseUtterance(text, ctx = {}) {
                 direction = nm && nm.start < hasShouldBe.index ? 'owed' : 'owe';
                 if (!nm) flags.push('direction_guess');
             }
+            if (repay) {
+                // «Али вернул» / «вернул мне» → мне вернули (долг передо мной); «вернул долг Али» / «я вернул» → я вернул
+                const vm = /(?:вернул\p{L}*|отдал\p{L}*|погасил\p{L}*|qaytard\p{L}*|returned|repaid)/u.exec(maskForWords);
+                direction = (nm && vm && nm.start < vm.index) || /(?:^|[^\p{L}])мне(?![\p{L}])/u.test(maskForWords) ? 'owed' : 'owe';
+            }
+            // имя: если в истории есть такой должник — берём его написание (убирает падежи: «у Бобура» → «Бобур»)
+            const known = (ctx.history || []).filter(t => t && t.type === 'debt' && t.name);
+            if (tx.name) {
+                const f = fold(tx.name);
+                const hit = known.find(t => { const n = fold(t.name); return n.length >= 3 && f.length >= 3 && (f.startsWith(n.slice(0, Math.max(3, n.length - 2))) || n.startsWith(f.slice(0, Math.max(3, f.length - 2)))); });
+                if (hit) tx.name = hit.name;
+            }
             tx.direction = direction;
             if (!direction) missing.push('direction');
             if (!tx.name) missing.push('name');
-            if (repay) missing.push('debtTarget');
+            if (repay) {
+                const open = known.filter(t => !t.paid && Number(t.remainingAmount ?? t.initialAmount ?? t.amount) > 0 && fold(t.name) === fold(tx.name || '') && (!direction || t.direction === direction));
+                if (open.length >= 1) { open.sort((a, b) => String(b.date).localeCompare(String(a.date))); tx.repaymentOf = open[0].id; tx.name = open[0].name; }
+                else missing.push('debtTarget');
+            }
             if (due.length) {
                 const d0 = due[0];
                 const from = Math.max(0, d0.start - g.start - 3);
@@ -313,8 +349,18 @@ export function parseUtterance(text, ctx = {}) {
             if (note) tx.note = note;
         }
 
-        items.push({ g, tx, flags, missing, suggestions, catStrength, explicitType, explicitDate, ownDate: tx.date, dateRole: g._dateRole, hasDateFlag: !!firstOwn, amountPos: a ? a.start : null });
+        items.push({ g, words, tx, flags, missing, suggestions, catStrength, explicitType, explicitDate, ownDate: tx.date, dateRole: g._dateRole, hasDateFlag: !!firstOwn, amountPos: a ? a.start : null });
     }
+
+    /* ───── «ещё 300к» без своего типа и категории наследует от предыдущей операции ───── */
+    items.forEach((it, i) => {
+        const prev = items[i - 1];
+        if (!prev || it.tx.type !== 'expense' || it.explicitType || it.tx.category) return;
+        if (!(prev.tx.type === 'income' || prev.tx.type === 'expense') || !prev.tx.category) return;
+        if (!it.words.some(w => /^(?:еще|тоже|also|yana|ham|plus)$/.test(w))) return;
+        it.tx.type = prev.tx.type; it.tx.category = prev.tx.category; it.catStrength = prev.catStrength * 0.8;
+        it.missing = it.missing.filter(m => m !== 'category'); it.flags.push('inherited_from_previous');
+    });
 
     /* ───── общая дата ───── */
     let lead = null, trail = null;
@@ -348,7 +394,7 @@ export function parseUtterance(text, ctx = {}) {
         const a = it.g.amounts[0];
         if (a?.currency) intent.currencyHint = a.currency;
         // для отрицательной суммы: берём модуль, но UI обязан подтвердить
-        intent.requiresConfirmation = intent.flags.some(f => ['negative_amount', 'huge_amount', 'unusual_amount', 'future_date', 'ambiguous_date', 'amount_rounded', 'date_inferred', 'debt_repayment', 'direction_guess'].includes(f));
+        intent.requiresConfirmation = intent.flags.some(f => ['negative_amount', 'huge_amount', 'unusual_amount', 'future_date', 'ambiguous_date', 'amount_rounded', 'amount_multiplied', 'inherited_from_previous', 'date_inferred', 'debt_repayment', 'direction_guess'].includes(f));
         intent.confidence = confidenceOf(intent);
         delete intent._catStrength; delete intent._explicitType; delete intent._explicitDate;
         // совсем пустое (нет суммы, нет категории, нет типа) — это не операция, а неразобранный текст

@@ -48,7 +48,8 @@ export function parsePeriod(norm, today, dates = null) {
         const monday = addDays(today, -weekdayMon(today));
         if (prev) { const from = addDays(monday, -7); return { kind: 'last_week', from, to: addDays(from, 6), explicit: true }; }
         if (cur) return { kind: 'this_week', from: monday, to: today, explicit: true };
-        return { kind: 'last7', from: addDays(today, -6), to: today, explicit: true };
+        // «за неделю» без уточнения = последняя законченная неделя (пн–вс)
+        { const from = addDays(monday, -7); return { kind: 'last_week', from, to: addDays(from, 6), explicit: true }; }
     }
     if (has(/^(?:год\p{L}*|yil\p{L}*|year)$/u)) {
         const y = prev ? T.y - 1 : T.y;

@@ -1,7 +1,7 @@
 // Тесты локального парсера акулки (src/shark/parser). today = 2026-11-23 (понедельник), часовой пояс Asia/Tashkent.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseUtterance, buildTransaction, runSummary } from '../src/shark/parser/index.js';
+import { parseUtterance, buildTransaction, buildDebtPayment, runSummary } from '../src/shark/parser/index.js';
 import { scanAmounts } from '../src/shark/parser/numbers.js';
 import { scanDates } from '../src/shark/parser/dates.js';
 import { prepare } from '../src/shark/parser/normalize.js';
@@ -353,7 +353,7 @@ test('запросы: сколько потратил на категорию', 
 
 test('запросы: периоды', () => {
     const cases = [
-        ['итог за прошлую неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за неделю', 'last7', '2026-11-17', TODAY], ['итог за эту неделю', 'this_week', TODAY, TODAY],
+        ['итог за прошлую неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за неделю', 'last_week', '2026-11-16', '2026-11-22'], ['итог за эту неделю', 'this_week', TODAY, TODAY],
         ['сколько потратил сегодня', 'today', TODAY, TODAY], ['сколько потратил вчера', 'yesterday', '2026-11-22', '2026-11-22'],
         ['сколько потратил в прошлом месяце', 'last_month', '2026-10-01', '2026-10-31'], ['сколько потратил за год', 'this_year', '2026-01-01', TODAY],
         ['сколько потратил в прошлом году', 'last_year', '2025-01-01', '2025-12-31'], ['сколько потратил в октябре', 'month', '2026-10-01', '2026-10-31'],
@@ -630,4 +630,73 @@ test('производительность: типичная фраза — ми
     const t1 = performance.now();
     for (let i = 0; i < 100; i++) parseUtterance('такси 45к', ctx);
     assert.ok((performance.now() - t1) / 100 < 5);
+});
+
+/* ───────── доработки по итогам этапа 1 ───────── */
+test('неделя: «за неделю» = последняя законченная неделя пн–вс; «эта неделя» = с понедельника по сегодня', () => {
+    for (const t of ['итог за неделю', 'сколько потратил за неделю', 'итог за прошлую неделю', 'сводка за неделю']) {
+        const q = first(t);
+        assert.deepEqual([q.period.kind, q.period.from, q.period.to], ['last_week', '2026-11-16', '2026-11-22'], t);
+    }
+    assert.deepEqual([first('итог за эту неделю').period.from, first('итог за эту неделю').period.to], ['2026-11-23', TODAY]);
+    // в воскресенье «последняя неделя» — прошедшая пн–вс, а не текущая
+    const sun = parseUtterance('итог за неделю', ctxOf({ today: '2026-11-29' })).intents[0];
+    assert.deepEqual([sun.period.from, sun.period.to], ['2026-11-16', '2026-11-22']);
+    assert.equal(first('итог за месяц').period.kind, 'this_month');
+});
+
+test('погашение долга: «Али вернул 200к», «вернул долг Али»', () => {
+    const debts = [{ id: 5, type: 'debt', date: '2026-11-01', name: 'Али', initialAmount: 300000, remainingAmount: 300000, paid: false, direction: 'owed', payments: [] },
+        { id: 6, type: 'debt', date: '2026-11-02', name: 'Бобур', initialAmount: 500000, remainingAmount: 500000, paid: false, direction: 'owe', payments: [] }];
+    const a = first('Али вернул 200к', { history: debts });
+    assert.equal(a.tx.type, 'debt');
+    assert.equal(a.tx.direction, 'owed');
+    assert.equal(a.tx.repaymentOf, 5);
+    assert.deepEqual(a.missing, []);
+    assert.ok(a.flags.includes('debt_repayment') && a.requiresConfirmation);
+    assert.deepEqual(buildDebtPayment(a), { debtId: 5, amount: 200000 });
+    assert.equal(buildTransaction(a), null);
+    const b = first('вернул долг Бобуру 100к', { history: debts });
+    assert.equal(b.tx.direction, 'owe');
+    assert.equal(b.tx.repaymentOf, 6);
+    assert.equal(b.tx.name, 'Бобур');
+    // без истории: долг не найден → просим уточнить, не выдумываем
+    const c = first('Али вернул 200к');
+    assert.equal(c.tx.type, 'debt');
+    assert.ok(c.missing.includes('debtTarget'));
+    assert.equal(buildDebtPayment(c), null);
+    // обычное «вернули» без имени — по-прежнему доход
+    assert.equal(first('вернули 50к за билеты').tx.type, 'income');
+});
+
+test('имя должника в падеже приводится к написанию из истории', () => {
+    const debts = [{ id: 6, type: 'debt', date: '2026-11-02', name: 'Бобур', initialAmount: 1, remainingAmount: 1, paid: false, direction: 'owe', payments: [] }];
+    assert.equal(first('занял у Бобура 500 тысяч', { history: debts }).tx.name, 'Бобур');
+});
+
+test('«зп» — зарплата', () => {
+    const i = first('5 млн зп');
+    assert.equal(i.tx.type, 'income');
+    assert.match(i.tx.category, /Зарплата/);
+});
+
+test('«ещё 300к» без типа наследует тип и категорию предыдущей операции', () => {
+    const r = P('аванс пришёл 500к а потом ещё 300к');
+    assert.equal(r.intents.length, 2);
+    assert.deepEqual(r.intents.map(i => [i.tx.type, i.tx.amount]), [['income', 500000], ['income', 300000]]);
+    assert.equal(r.intents[1].tx.category, r.intents[0].tx.category);
+    assert.ok(r.intents[1].flags.includes('inherited_from_previous') && r.intents[1].requiresConfirmation);
+    const r2 = P('аванс 500к и 300к');
+    assert.equal(r2.intents[1].tx.category, null);
+});
+
+test('«по 18к два раза» умножает; без «по» сумма — итог', () => {
+    const cases = [['кофе по 18к два раза', 36000, true], ['кофе по 18к 2 раза', 36000, true], ['кофе по 10к x3', 30000, true], ['кофе 18к два раза', 18000, false], ['кофе 18к 2 раза', 18000, false], ['kofe har biri 5 ming 3 marta', 15000, true]];
+    for (const [t, amount, mult] of cases) {
+        const r = P(t);
+        assert.equal(r.intents.length, 1, t);
+        assert.equal(r.intents[0].tx.amount, amount, t);
+        assert.equal(r.intents[0].flags.includes('amount_multiplied'), mult, t);
+        assert.equal(r.intents[0].requiresConfirmation, mult, t);
+    }
 });
