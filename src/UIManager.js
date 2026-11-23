@@ -1245,6 +1245,14 @@ export class UIManager {
         this.openModal('transaction-detail-sheet');
     }
 
+    // после смены или создания бюджета не из списка (например, из чата Акулки)
+    afterBudgetSwitch() {
+        this.updateHeader();
+        this.updateUI();
+        refreshExportAnalytics(this.budgetManager);
+        refreshUserProfile(this.budgetManager);
+    }
+
     populateBudgetList() {
         const listDiv = document.querySelector('#budget-switch-sheet .budget-list');
         if (!listDiv) return;

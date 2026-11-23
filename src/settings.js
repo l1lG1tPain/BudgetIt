@@ -5,6 +5,7 @@ import { getSharkSettings, CHARACTER_LABELS, SHARK_NAMES, findActivePlanner, iso
 import { ALL_ACHIEVEMENTS } from '../constants/achievementList.js';
 import { initializeAnalytics } from './widgets/charts.js';
 import { FAQ_ITEMS }           from '../constants/faq-constants.js';
+import { AKULKA_PROJECTS }     from '../constants/akulka-projects.js';
 import { renderAchievementsList, getUnlockedAchievements } from './utils/achievements.js';
 import { showTweak } from './utils/tweakSystem.js';
 import { normalizeCustomCategories } from './utils/customCategories.js';
@@ -27,6 +28,19 @@ const DAILY_BACKUP_ON_KEY = 'budgetit:dailyBackup:on';
 const DAILY_BACKUP_LAST_KEY = 'budgetit:dailyBackup:last';
 
 /* ========================= FAQ ========================= */
+
+// «Akulka Projects» в профиле: карточки из constants/akulka-projects.js (тот же список видит Акулка в чате)
+function renderProjectsGrid() {
+    const box = document.getElementById('akulka-projects-grid');
+    if (!box) return;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    box.innerHTML = AKULKA_PROJECTS.map(p => {
+        const inner = `<img src="${esc(p.icon)}" class="product-icon" alt="" loading="lazy"><h3>${esc(p.name)}</h3><p>${esc(p.short)}</p>${p.version ? `<span class="product-version">${esc(p.version)}</span>` : ''}`;
+        return p.url && !p.current
+            ? `<a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer" class="product-card link">${inner}</a>`
+            : `<div class="product-card">${inner}</div>`;
+    }).join('');
+}
 
 function renderFAQ() {
     const box = document.getElementById('faq-container');
@@ -149,6 +163,7 @@ export function initSettings(budgetManager, ui) {
 
     // Имя акулки в hero-карточке settings-page — обновляем сразу при инициализации
     refreshHeroName();
+    renderProjectsGrid();
 
     document.getElementById('user-profile-card')?.addEventListener('click', () => {
         openProfilePage(budgetManager);

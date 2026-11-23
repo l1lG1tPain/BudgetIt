@@ -37,7 +37,7 @@
 
 
 
-  <link rel="manifest" href="manifest.json?v=5.0.5">
+  <link rel="manifest" href="manifest.json?v=5.1.0">
 
   <script defer
         src="https://cloud.umami.is/script.js"
@@ -88,7 +88,7 @@
   <meta name="twitter:image:alt"   content="Акулка в бордовом худи — талисман BudgetIt">
 
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.0.5","image":"https://budgetit.app/assets/og-cover.png"}
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BudgetIt","alternateName":["Акулка бюджета","Akulka","BudgetIt Shark","Shark budget tracker"],"keywords":"Акулка, учёт бюджета, budget tracker, expense tracker, shark","url":"https://budgetit.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":"ru","description":"Бесплатный учёт личного бюджета с Акулкой (Shark): поступления, траты, накопления и долги, план месяца, аналитика и офлайн-режим. Free budget and expense tracker.","offers":{"@type":"Offer","price":"0","priceCurrency":"UZS"},"softwareVersion":"5.1.0","image":"https://budgetit.app/assets/og-cover.png"}
   </script>
 
   <style>
@@ -719,44 +719,8 @@
               Инди-экосистема продуктов, которые делают жизнь проще и приятнее
           </p>
 
-          <div class="products-grid">
-
-              <a href="https://teatimer-livid.vercel.app/" target="_blank" rel="noopener noreferrer" class="product-card link">
-                  <img src="assets/icons/TeaTimer-l.png" class="product-icon" alt="" loading="lazy">
-                  <h3>TeaTimer</h3>
-                  <p>Заварка китайского чая: время проливов по сорту и крепости</p>
-                  <span class="product-version">new</span>
-              </a>
-
-              <a href="https://l1lg1tpain.github.io/TrackIt/index.html" class="product-card link">
-                  <img src="assets/icons/trackit-icon.png" class="product-icon">
-                  <h3>TrackIt</h3>
-                  <p>Счётчик очков для настольных игр</p>
-                  <span class="product-version">v3.5</span>
-              </a>
-
-              <div class="product-card">
-                  <img src="assets/icons/budgetit-icon.png" class="product-icon">
-                  <h3>BudgetIt</h3>
-                  <p>Учёт финансов с аналитикой</p>
-                  <span class="product-version">v5.0.5</span>
-              </div>
-
-              <a href="https://migry-bice.vercel.app/" target="_blank" rel="noopener noreferrer" class="product-card link">
-                  <img src="assets/icons/migri-icon.png" class="product-icon">
-                  <h3>Мигри</h3>
-                  <p>Трекер головной боли с аналитикой для врача</p>
-                  <span class="product-version">v1.0</span>
-              </a>
-
-              <a href="https://t.me/LUdomania_app_bot" target="_blank" rel="noopener noreferrer" class="product-card link">
-                  <img src="assets/icons/ludomania-icon.png" class="product-icon">
-                  <h3>Ludomania</h3>
-                  <p>Мини-игра в Telegram</p>
-                  <span class="product-version">beta</span>
-              </a>
-
-          </div>
+          <!-- карточки строятся из constants/akulka-projects.js (settings.js → renderProjectsGrid) -->
+          <div class="products-grid" id="akulka-projects-grid"></div>
       </div>
 
   </div>
@@ -1121,7 +1085,7 @@
               <div class="about-hero">
                   <img src="assets/BudgetIt ava.png" class="about-avatar" alt="🦈">
                   <div class="about-title">BudgetIt</div>
-                  <div class="about-version">Версия 5.0.5</div>
+                  <div class="about-version">Версия 5.1.0</div>
                   <div class="about-sub">Акулка следит за твоими финансами 🧠💰</div>
               </div>
 
@@ -1139,7 +1103,7 @@
                   </div>
                   <div class="about-stat-card">
                       <i class="ti ti-history"></i>
-                      <div class="about-stat-value">v5.0</div>
+                      <div class="about-stat-value">v5.1</div>
                       <div class="about-stat-label">текущая версия</div>
                   </div>
                   <div class="about-stat-card">
@@ -1201,11 +1165,21 @@
                   </div>
                   <div class="about-changelog">
                       <div class="about-changelog-row">
+                          <div class="about-changelog-ver">5.1.0</div>
+                          <div class="about-changelog-info">
+                              <div class="about-changelog-name">
+                                  Акулка-чат
+                                  <span class="about-badge-now">Сейчас</span>
+                              </div>
+                              <div class="about-changelog-desc">Акулка стала главным входом: кнопка-акулка в навбаре открывает чат. Пиши как человеку — «вчера такси 25к», «сколько на еду за месяц», «курс доллара», «покажи план», «смени тему на Тиффани», «вручную» — и она запишет, посчитает или откроет нужный раздел. Любая запись — только после твоего подтверждения. Ручной ввод остался: первый чипс «Добавить вручную» в чате. Понимает разговорную речь, сокращения, транслит и опечатки (55 команд, больше тысячи фраз), отвечает в характере: добрая, обычная или строгая. Умеет свои категории, смену типа и отмену последней записи, периоды (неделя, месяцы, квартал, «с октября»), статистику и ближайшую зарплату, курсы валют, темы, настройки Акулки, план месяца и бюджеты (удаление — только вручную), FAQ и карточки проектов. Новая кнопка отправки в стиле темы, исправлены реплики Акулки.</div>
+                          </div>
+                      </div>
+                      <div class="about-changelog-row">
                           <div class="about-changelog-ver">5.0.5</div>
                           <div class="about-changelog-info">
                               <div class="about-changelog-name">
                                   Честные цифры
-                                  <span class="about-badge-now">Сейчас</span>
+                                  
                               </div>
                               <div class="about-changelog-desc">Аналитика и тренды считают все деньги, как главный экран: вклады, долги и переводы; прогноз остатка до конца месяца, график «Категории по месяцам» и новые тренды; исправлены расчёты: план после смены числа дней, закрытие вклада, проценты по дням; тема «Тиффани» стала светлой — в фирменном цвете</div>
                           </div>
@@ -1665,8 +1639,18 @@
   <!-- ═══════════════════════════════════════════════════ -->
   <footer class="liquid-footer" id="liquid-footer">
 
-      <!-- FAB: круглая кнопка + (только на главной) -->
-      <button id="add-btn" class="fab-btn" aria-label="Добавить транзакцию">
+      <!-- FAB: чат с Акулкой. Ручной ввод — первым чипсом в чате или фразой «вручную» -->
+      <button id="shark-fab" class="fab-btn shark-fab" type="button" aria-label="Чат с Акулкой">
+          <svg class="shark-fab-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path class="sf-bubble" d="M6 3.6h12a3 3 0 0 1 3 3v7.6a3 3 0 0 1-3 3h-6.3l-4.1 3.1c-.62.47-1.5.03-1.5-.75v-2.4A3 3 0 0 1 3 14.2V6.6a3 3 0 0 1 3-3z"
+                    fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path class="sf-fin" d="M7.4 12.9c1.75-.15 3.3-1.35 4.35-3.5.6-1.25 1.5-2.3 3.05-2.55-.62 1.5-.66 3.25.06 4.75.4.83.98 1.18 1.64 1.3H7.4z" fill="currentColor"/>
+              <path class="sf-wave" d="M6.6 14.35c.85.55 1.7.55 2.55 0s1.7-.55 2.55 0 1.7.55 2.55 0 1.7-.55 2.55 0"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+      </button>
+      <!-- прежняя «+»: скрыта, но остаётся для вызовов .click() (формы, итоги месяца, десктоп, ручной ввод из чата) -->
+      <button id="add-btn" class="fab-btn" aria-label="Добавить транзакцию" hidden>
           <svg class="budgetit-fab-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                       d="M12 5.25V18.75"

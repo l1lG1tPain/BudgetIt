@@ -1,6 +1,6 @@
 /* === STATIC CACHE CONFIG ============================================ */
 const CACHE_PREFIX  = 'budgetit-cache';
-const CACHE_VERSION = 'v5.0.5';
+const CACHE_VERSION = 'v5.1.0';
 const CACHE_NAME    = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 
 /* Файлы, которые точно должны быть офлайн-доступны */
@@ -66,6 +66,23 @@ const STATIC_ASSETS = [
     '/src/shark/texts/emotionInfo.js',
     '/src/shark/texts/rude.js',
     '/src/shark/texts/stats-more.js',
+    // чат Акулки: команды, разбор фраз, реплики
+    '/src/shark/chatCommands.js',
+    '/src/shark/chatFlow.js',
+    '/src/shark/typos.js',
+    '/src/shark/texts/chat.js',
+    '/src/shark/parser/index.js',
+    '/src/shark/parser/parseUtterance.js',
+    '/src/shark/parser/build.js',
+    '/src/shark/parser/categories.js',
+    '/src/shark/parser/chatContext.js',
+    '/src/shark/parser/dates.js',
+    '/src/shark/parser/lexicon.js',
+    '/src/shark/parser/messages.js',
+    '/src/shark/parser/normalize.js',
+    '/src/shark/parser/numbers.js',
+    '/src/shark/parser/queries.js',
+    '/src/shark/parser/summary.js',
     '/src/ui/PwaInstall.js',
     '/assets/onb-scene-cut.webp',
     '/assets/hoodie/hoodie-cheeky.webp',
@@ -137,6 +154,7 @@ const STATIC_ASSETS = [
     '/constants/depositCategories.js',
     '/constants/expenseCategories.js',
     '/constants/faq-constants.js',
+    '/constants/akulka-projects.js',
     '/constants/incomeCategories.js',
     '/constants/index.js',
     '/constants/loadingMessages.js',

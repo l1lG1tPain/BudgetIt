@@ -1233,6 +1233,12 @@ export class ExcelImportManager {
     /* ────────────────────────────────────────────────
        17. Парсинг строк по текущим настройкам маппинга
     ──────────────────────────────────────────────── */
+    _isFailedStatus(v) {
+        const t = String(v ?? '').trim().toLowerCase();
+        if (!t) return false;
+        return /ошибк|error|fail|неуспеш|не\s*удал|отклонен|отклонён|отменен|отменён|declin|reject|cancel|xato|bekor/.test(t);
+    }
+
     _parseRows() {
         if (this._pdfMode) return this._parsePdfRowsForPreview();
         if (!this._rows?.length) return [];
@@ -1246,7 +1252,15 @@ export class ExcelImportManager {
 
         const result = [];
 
+        // колонка «Статус платежа» (Click и др.): неуспешные операции не импортируем
+        const colStatus = (this._headers || []).findIndex(h => /статус|status|holat/i.test(String(h || '')));
+        this._skippedFailed = 0;
+
         for (const row of this._rows) {
+            if (colStatus >= 0 && this._isFailedStatus(row[colStatus])) {
+                this._skippedFailed++;
+                continue;
+            }
             const rawDate = String(row[colDate] ?? '').trim();
             const rawAmount = row[colAmount];
             if (!rawDate || rawAmount === '' || rawAmount == null) continue;
